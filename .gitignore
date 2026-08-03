@@ -1,0 +1,18 @@
+# Local / generated
+**/rvt_list.txt
+**/xlsx_out_path.cfg
+**/exemplar_model.cfg
+**/exemplar_link.cfg
+**/project_map.csv
+**/accuracy.cfg
+**/session_stamp.cfg
+**/reports/
+**/__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+*.xlsx
+!samples/**
+.env
+.vscode/
+.idea/

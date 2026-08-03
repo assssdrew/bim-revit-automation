@@ -1,0 +1,5 @@
+﻿host;exemplar;category;name_host;name_exemplar;issue;value_host;value_exemplar;delta;tolerance;status
+BF_Corpus_A.rvt;AR_Corpus_A.rvt;Level;Level 1;Level 1;elevation_delta;0.000;0.000;0.5;2;GREEN
+BF_Corpus_A.rvt;AR_Corpus_A.rvt;Level;Level 2;Level 2;elevation_delta;6000.0;6012.0;12.0;2;RED
+BF_Corpus_A.rvt;AR_Corpus_A.rvt;Grid;1;1;position_delta;0;5.2;5.2;5;YELLOW
+BF_Corpus_A.rvt;AR_Corpus_A.rvt;Grid;A;;missing_in_exemplar;;;;RED
