@@ -7,7 +7,7 @@ I build **task scripts + operator toolkits** that turn weekly BIM coordination i
 | | |
 |---|---|
 | **Author** | [assssdrew](https://github.com/assssdrew) |
-| **Stack** | Revit API · IronPython (RBP) · PowerShell · OpenXML |
+| **Stack** | Revit API · IronPython (RBP) · PowerShell · OpenXML · FTP / ntfy |
 | **Focus** | Workshared / Revit Server (`RSN://`) pipelines, safety-first Apply |
 | **Language** | [Русский README](README.ru.md) |
 
@@ -20,6 +20,7 @@ I build **task scripts + operator toolkits** that turn weekly BIM coordination i
 | 01 | [Project Units + RSN](cases/01-project-units/) | **Production-ready** | Batch set Length accuracy; open local / UNC / `RSN://` models; Sync + Relinquish |
 | 02 | [Health Check](cases/02-health-check/) | **Production-ready** (v1.4.0) | Read-only model health audit → CSV + coloured XLSX (no Save/Sync) |
 | 03 | [Levels & Grids](cases/03-levels-grids/) | **MVP ready** · pilot pending | Cascade audit of Levels/Grids vs linked exemplar; Apply only on base files |
+| 04 | [FTP model alerts](cases/04-ftp-model-alerts/) | **Production-ready** | Poll shared FTP exchange folders → phone push (ntfy / Telegram) |
 
 New cases are added as folders under `cases/` — see [docs/HOW_TO_ADD_CASE.md](docs/HOW_TO_ADD_CASE.md).
 
@@ -46,6 +47,7 @@ Manual open-check-fix does not scale. These toolkits:
 | Units / RSN | Confirmed on real Revit Server models (Sync + Relinquish OK) |
 | Health Check | Batch read-only audit across workshared models |
 | Levels & Grids | MVP coded; first live pilot expected imminently |
+| FTP model alerts | Field-tested phone push when exchange folders change (no FileZilla babysitting) |
 
 Exact hour-savings vary by project; the design goal is: **one report session instead of opening dozens of models by hand**.
 
@@ -73,11 +75,12 @@ bim-revit-automation/
     01-project-units/src/      ← scripts for RBP
     02-health-check/src/
     03-levels-grids/src/
+    04-ftp-model-alerts/src/   ← FTP poller + phone alerts (not RBP)
   samples/                     ← anonymised report snippets
   docs/
 ```
 
-Each `cases/*/src` folder is what you copy into your RBP `Scripts` directory.
+Each RBP case `src/` is what you copy into your RBP `Scripts` directory. Case 04 runs standalone on Windows (Task Scheduler).
 
 ---
 

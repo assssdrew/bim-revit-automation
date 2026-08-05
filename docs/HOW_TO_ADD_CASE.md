@@ -17,8 +17,8 @@ Publish new automation as a numbered folder. Keep the hub README in sync (EN + R
 
 | NN | Topic ideas |
 |----|-------------|
-| 04 | Navisworks rename / publish helpers |
-| 05 | Parameter batch fill |
-| 06 | Link status / coordination report |
+| 05 | Navisworks rename / publish helpers |
+| 06 | Parameter batch fill |
+| 07 | Link status / coordination report |
 
-Do not commit live `rvt_list.txt`, session cfg, or real project reports.
+Do not commit live `rvt_list.txt`, session cfg, real project reports, FTP `credentials.xml` / `config.json` / `state.json`.

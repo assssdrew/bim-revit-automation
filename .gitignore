@@ -16,3 +16,7 @@ Thumbs.db
 .env
 .vscode/
 .idea/
+**/credentials.xml
+**/config.json
+!**/config.example.json
+**/state.json

@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | **Автор** | [assssdrew](https://github.com/assssdrew) |
-| **Стек** | Revit API · IronPython (RBP) · PowerShell · OpenXML |
+| **Стек** | Revit API · IronPython (RBP) · PowerShell · OpenXML · FTP / ntfy |
 | **Фокус** | Workshared / Revit Server (`RSN://`), безопасный Apply |
 | **EN** | [English README](README.md) |
 
@@ -20,6 +20,7 @@
 | 01 | [Единицы проекта + RSN](cases/01-project-units/) | **В проде** | Пакетная точность Length; локальные / UNC / `RSN://`; Sync + Relinquish |
 | 02 | [Health Check](cases/02-health-check/) | **В проде** (v1.4.0) | Аудит здоровья модели без Save/Sync → CSV + цветной XLSX |
 | 03 | [Уровни и оси](cases/03-levels-grids/) | **MVP готов** · пилот со дня на день | Каскадная сверка Levels/Grids с эталоном; Apply только для БФ |
+| 04 | [Оповещения FTP](cases/04-ftp-model-alerts/) | **В проде** | Опрос папок обмена на FTP → push на телефон (ntfy / Telegram) |
 
 Новые кейсы — папки в `cases/`, инструкция: [docs/HOW_TO_ADD_CASE.md](docs/HOW_TO_ADD_CASE.md).
 
@@ -46,6 +47,7 @@
 | Units / RSN | Подтверждено на реальных моделях Revit Server |
 | Health Check | Пакетный read-only аудит workshared-моделей |
 | Levels & Grids | MVP в коде; живой пилот ожидается со дня на день |
+| Оповещения FTP | Проверено в бою: push на телефон при обновлении папок обмена |
 
 Цель: **одна сессия отчёта вместо ручного открытия десятков моделей**.
 
@@ -73,11 +75,12 @@ bim-revit-automation/
     01-project-units/src/
     02-health-check/src/
     03-levels-grids/src/
+    04-ftp-model-alerts/src/   ← опрос FTP + push (не RBP)
   samples/
   docs/
 ```
 
-Папку `cases/*/src` копируют в каталог Scripts RBP.
+Папки RBP-кейсов `src/` копируют в Scripts RBP. Кейс 04 — отдельно на Windows (Планировщик заданий).
 
 ---
 

@@ -1,0 +1,4 @@
+﻿# Local secrets / runtime (never commit)
+config.json
+credentials.xml
+state.json

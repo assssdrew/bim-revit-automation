@@ -1,0 +1,20 @@
+﻿{
+  "Host": "ftp.example.com",
+  "Port": 21,
+  "UseSsl": false,
+  "RemotePaths": [
+    "/PROJECT_A/01_Models/RVT",
+    "/PROJECT_B/01_Models/RVT",
+    "/PROJECT_C/01_Models/RVT"
+  ],
+  "WatchExtensions": [".rvt", ".rfa", ".nwc", ".nwd", ".ifc", ".dwg", ".pdf", ".zip", ".rar", ".7z"],
+  "WatchFolders": true,
+  "RecursiveDepth": 1,
+  "NotifyOnFirstRun": false,
+  "NotifyProvider": "ntfy",
+  "NtfyTopic": "your-secret-topic-name",
+  "NtfyTitle": "FTP models",
+  "NtfyToken": "",
+  "TelegramBotToken": "",
+  "TelegramChatId": ""
+}
