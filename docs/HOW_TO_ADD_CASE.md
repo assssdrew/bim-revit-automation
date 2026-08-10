@@ -20,5 +20,6 @@ Publish new automation as a numbered folder. Keep the hub README in sync (EN + R
 | 05 | Navisworks rename / publish helpers |
 | 06 | Parameter batch fill |
 | 07 | Link status / coordination report |
+| — | Clash tolerance matrix (docs only for now): [navisworks-clash-tolerances.md](navisworks-clash-tolerances.md) |
 
 Do not commit live `rvt_list.txt`, session cfg, real project reports, FTP `credentials.xml` / `config.json` / `state.json`.

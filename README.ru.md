@@ -24,6 +24,8 @@
 
 Новые кейсы — папки в `cases/`, инструкция: [docs/HOW_TO_ADD_CASE.md](docs/HOW_TO_ADD_CASE.md).
 
+Справочно (пока без скрипта): [допуски на коллизии Navisworks — черновик П/Р](docs/navisworks-clash-tolerances.ru.md).
+
 ---
 
 ## Проблема → подход
