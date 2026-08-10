@@ -24,6 +24,8 @@ I build **task scripts + operator toolkits** that turn weekly BIM coordination i
 
 New cases are added as folders under `cases/` — see [docs/HOW_TO_ADD_CASE.md](docs/HOW_TO_ADD_CASE.md).
 
+Reference (no script yet): [Navisworks clash tolerances draft (P/R)](docs/navisworks-clash-tolerances.md).
+
 ---
 
 ## Problem → approach
