@@ -19,7 +19,7 @@ I write the **task scripts + Windows toolkits** (pick models → run → coloure
 |---|------|--------|-----------|
 | 01 | [Project Units + RSN](cases/01-project-units/) | **Production-ready** | Batch set Length accuracy; open local / UNC / `RSN://`; Sync + Relinquish |
 | 02 | [Health Check](cases/02-health-check/) | **Production-ready** (v1.4.0) | Read-only model health audit → CSV + coloured XLSX (no Save/Sync) |
-| 03 | [Levels & Grids](cases/03-levels-grids/) | **MVP ready** · pilot pending | Cascade audit of Levels/Grids vs linked exemplar; Apply only on base files |
+| 03 | [Levels & Grids](cases/03-levels-grids/) | **MVP ready** | Cascade audit of Levels/Grids vs linked exemplar; Apply only on base files |
 | 04 | [FTP model alerts](cases/04-ftp-model-alerts/) | **Production-ready** | Poll shared FTP exchange folders → phone push (ntfy / Telegram) |
 | 05 | [Compact save](cases/05-compact-save/) | **Production-ready** | Operator window: fast or deep Compact of workshared / `RSN://` centrals → size report |
 | 06 | [Model ops](cases/06-model-ops/) | **Production-ready** (v3.0.0) | Presets UI: rename, Revit-year upgrade, RVT relink across a discipline park |
@@ -58,7 +58,7 @@ Manual open-check-fix does not scale. These toolkits:
 | Model ops | Production: rename / year upgrade / relink a ~50+ model park without breaking the link chain |
 | Units / RSN | Confirmed on real Revit Server models (Sync + Relinquish OK) |
 | Health Check | Batch read-only audit across workshared models |
-| Levels & Grids | MVP coded; first live pilot expected imminently |
+| Levels & Grids | MVP coded; not yet piloted on a live project |
 | FTP model alerts | Field-tested phone push when exchange folders change (no FileZilla babysitting) |
 
 Exact hour-savings vary by project; the design goal is: **one report session instead of opening dozens of models by hand**.
