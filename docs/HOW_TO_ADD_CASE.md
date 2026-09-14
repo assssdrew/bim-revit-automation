@@ -15,11 +15,10 @@ Publish new automation as a numbered folder. Keep the hub README in sync (EN + R
 
 ## Suggested numbering
 
-| NN | Topic ideas |
-|----|-------------|
-| 05 | Navisworks rename / publish helpers |
-| 06 | Parameter batch fill |
-| 07 | Link status / coordination report |
-| — | Clash tolerance matrix (docs only for now): [navisworks-clash-tolerances.md](navisworks-clash-tolerances.md) |
+| NN | Topic |
+|----|--------|
+| 05 | Compact save (published) |
+| 06 | Model ops (detach / save-as central / link remap) |
+| 07 | Navisworks rename / publish helpers |
 
 Do not commit live `rvt_list.txt`, session cfg, real project reports, FTP `credentials.xml` / `config.json` / `state.json`.

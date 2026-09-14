@@ -1,14 +1,14 @@
 # Портфолио: автоматизация BIM / Revit
 
-Пакетная автоматизация моделей Autodesk Revit через [Revit Batch Processor (RBP)](https://github.com/bvn-architecture/RevitBatchProcessor) — открытая утилита, не моя разработка.
+Операторская автоматизация Autodesk Revit: **сжатие workshared-моделей**, еженедельный health-аудит, единицы / уровни-оси, оповещения по папкам обмена.
 
-Я пишу **task-скрипты и операторские toolkit’и**: выбор моделей → прогон → цветной Excel-отчёт (и, где безопасно, Apply + Sync).
+Я пишу **task-скрипты и Windows-toolkit’и** (выбор моделей → прогон → цветной Excel). [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor) — один из открытых хостов для Revit API, не сам продукт; не каждый кейс его использует.
 
 | | |
 |---|---|
 | **Автор** | [assssdrew](https://github.com/assssdrew) |
-| **Стек** | Revit API · IronPython (RBP) · PowerShell · OpenXML · FTP / ntfy |
-| **Фокус** | Workshared / Revit Server (`RSN://`), безопасный Apply |
+| **Стек** | Revit API · IronPython · PowerShell · WinForms · OpenXML · FTP / ntfy |
+| **Фокус** | Workshared / Revit Server (`RSN://`), безопасные записи |
 | **EN** | [English README](README.md) |
 
 ---
@@ -21,23 +21,35 @@
 | 02 | [Health Check](cases/02-health-check/) | **В проде** (v1.4.0) | Аудит здоровья модели без Save/Sync → CSV + цветной XLSX |
 | 03 | [Уровни и оси](cases/03-levels-grids/) | **MVP готов** · пилот со дня на день | Каскадная сверка Levels/Grids с эталоном; Apply только для БФ |
 | 04 | [Оповещения FTP](cases/04-ftp-model-alerts/) | **В проде** | Опрос папок обмена на FTP → push на телефон (ntfy / Telegram) |
+| 05 | [Сжатие моделей](cases/05-compact-save/) | **В проде** | Окно оператора: быстрый или глубокий Compact хранилищ / `RSN://` → отчёт по размеру |
 
 Новые кейсы — папки в `cases/`, инструкция: [docs/HOW_TO_ADD_CASE.md](docs/HOW_TO_ADD_CASE.md).
 
-Справочно (пока без скрипта): [допуски на коллизии Navisworks — черновик П/Р](docs/navisworks-clash-tolerances.ru.md).
+---
+
+## Главный кейс — сжатие (Compact)
+
+Еженедельная координация — это аудиты и отчёты. **Compact** — обслуживание: уменьшить живые хранилища, не путая это с zip или Purge Unused.
+
+Окно (`Сжатие.cmd`), два режима:
+
+- **Быстрый** — Create New Local, Sync со сжатием; команда может оставаться в файлах
+- **Глубокий** — раз в месяц/квартал; все выходят; открытие хранилища с Audit, затем Compact
+
+См. [кейс 05](cases/05-compact-save/).
 
 ---
 
 ## Проблема → подход
 
-**Типовая неделя:** пришла обновлённая АР; нужно держать в согласованности БФ и до ~80 разделов (единицы, здоровье модели, уровни/оси).
+**Типовая неделя:** пришла обновлённая АР; нужно держать в согласованности БФ и до ~80 разделов (единицы, здоровье модели, уровни/оси). Хранилищам ещё нужно периодическое сжатие.
 
 Вручную это не масштабируется. Toolkit’и:
 
 1. Собирают список моделей (папка / файлы / Revit Server)
-2. Идут через RBP с **Create New Local** (без Detach на живых centrals)
-3. Отдают отчёты **GREEN / YELLOW / RED**
-4. Пишут в модель только там, где риск понятен (единицы; уровни/оси БФ) — без «автокоординации»
+2. Гоняют задачу Revit API (батч-хост или отдельное окно)
+3. Отдают отчёты **GREEN / YELLOW / RED** — или вес до/после для Compact
+4. Пишут в модель только там, где риск понятен (единицы; уровни/оси БФ; Compact с явным режимом) — без «автокоординации»
 
 ---
 
@@ -46,6 +58,7 @@
 | Метрика | Значение |
 |---------|----------|
 | Недельный каскад | ~5–6 БФ (БФ↔АР), затем до ~80 разделов (↔БФ) |
+| Сжатие | В проде: быстрый в любой день / глубокий в окно обслуживания; Excel вес до→после |
 | Units / RSN | Подтверждено на реальных моделях Revit Server |
 | Health Check | Пакетный read-only аудит workshared-моделей |
 | Levels & Grids | MVP в коде; живой пилот ожидается со дня на день |
@@ -61,6 +74,7 @@
 
 - **Audit** никогда не делает Save / Sync / Relinquish
 - **Apply** — отдельный скрипт / явный список (например, только БФ)
+- **Compact** — запись: быстрый через Create New Local; глубокий открывает хранилище, только когда команда вышла
 - Координаты, PBP, Survey, True North, Shared Coordinates — **не трогаем автоматом**
 - Допуски обязательны, иначе ложные RED
 
@@ -77,23 +91,24 @@ bim-revit-automation/
     01-project-units/src/
     02-health-check/src/
     03-levels-grids/src/
-    04-ftp-model-alerts/src/   ← опрос FTP + push (не RBP)
+    04-ftp-model-alerts/src/   ← опрос FTP + push (без Revit API)
+    05-compact-save/src/       ← окно оператора + задача Compact
   samples/
   docs/
 ```
 
-Папки RBP-кейсов `src/` копируют в Scripts RBP. Кейс 04 — отдельно на Windows (Планировщик заданий).
+Папку `src/` кейса копируют на ПК с нужным годом Revit. Кейс 04 — отдельно на Windows (Планировщик заданий). Кейс 05 запускается через `Сжатие.cmd`, а не ручным заполнением GUI батч-хоста.
 
 ---
 
 ## Требования
 
 - Autodesk Revit (год = году моделей; units — 2022+)
-- [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor)
 - Windows + PowerShell
+- [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor) для батч-кейсов с Revit API (01–03, 05)
 
 ---
 
 ## Дисклеймер
 
-Код — портфолио / стартовая точка. Перед Apply — проверка на тестовой копии. Корпоративные пути в публичном репо санитизированы.
+Код — портфолио / стартовая точка. Перед записью в модель — проверка на тестовой копии. Корпоративные пути в публичном репо санитизированы.

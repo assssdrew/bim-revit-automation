@@ -5,6 +5,7 @@ These toolkits are built for **production BIM servers**. The public code keeps t
 ## Hard rules
 
 1. **Create New Local** for workshared / `RSN://` models. Never Detach live centrals for Apply jobs.
+   Exception: compact-save **deep** mode opens the central with Audit (no new local, no Detach) after the team is out of the files. **Fast** compact still uses Create New Local.
 2. **Audit ≠ Apply.** Report scripts must not Save, Sync, or Relinquish.
 3. **Apply scope is narrow.** Prefer an explicit model list (e.g. base files only), not “all 80 disciplines”.
 4. **No automatic coordinate surgery.** Internal Origin, PBP / Survey Point, True North, Shared Coordinates / Site stay manual or report-only.

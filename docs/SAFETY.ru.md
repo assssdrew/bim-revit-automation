@@ -5,6 +5,7 @@ Toolkit’и рассчитаны на **боевые BIM-серверы**. В �
 ## Жёсткие правила
 
 1. Для workshared / `RSN://` — **Create New Local**. Не Detach живые centrals для Apply.
+   Исключение: **глубокое** сжатие открывает хранилище с Audit (без нового локального, без Detach), когда команда вышла из файлов. **Быстрое** сжатие по-прежнему идёт через Create New Local.
 2. **Audit ≠ Apply.** Отчётные скрипты не делают Save / Sync / Relinquish.
 3. **Узкий Apply.** Явный список моделей (например, только БФ), не «все 80 разделов».
 4. **Без автокоординации.** Internal Origin, PBP / Survey, True North, Shared Coordinates / Site — руками или только в отчёте.
