@@ -1,0 +1,13 @@
+mapping.csv
+job.json
+job_paths.csv
+rbp_checklist.txt
+rvt_list.txt
+rvt_list_new.txt
+rvt_list_staging.txt
+to_delete_rsn.txt
+last_selection.cfg
+models_path.cfg
+reports/
+отчеты/
+*.xlsx
