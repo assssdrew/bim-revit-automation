@@ -909,7 +909,7 @@ function Show-FolderPathDialog {
     # Same Explorer-style dialog as file Open (address bar, tree, UNC).
     # Trick: ValidateNames/CheckFileExists off + dummy FileName = pick folder.
     $dlg = New-Object System.Windows.Forms.OpenFileDialog
-    $dlg.Title = "Parent folder (e.g. 4_Razrabotka): paste path, then Open"
+    $dlg.Title = "Parent folder (e.g. Models): paste path, then Open"
     $dlg.Filter = "Folders|*.nevermatch|All files (*.*)|*.*"
     $dlg.FilterIndex = 1
     $dlg.CheckFileExists = $false
@@ -973,7 +973,7 @@ function Test-ExcludedModelPath([string]$Path) {
 }
 
 function Test-IsTargetRvtName([string]$Name) {
-    # Ochakovo (and others): any .rvt in RVT\. Skip .0001.rvt and *_backup.
+    # ExampleProject (and others): any .rvt in RVT\. Skip .0001.rvt and *_backup.
     if ([string]::IsNullOrWhiteSpace($Name)) { return $false }
     if ($Name -match '\.\d{4}\.rvt$') { return $false }
     if ($Name -match '(?i)_backup') { return $false }
@@ -1115,7 +1115,7 @@ function Show-DisciplineFolderChecklist {
 
 function Select-LocalFolder {
     Write-Host ""
-    Write-Host "Step 1/2: open PARENT folder (e.g. ...\4_Razrabotka proekta)"
+    Write-Host "Step 1/2: open PARENT folder (e.g. ...\ExampleProject)"
     $typed = Show-FolderPathDialog
     if ([string]::IsNullOrWhiteSpace($typed)) {
         return @()

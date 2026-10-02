@@ -1,6 +1,6 @@
 # Collects target .rvt under discipline folders for Revit Batch Processor.
 # Finds folders named RVT (any depth), takes any .rvt in that folder
-# (Ochakovo names like 1037_П_ЖД_К01_ВК1.rvt — no *_R## required).
+# (ExampleProject names like PROJ_ANNEX_K01.rvt — no *_R## required).
 # Skips Backup / _backup / Revit_temp / Reserve / Families / .0001.rvt
 #
 # Usage:
