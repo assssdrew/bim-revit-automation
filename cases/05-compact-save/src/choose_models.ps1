@@ -1,4 +1,4 @@
-# Unified model picker for Revit Batch Processor.
+﻿# Unified model picker for Revit Batch Processor.
 # Sources: local folder / local files / Revit Server (RSN://).
 # Writes rvt_list.txt - can replace or append.
 # Encoding: ASCII-friendly messages for Windows PowerShell 5.1.
@@ -195,18 +195,20 @@ $PathCfg = Join-Path $listPaths.CfgDir "models_path.cfg"
 $LastCfg = Join-Path $listPaths.CfgDir "last_selection.cfg"
 $ServersCfg = Join-Path $ToolDir "servers.cfg"
 
-try {
-    if ($ToolDir -and (Test-Path -LiteralPath $ToolDir)) {
-        Set-Location -LiteralPath $ToolDir
-    }
+function Write-RsTrace([string]$Text) {
+    # Hidden STA window: the first Write-Host allocates a black console.
+    if ($script:CompactUiLibrary) { return }
+    if ($CompactUiLibrary) { return }
+    Write-Host $Text
 }
-catch { }
 
-if ($OutListIsLocal) {
+$script:RsServiceBaseCache = @{}
+
+if ($OutListIsLocal -and -not $CompactUiLibrary) {
     Write-Host ""
     Write-Host "NOTE: no write access to share tool folder."
     Write-Host ("      List will be saved locally: {0}" -f $OutList)
-    Write-Host "      Сжатие.cmd подхватит этот список."
+    Write-Host "      Сжатие.vbs подхватит этот список."
     Write-Host ""
 }
 
@@ -233,31 +235,13 @@ function Show-OwnedDialog($Dialog) {
     }
 }
 
-try {
-    if ($ToolDir -and (Test-Path -LiteralPath $ToolDir)) {
-        Set-Location -LiteralPath $ToolDir
-    }
-}
-catch { }
-
-function Show-OwnedDialog($Dialog) {
-    $owner = New-Object System.Windows.Forms.Form
-    $owner.Text = "batch_compact_save"
-    $owner.TopMost = $true
-    $owner.ShowInTaskbar = $false
-    $owner.StartPosition = "CenterScreen"
-    $owner.Size = New-Object System.Drawing.Size(1, 1)
-    $owner.Opacity = 0
-    $owner.Show()
-    $owner.Activate()
+if (-not $CompactUiLibrary) {
     try {
-        return $Dialog.ShowDialog($owner)
+        if ($ToolDir -and (Test-Path -LiteralPath $ToolDir)) {
+            Set-Location -LiteralPath $ToolDir
+        }
     }
-    finally {
-        $owner.Hide()
-        $owner.Close()
-        $owner.Dispose()
-    }
+    catch { }
 }
 
 $DefaultServers = @(
@@ -465,7 +449,7 @@ function Write-RvtList {
     Write-Host ("List: {0}" -f $OutList)
     Save-ActiveListPointer -ListPath $OutList
     if ($OutListIsLocal) {
-        Write-Host "Saved for this PC (no share write). Next: Сжатие.cmd"
+        Write-Host "Saved for this PC (no share write). Next: Сжатие.vbs"
     }
     $localN = @($unique | Where-Object { $_ -notmatch '^(?i)RSN://' }).Count
     $rsnN = @($unique | Where-Object { $_ -match '^(?i)RSN://' }).Count
@@ -502,25 +486,118 @@ function Format-RevitServerError {
         [string]$Server,
         [string]$Year
     )
+    if ($Raw -match 'Нет веб-службы списка папок') {
+        return $Raw
+    }
     if (Test-IsServerUnreachable $Raw) {
         return (
-            "Нет связи с Revit Server {0} (год {1})." + [Environment]::NewLine + [Environment]::NewLine +
-            "Проверьте VPN/сеть и что служба Revit Server запущена." + [Environment]::NewLine +
+            "Нет связи с веб-списком на Revit Server {0} (год {1})." + [Environment]::NewLine + [Environment]::NewLine +
+            "Revit при этом может открывать модели — это другой порт." + [Environment]::NewLine +
+            "Проверьте IIS / Revit Server Administrator на этом сервере." + [Environment]::NewLine +
             "Окно можно закрыть и выбрать другой сервер."
         ) -f $Server, $Year
     }
     return $Raw
 }
 
-function Invoke-RevitServerGet {
+function Decode-HttpChunks([string]$Body) {
+    $sr = New-Object System.IO.StringReader($Body)
+    $sb = New-Object System.Text.StringBuilder
+    while ($true) {
+        $line = $sr.ReadLine()
+        if ($null -eq $line) { break }
+        $line = $line.Trim()
+        if ($line -eq "") { continue }
+        $hex = ($line -split ";")[0]
+        $size = 0
+        try { $size = [Convert]::ToInt32($hex, 16) } catch { break }
+        if ($size -le 0) { break }
+        $buf = New-Object char[] $size
+        $got = $sr.Read($buf, 0, $size)
+        if ($got -gt 0) { [void]$sb.Append($buf, 0, $got) }
+        [void]$sr.ReadLine()
+    }
+    return $sb.ToString()
+}
+
+function Invoke-RevitServerGetRawHttp {
+    param(
+        [string]$HostName,
+        [int]$Port,
+        [string]$Path
+    )
+    $client = New-Object System.Net.Sockets.TcpClient
+    $client.NoDelay = $true
+    $client.ReceiveTimeout = 20000
+    $client.SendTimeout = 20000
+    try {
+        $iar = $client.BeginConnect($HostName, $Port, $null, $null)
+        if (-not $iar.AsyncWaitHandle.WaitOne(8000, $false)) {
+            throw "The operation has timed out"
+        }
+        $client.EndConnect($iar)
+        $stream = $client.GetStream()
+        $guid = [guid]::NewGuid().ToString()
+        $req = (
+            "GET {0} HTTP/1.1`r`n" +
+            "Host: {1}`r`n" +
+            "Accept: application/json`r`n" +
+            "User-Name: {2}`r`n" +
+            "User-Machine-Name: {3}`r`n" +
+            "Operation-GUID: {4}`r`n" +
+            "Connection: close`r`n" +
+            "`r`n"
+        ) -f $Path, $HostName, $env:USERNAME, $env:COMPUTERNAME, $guid
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($req)
+        $stream.Write($bytes, 0, $bytes.Length)
+        $stream.Flush()
+        $ms = New-Object System.IO.MemoryStream
+        $buf = New-Object byte[] 8192
+        while (($n = $stream.Read($buf, 0, $buf.Length)) -gt 0) {
+            $ms.Write($buf, 0, $n)
+            if ($ms.Length -gt 20000000) { break }
+        }
+        $raw = [System.Text.Encoding]::UTF8.GetString($ms.ToArray())
+        $split = $raw.IndexOf("`r`n`r`n")
+        if ($split -lt 0) { throw "Empty response body" }
+        $head = $raw.Substring(0, $split)
+        $body = $raw.Substring($split + 4)
+        $statusLine = ($head -split "`r`n")[0]
+        $code = 0
+        if ($statusLine -match 'HTTP/\d\.\d\s+(\d+)') { $code = [int]$Matches[1] }
+        if ($code -ge 400 -or $code -eq 0) {
+            throw ("The remote server returned an error: ({0})." -f $code)
+        }
+        if ($head -match '(?i)Transfer-Encoding:\s*chunked') {
+            $body = Decode-HttpChunks $body
+        }
+        if ([string]::IsNullOrWhiteSpace($body)) { throw "Empty response body" }
+        return ($body | ConvertFrom-Json)
+    }
+    finally {
+        try { $client.Close() } catch { }
+    }
+}
+
+function Invoke-RevitServerGetWebRequest {
     param([string]$Url)
+
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = (
+            [Net.ServicePointManager]::SecurityProtocol -bor
+            [Net.SecurityProtocolType]::Tls12
+        )
+    }
+    catch { }
 
     $request = [System.Net.HttpWebRequest]::Create($Url)
     $request.Method = "GET"
-    $request.Timeout = 8000
-    $request.ReadWriteTimeout = 8000
+    $request.Timeout = 20000
+    $request.ReadWriteTimeout = 20000
     $request.AutomaticDecompression = [System.Net.DecompressionMethods]::GZip -bor [System.Net.DecompressionMethods]::Deflate
     $request.Accept = "application/json"
+    $request.KeepAlive = $false
+    $request.AllowAutoRedirect = $false
     $request.Headers.Add("User-Name", $env:USERNAME)
     $request.Headers.Add("User-Machine-Name", $env:COMPUTERNAME)
     $request.Headers.Add("Operation-GUID", [guid]::NewGuid().ToString())
@@ -547,6 +624,20 @@ function Invoke-RevitServerGet {
     }
 }
 
+function Invoke-RevitServerGet {
+    param([string]$Url)
+
+    $m = [regex]::Match($Url, '^(?<scheme>https?)://(?<host>[^/:]+)(:(?<port>\d+))?(?<path>/.*)$')
+    if ($m.Success -and $m.Groups["scheme"].Value -eq "http") {
+        $port = 80
+        if ($m.Groups["port"].Success -and $m.Groups["port"].Value) {
+            $port = [int]$m.Groups["port"].Value
+        }
+        return (Invoke-RevitServerGetRawHttp -HostName $m.Groups["host"].Value -Port $port -Path $m.Groups["path"].Value)
+    }
+    return (Invoke-RevitServerGetWebRequest -Url $Url)
+}
+
 function Encode-RevitServerSegment {
     param([string]$Text)
     # UTF-8 percent-encoding (same idea as Uri.EscapeDataString, explicit)
@@ -570,6 +661,45 @@ function Encode-RevitServerSegment {
     return $sb.ToString()
 }
 
+function Test-TcpPortOpen {
+    param(
+        [string]$HostName,
+        [int]$Port,
+        [int]$TimeoutMs = 2000
+    )
+    $client = New-Object System.Net.Sockets.TcpClient
+    try {
+        $iar = $client.BeginConnect($HostName, $Port, $null, $null)
+        if (-not $iar.AsyncWaitHandle.WaitOne($TimeoutMs, $false)) {
+            return $false
+        }
+        $client.EndConnect($iar)
+        return $true
+    }
+    catch {
+        return $false
+    }
+    finally {
+        try { $client.Close() } catch { }
+    }
+}
+
+function Get-RevitServerServiceBases {
+    param(
+        [string]$Server,
+        [string]$Year
+    )
+    $key = "{0}|{1}" -f $Server, $Year
+    if ($script:RsServiceBaseCache -and $script:RsServiceBaseCache.ContainsKey($key)) {
+        return @($script:RsServiceBaseCache[$key])
+    }
+    $y = $Year
+    if ([string]::IsNullOrWhiteSpace($y)) { $y = "2024" }
+    return @(
+        ("http://{0}/RevitServerAdminRESTService{1}/AdminRESTService.svc/" -f $Server, $y)
+    )
+}
+
 function Get-RevitServerContents {
     param(
         [string]$Server,
@@ -580,7 +710,7 @@ function Get-RevitServerContents {
     $inputFolder = ""
     if ($null -ne $Folder) { $inputFolder = [string]$Folder }
     $inputFolder = $inputFolder.Trim().Trim("/\").Replace("\", "/").Trim("/")
-    Write-Host ("RS contents: Server={0} Year={1} Folder=[{2}]" -f $Server, $Year, $inputFolder)
+    Write-RsTrace ("RS contents: Server={0} Year={1} Folder=[{2}]" -f $Server, $Year, $inputFolder)
 
     $segments = @()
     if (-not [string]::IsNullOrWhiteSpace($inputFolder)) {
@@ -589,21 +719,20 @@ function Get-RevitServerContents {
         )
     }
 
-    $base = ("http://{0}/RevitServerAdminRESTService{1}/AdminRESTService.svc/" -f $Server, $Year)
-
     $pathVariants = @()
     if ($segments.Count -eq 0) {
         $pathVariants += "%7C/contents"
         $pathVariants += "%7C/Contents"
+        $pathVariants += "%7Ccontents"
+        $pathVariants += "|contents"
     }
     else {
         $enc = @($segments | ForEach-Object { Encode-RevitServerSegment $_ })
         $joined = ($enc -join "%7C")
         $rawJoined = ($segments -join "|")
 
-        # Common working patterns for folder contents
         $pathVariants += ("%7C{0}/contents" -f $joined)
-        $pathVariants += ("%7C{0}%7C/contents" -f $joined)   # trailing pipe
+        $pathVariants += ("%7C{0}%7C/contents" -f $joined)
         $pathVariants += ("%7C{0}/Contents" -f $joined)
         $pathVariants += ("%7C{0}%7C/Contents" -f $joined)
         $pathVariants += ("|{0}/contents" -f $rawJoined)
@@ -621,27 +750,37 @@ function Get-RevitServerContents {
     $resp = $null
     $tried = @()
     $lastError = $null
+    $bases = @(Get-RevitServerServiceBases -Server $Server -Year $Year)
 
-    foreach ($svcPath in $pathVariants) {
-        $url = $base + $svcPath
-        $result.Url = $url
-        $tried += $url
-        try {
-            $resp = Invoke-RevitServerGet -Url $url
-            $lastError = $null
-            break
-        }
-        catch {
-            $lastError = Get-InnermostMessage $_
-            $resp = $null
-            if (Test-IsServerUnreachable $lastError) {
-                break
+    :outer foreach ($base in $bases) {
+        foreach ($svcPath in $pathVariants) {
+            $url = $base + $svcPath
+            $result.Url = $url
+            $tried += $url
+            try {
+                $resp = Invoke-RevitServerGet -Url $url
+                $lastError = $null
+                $script:RsServiceBaseCache = if ($script:RsServiceBaseCache) { $script:RsServiceBaseCache } else { @{} }
+                $script:RsServiceBaseCache[("{0}|{1}" -f $Server, $Year)] = $base
+                break outer
+            }
+            catch {
+                $lastError = Get-InnermostMessage $_
+                $resp = $null
             }
         }
     }
 
     if (-not $resp) {
-        $result.Error = ("{0} | last URL: {1}" -f $lastError, $result.Url)
+        $hint = $lastError
+        if (Test-IsServerUnreachable $lastError) {
+            $hint = (
+                "Нет связи с веб-службой списка на {0} (год {1}). " +
+                "Revit может открывать модели, а окно выбора папок идёт через порт 80. " +
+                "Проверьте IIS / Revit Server Administrator на этом сервере."
+            ) -f $Server, $Year
+        }
+        $result.Error = ("{0} | last URL: {1}" -f $hint, $result.Url)
         return $result
     }
 
@@ -734,7 +873,7 @@ function Get-RevitServerModelsRecursive {
 
     $contents = Get-RevitServerContents -Server $Server -Folder $Folder -Year $Year
     if ($contents.Error) {
-        Write-Host ("REST warn [{0}]: {1}" -f $Folder, $contents.Error)
+        Write-RsTrace ("REST warn [{0}]: {1}" -f $Folder, $contents.Error)
         return @()
     }
 
@@ -752,6 +891,22 @@ function Get-RevitServerModelsRecursive {
         $found += @(Get-RevitServerModelsRecursive -Server $Server -Folder $child -Year $Year -Depth ($Depth + 1))
     }
     return $found
+}
+
+function Collect-RsnFromRsFolders {
+    param(
+        [string]$Server,
+        [string]$Year,
+        [string[]]$Folders
+    )
+    $picked = New-Object System.Collections.Generic.List[string]
+    foreach ($fp in @($Folders)) {
+        if ([string]::IsNullOrWhiteSpace($fp)) { continue }
+        foreach ($p in @(Get-RevitServerModelsRecursive -Server $Server -Folder $fp -Year $Year)) {
+            if ($p -and -not $picked.Contains($p)) { [void]$picked.Add($p) }
+        }
+    }
+    return $picked
 }
 
 function Show-RevitServerBrowser {
@@ -819,17 +974,17 @@ function Show-RevitServerBrowser {
     $lblStatus.Text = "Loading..."
 
     $btnAddSelected = New-Object System.Windows.Forms.Button
-    $btnAddSelected.Text = "Add selected (models / folders)"
+    $btnAddSelected.Text = "Добавить файлы"
     $btnAddSelected.Location = New-Object System.Drawing.Point(12, 545)
-    $btnAddSelected.Size = New-Object System.Drawing.Size(220, 32)
+    $btnAddSelected.Size = New-Object System.Drawing.Size(160, 32)
 
     $btnAddFolder = New-Object System.Windows.Forms.Button
-    $btnAddFolder.Text = "Add ALL under current path"
-    $btnAddFolder.Location = New-Object System.Drawing.Point(240, 545)
-    $btnAddFolder.Size = New-Object System.Drawing.Size(240, 32)
+    $btnAddFolder.Text = "Добавить папку"
+    $btnAddFolder.Location = New-Object System.Drawing.Point(180, 545)
+    $btnAddFolder.Size = New-Object System.Drawing.Size(160, 32)
 
     $btnCancel = New-Object System.Windows.Forms.Button
-    $btnCancel.Text = "Cancel"
+    $btnCancel.Text = "Отмена"
     $btnCancel.Location = New-Object System.Drawing.Point(792, 545)
     $btnCancel.Size = New-Object System.Drawing.Size(80, 32)
     $btnCancel.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
@@ -909,15 +1064,17 @@ function Show-RevitServerBrowser {
                 FullRsn = [string]$fullRsn
             }
             [void]$st.List.Items.Add($item)
-            Write-Host ("LIST model: {0}" -f $fullRsn)
+            Write-RsTrace ("LIST model: {0}" -f $fullRsn)
         }
 
         $fc = @($contents.Folders).Count
         $mc = @($contents.Models).Count
         $pathShow = if ([string]::IsNullOrWhiteSpace($requestFolder)) { "/" } else { ("/" + $requestFolder) }
         $st.Status.Text = (
-            "req=[{0}]  folders={1} models={2}{3}URL={4}" -f
-            $requestFolder, $fc, $mc, [Environment]::NewLine, $contents.Url
+            "Папка: {0}   папок: {1}   моделей: {2}" -f
+            $(if ([string]::IsNullOrWhiteSpace($requestFolder)) { "/" } else { $requestFolder }),
+            $fc,
+            $mc
         )
         $st.Form.Cursor = [System.Windows.Forms.Cursors]::Default
         return $true
@@ -978,9 +1135,6 @@ function Show-RevitServerBrowser {
     $btnAddSelected.Add_Click({
         $st = $script:RsBrowserState
         $picked = New-Object System.Collections.Generic.List[string]
-        $selFolders = @()
-        $selModels = 0
-
         $uiFolder = [string]$st.CurrentFolder
         if ([string]::IsNullOrWhiteSpace($uiFolder)) {
             $uiFolder = [string]$st.PathBox.Text.Trim().Trim("/\").Replace("\", "/")
@@ -989,66 +1143,30 @@ function Show-RevitServerBrowser {
         foreach ($it in @($st.List.SelectedItems)) {
             $meta = $it.Tag
             if (-not $meta) { continue }
-            $kind = [string]$meta['Kind']
-
-            if ($kind -eq 'model') {
-                $selModels++
-                $fullRsn = [string]$meta['FullRsn']
-                if ([string]::IsNullOrWhiteSpace($fullRsn)) {
-                    $modelFolder = [string]$meta['Folder']
-                    if ([string]::IsNullOrWhiteSpace($modelFolder)) { $modelFolder = $uiFolder }
-                    $fullRsn = ConvertTo-RsnPath -Server ([string]$st.Server) -FolderPath $modelFolder -ModelName ([string]$meta['Name'])
-                }
-                if (-not [string]::IsNullOrWhiteSpace($uiFolder)) {
-                    $expectedPrefix = ("RSN://{0}/{1}/" -f [string]$st.Server, $uiFolder)
-                    if (-not $fullRsn.StartsWith($expectedPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
-                        $fullRsn = ConvertTo-RsnPath -Server ([string]$st.Server) -FolderPath $uiFolder -ModelName ([string]$meta['Name'])
-                    }
-                }
-                if (-not [string]::IsNullOrWhiteSpace($fullRsn)) {
-                    Write-Host ("ADD selected model: {0}" -f $fullRsn)
-                    if (-not $picked.Contains($fullRsn)) { [void]$picked.Add($fullRsn) }
-                }
-                continue
+            if ([string]$meta['Kind'] -ne 'model') { continue }
+            $fullRsn = [string]$meta['FullRsn']
+            if ([string]::IsNullOrWhiteSpace($fullRsn)) {
+                $modelFolder = [string]$meta['Folder']
+                if ([string]::IsNullOrWhiteSpace($modelFolder)) { $modelFolder = $uiFolder }
+                $fullRsn = ConvertTo-RsnPath -Server ([string]$st.Server) -FolderPath $modelFolder -ModelName ([string]$meta['Name'])
             }
-
-            if ($kind -eq 'folder') {
-                $name = [string]$meta['Name']
-                if ([string]::IsNullOrWhiteSpace($uiFolder)) {
-                    $folderPath = $name
-                }
-                else {
-                    $folderPath = ($uiFolder.Trim("/") + "/" + $name)
-                }
-                $selFolders += $folderPath
+            if (-not [string]::IsNullOrWhiteSpace($fullRsn) -and -not $picked.Contains($fullRsn)) {
+                [void]$picked.Add($fullRsn)
             }
-        }
-
-        if ($selFolders.Count -gt 0) {
-            $st.Form.Cursor = [System.Windows.Forms.Cursors]::WaitCursor
-            $st.Status.Text = ("Collecting models from {0} selected folder(s)..." -f $selFolders.Count)
-            [System.Windows.Forms.Application]::DoEvents()
-            foreach ($folderPath in $selFolders) {
-                Write-Host ("ADD selected folder (recursive): {0}" -f $folderPath)
-                $fromFolder = @(Get-RevitServerModelsRecursive -Server ([string]$st.Server) -Folder $folderPath -Year ([string]$st.Year))
-                foreach ($p in $fromFolder) {
-                    if ($p -and -not $picked.Contains($p)) { [void]$picked.Add($p) }
-                }
-            }
-            $st.Form.Cursor = [System.Windows.Forms.Cursors]::Default
         }
 
         if ($picked.Count -eq 0) {
             [System.Windows.Forms.MessageBox]::Show(
-                "Select .rvt model(s) and/or Folder row(s) (Ctrl+click), then Add selected.`n`n" +
-                "Highlighted folders only are collected (not siblings like АР/БФ).`n" +
-                "To take the entire current path, use 'Add ALL under current path'.",
-                "Revit Server"
+                $st.Form,
+                "Выделите модели (.rvt) в списке, затем «Добавить файлы»." + [Environment]::NewLine + [Environment]::NewLine +
+                "Чтобы взять все модели из папки — откройте её или выделите строку папки и нажмите «Добавить папку».",
+                "Revit Server",
+                [System.Windows.Forms.MessageBoxButtons]::OK,
+                [System.Windows.Forms.MessageBoxIcon]::Information
             ) | Out-Null
             return
         }
 
-        Write-Host ("Selected rows -> models={0} folders={1} total RSN={2}" -f $selModels, $selFolders.Count, $picked.Count)
         $st.Selected = @($picked)
         $st.Form.DialogResult = [System.Windows.Forms.DialogResult]::OK
         $st.Form.Close()
@@ -1056,81 +1174,54 @@ function Show-RevitServerBrowser {
 
     $btnAddFolder.Add_Click({
         $st = $script:RsBrowserState
-        $folderForRecursive = [string]$st.CurrentFolder
-        if ([string]::IsNullOrWhiteSpace($folderForRecursive)) {
-            $folderForRecursive = [string]$st.PathBox.Text.Trim().Trim("/\").Replace("\", "/")
-        }
-        if ([string]::IsNullOrWhiteSpace($folderForRecursive)) {
-            [System.Windows.Forms.MessageBox]::Show(
-                "Current path is empty. Open the target folder (Open / Go) first.",
-                "Revit Server"
-            ) | Out-Null
-            return
+        $current = [string]$st.CurrentFolder
+        if ([string]::IsNullOrWhiteSpace($current)) {
+            $current = [string]$st.PathBox.Text.Trim().Trim("/\").Replace("\", "/")
         }
 
-        # If user highlighted folders, do NOT silently take siblings — offer the safe action.
-        $highlightedFolders = @()
+        $targets = New-Object System.Collections.Generic.List[string]
         foreach ($it in @($st.List.SelectedItems)) {
             $meta = $it.Tag
-            if ($meta -and [string]$meta['Kind'] -eq 'folder') {
-                $name = [string]$meta['Name']
-                $highlightedFolders += ($folderForRecursive.Trim("/") + "/" + $name)
+            if (-not $meta -or [string]$meta['Kind'] -ne 'folder') { continue }
+            $name = [string]$meta['Name']
+            if ([string]::IsNullOrWhiteSpace($current)) {
+                [void]$targets.Add($name)
+            }
+            else {
+                [void]$targets.Add(($current.Trim("/") + "/" + $name))
             }
         }
-        if ($highlightedFolders.Count -gt 0) {
-            $ans = [System.Windows.Forms.MessageBox]::Show(
-                ("You highlighted {0} folder(s).`n`n" +
-                 "YES = only those folders`n" +
-                 "NO  = ALL models under current path (including АР/БФ/...):`n{1}`n`n" +
-                 "Cancel = abort") -f $highlightedFolders.Count, $folderForRecursive,
-                "Revit Server",
-                [System.Windows.Forms.MessageBoxButtons]::YesNoCancel,
-                [System.Windows.Forms.MessageBoxIcon]::Question
-            )
-            if ($ans -eq [System.Windows.Forms.DialogResult]::Cancel) { return }
-            if ($ans -eq [System.Windows.Forms.DialogResult]::Yes) {
-                $st.Form.Cursor = [System.Windows.Forms.Cursors]::WaitCursor
-                $picked = New-Object System.Collections.Generic.List[string]
-                foreach ($fp in $highlightedFolders) {
-                    Write-Host ("ADD highlighted folder: {0}" -f $fp)
-                    foreach ($p in @(Get-RevitServerModelsRecursive -Server ([string]$st.Server) -Folder $fp -Year ([string]$st.Year))) {
-                        if ($p -and -not $picked.Contains($p)) { [void]$picked.Add($p) }
-                    }
-                }
-                $st.Form.Cursor = [System.Windows.Forms.Cursors]::Default
-                if ($picked.Count -eq 0) {
-                    [System.Windows.Forms.MessageBox]::Show("No models found in highlighted folders.", "Revit Server") | Out-Null
-                    return
-                }
-                $st.Selected = @($picked)
-                $st.Form.DialogResult = [System.Windows.Forms.DialogResult]::OK
-                $st.Form.Close()
+        if ($targets.Count -eq 0) {
+            if ([string]::IsNullOrWhiteSpace($current)) {
+                [System.Windows.Forms.MessageBox]::Show(
+                    $st.Form,
+                    "Откройте папку проекта (Open) или выделите строку папки.",
+                    "Revit Server",
+                    [System.Windows.Forms.MessageBoxButtons]::OK,
+                    [System.Windows.Forms.MessageBoxIcon]::Information
+                ) | Out-Null
                 return
             }
-            # NO -> fall through to full current path
-        }
-        else {
-            $ans = [System.Windows.Forms.MessageBox]::Show(
-                ("Add ALL models under:`n{0}`n`n(This ignores which rows are highlighted.)" -f $folderForRecursive),
-                "Revit Server",
-                [System.Windows.Forms.MessageBoxButtons]::OKCancel,
-                [System.Windows.Forms.MessageBoxIcon]::Warning
-            )
-            if ($ans -ne [System.Windows.Forms.DialogResult]::OK) { return }
+            [void]$targets.Add($current)
         }
 
         $st.Form.Cursor = [System.Windows.Forms.Cursors]::WaitCursor
-        $st.Status.Text = "Collecting ALL models under current path..."
+        $st.Status.Text = "Собираю модели из папки…"
         [System.Windows.Forms.Application]::DoEvents()
-        Write-Host ("ADD ALL under: {0}" -f $folderForRecursive)
-        $picked = @(Get-RevitServerModelsRecursive -Server ([string]$st.Server) -Folder $folderForRecursive -Year ([string]$st.Year))
+        $picked = @(Collect-RsnFromRsFolders -Server ([string]$st.Server) -Year ([string]$st.Year) -Folders @($targets))
         $st.Form.Cursor = [System.Windows.Forms.Cursors]::Default
+
         if ($picked.Count -eq 0) {
-            [System.Windows.Forms.MessageBox]::Show("No models found in this folder.", "Revit Server") | Out-Null
-            [void]$script:RsRefresh.Invoke([string]$folderForRecursive, $false)
+            [System.Windows.Forms.MessageBox]::Show(
+                $st.Form,
+                "В этой папке нет моделей.",
+                "Revit Server",
+                [System.Windows.Forms.MessageBoxButtons]::OK,
+                [System.Windows.Forms.MessageBoxIcon]::Information
+            ) | Out-Null
             return
         }
-        $st.Selected = $picked
+        $st.Selected = @($picked)
         $st.Form.DialogResult = [System.Windows.Forms.DialogResult]::OK
         $st.Form.Close()
     })
@@ -1224,7 +1315,7 @@ function Select-FromRevitServer {
     $serverObj = Select-ServerHost
     if (-not $serverObj) { return @() }
 
-    Write-Host ("Opening browser for {0} ({1})..." -f $serverObj.Label, $serverObj.Host)
+    Write-RsTrace ("Opening browser for {0} ({1})..." -f $serverObj.Label, $serverObj.Host)
     $selected = @(Show-RevitServerBrowser -ServerObj $serverObj)
 
     if ($selected.Count -gt 0) {
@@ -1246,12 +1337,34 @@ function Select-FromRevitServer {
     return $selected
 }
 
+function Resolve-PickedFolderPath([string]$Picked) {
+    if ([string]::IsNullOrWhiteSpace($Picked)) { return $null }
+    $p = $Picked.Trim().Trim('"')
+    for ($i = 0; $i -lt 3; $i++) {
+        $leaf = ""
+        try { $leaf = [System.IO.Path]::GetFileName($p.TrimEnd("\/")) } catch { $leaf = "" }
+        $isDummy = (
+            $leaf -match '^(?i)Select this folder' -or
+            $leaf -match '(?i)\.nevermatch$' -or
+            $leaf -eq "." -or
+            $leaf -eq "Folder"
+        )
+        if (-not $isDummy) { break }
+        try { $p = [System.IO.Path]::GetDirectoryName($p) } catch { break }
+        if ([string]::IsNullOrWhiteSpace($p)) { break }
+    }
+    $ext = ""
+    try { $ext = [System.IO.Path]::GetExtension($p) } catch { $ext = "" }
+    if ($ext -and $ext.ToLower() -eq ".rvt") {
+        try { return [System.IO.Path]::GetDirectoryName($p) } catch { return $p }
+    }
+    return $p
+}
+
 function Show-FolderPathDialog {
-    # Same Explorer-style dialog as file Open (address bar, tree, UNC).
-    # Trick: ValidateNames/CheckFileExists off + dummy FileName = pick folder.
     $dlg = New-Object System.Windows.Forms.OpenFileDialog
-    $dlg.Title = "Папка с моделями — вставьте путь в адресную строку и нажмите «Открыть»"
-    $dlg.Filter = "Folders|*.nevermatch|All files (*.*)|*.*"
+    $dlg.Title = "Папка с моделями — зайдите внутрь нужной папки и нажмите «Открыть»"
+    $dlg.Filter = "Все файлы (*.*)|*.*"
     $dlg.FilterIndex = 1
     $dlg.CheckFileExists = $false
     $dlg.CheckPathExists = $false
@@ -1259,55 +1372,27 @@ function Show-FolderPathDialog {
     $dlg.Multiselect = $false
     $dlg.DereferenceLinks = $true
     $dlg.FileName = "Select this folder"
-    $dlg.ValidateNames = $false
-    $dlg.Multiselect = $false
-    $dlg.DereferenceLinks = $true
-    $dlg.FileName = "Select this folder"
-    $dlg.CheckPathExists = $false
 
-    if (Test-Path -LiteralPath $PathCfg) {
-        $prev = (
-            Get-Content -LiteralPath $PathCfg -ErrorAction SilentlyContinue |
-                Where-Object { $_ -and -not $_.StartsWith("#") -and -not $_.StartsWith("FILES:") } |
-                Select-Object -First 1
-        )
-        if ($prev) {
-            $prev = Get-NativePath $prev.Trim()
-            if ($prev -and (Test-Path -LiteralPath $prev -PathType Container)) {
-                try { $dlg.InitialDirectory = $prev } catch { }
-            }
-        }
-    }
-    if ([string]::IsNullOrWhiteSpace($dlg.InitialDirectory)) {
+    if ([string]::IsNullOrWhiteSpace($dlg.InitialDirectory) -and $ToolDir -and -not $ToolDir.StartsWith("\\")) {
         try { $dlg.InitialDirectory = $ToolDir } catch { }
     }
 
-    if (-not $CompactUiLibrary) {
+    if (-not $script:CompactUiLibrary -and -not $CompactUiLibrary) {
         Write-Host "A folder window should appear on top. If not, look behind this console."
         Write-Host "Paste the UNC path into the address bar, then Open."
     }
     if ((Show-OwnedDialog $dlg) -ne [System.Windows.Forms.DialogResult]::OK) {
-        if ($CompactUiLibrary) { return $null }
+        if ($script:CompactUiLibrary -or $CompactUiLibrary) { return $null }
         $pasted = Read-Host "No window / Cancel. Paste parent folder path, or Enter to abort"
         if ([string]::IsNullOrWhiteSpace($pasted)) { return $null }
         return (Get-NativePath $pasted.Trim().Trim('"'))
     }
 
-    $picked = $dlg.FileName
-    if ([string]::IsNullOrWhiteSpace($picked)) { return $null }
-
-    if (Test-Path -LiteralPath $picked -PathType Leaf) {
-        return (Split-Path -Parent $picked)
+    $resolved = Resolve-PickedFolderPath $dlg.FileName
+    if ([string]::IsNullOrWhiteSpace($resolved) -and $dlg.InitialDirectory) {
+        $resolved = $dlg.InitialDirectory
     }
-    if (Test-Path -LiteralPath $picked -PathType Container) {
-        return $picked
-    }
-
-    $dir = Split-Path -Parent $picked
-    if ($dir -and (Test-Path -LiteralPath $dir -PathType Container)) {
-        return $dir
-    }
-    return $null
+    return (Get-NativePath $resolved)
 }
 
 function Get-U {
@@ -1329,42 +1414,80 @@ function Test-ExcludedModelPath([string]$Path) {
 }
 
 function Test-IsTargetRvtName([string]$Name) {
-    # Any .rvt in RVT\. Skip .0001.rvt and *_backup.
     if ([string]::IsNullOrWhiteSpace($Name)) { return $false }
     if ($Name -match '\.\d{4}\.rvt$') { return $false }
     if ($Name -match '(?i)_backup') { return $false }
     return ($Name -match '(?i)\.rvt$')
 }
 
+function Test-SkipWalkFolderName([string]$Name) {
+    if ([string]::IsNullOrWhiteSpace($Name)) { return $true }
+    if ($Name -match '^(?i)(DWG|PDF|EXCEL|WORD|XLSX|NWC|NWD|IFC|Backup|Revit_temp)$') { return $true }
+    $hlam = Get-U @(0x0425, 0x043B, 0x0430, 0x043C)
+    if ($Name -ieq $hlam) { return $true }
+    return $false
+}
+
+function Add-RvtFilesFromFolder {
+    param(
+        [string]$Folder,
+        [System.Collections.Generic.List[string]]$Found
+    )
+    $files = @()
+    try {
+        $files = @(Get-ChildItem -LiteralPath $Folder -File -Force -ErrorAction Stop)
+    }
+    catch {
+        return
+    }
+    foreach ($f in $files) {
+        if ($f.Extension -ine ".rvt") { continue }
+        if (-not (Test-IsTargetRvtName $f.Name)) { continue }
+        $native = Get-NativePath $f.FullName
+        if ($native -and -not (Test-ExcludedModelPath $native)) {
+            [void]$Found.Add($native)
+        }
+    }
+}
+
 function Get-TargetRvtsFromDisciplineFolders {
     param([string[]]$Folders)
 
     $found = New-Object System.Collections.Generic.List[string]
-    foreach ($folder in @($Folders)) {
-        if ([string]::IsNullOrWhiteSpace($folder)) { continue }
-        if (-not (Test-Path -LiteralPath $folder -PathType Container)) { continue }
-        if (Test-ExcludedModelPath $folder) { continue }
+    $maxDepth = 6
+    foreach ($root in @($Folders)) {
+        if ([string]::IsNullOrWhiteSpace($root)) { continue }
+        if (Test-ExcludedModelPath ($root.TrimEnd("\") + "\")) { continue }
 
-        $rvtDirs = @(
-            Get-ChildItem -LiteralPath $folder -Recurse -Directory -Force -Depth 8 -ErrorAction SilentlyContinue |
-                Where-Object {
-                    ($_.Name -ieq "RVT") -and
-                    (-not (Test-ExcludedModelPath $_.FullName))
-                }
-        )
-        foreach ($rvtDir in $rvtDirs) {
-            $files = @(
-                Get-ChildItem -LiteralPath $rvtDir.FullName -File -Force -ErrorAction SilentlyContinue |
-                    Where-Object {
-                        ($_.Extension -ieq ".rvt") -and
-                        (Test-IsTargetRvtName $_.Name)
-                    }
-            )
-            foreach ($f in $files) {
-                $native = Get-NativePath $f.FullName
-                if ($native -and -not (Test-ExcludedModelPath $native)) {
-                    [void]$found.Add($native)
-                }
+        $queue = New-Object System.Collections.Generic.Queue[object]
+        $queue.Enqueue(@{ Path = $root; Depth = 0 })
+        $guard = 0
+        while ($queue.Count -gt 0 -and $guard -lt 2000) {
+            $guard++
+            $cur = $queue.Dequeue()
+            $path = [string]$cur.Path
+            $depth = [int]$cur.Depth
+            if (Test-ExcludedModelPath ($path.TrimEnd("\") + "\")) { continue }
+
+            $leaf = ""
+            try { $leaf = [System.IO.Path]::GetFileName($path.TrimEnd("\")) } catch { $leaf = "" }
+            if ($leaf -ieq "RVT") {
+                Add-RvtFilesFromFolder -Folder $path -Found $found
+                continue
+            }
+
+            if ($depth -ge $maxDepth) { continue }
+            $kids = @()
+            try {
+                $kids = @(Get-ChildItem -LiteralPath $path -Directory -Force -ErrorAction Stop)
+            }
+            catch {
+                continue
+            }
+            foreach ($k in $kids) {
+                if (Test-ExcludedModelPath ($k.FullName.TrimEnd("\") + "\")) { continue }
+                if (Test-SkipWalkFolderName $k.Name) { continue }
+                $queue.Enqueue(@{ Path = $k.FullName; Depth = ($depth + 1) })
             }
         }
     }
@@ -1642,7 +1765,7 @@ if ($hasRsn) {
 
 Write-Host ""
 Write-Host "Next:"
-Write-Host "  Сжатие.cmd  (окно: список и запуск)"
+Write-Host "  Сжатие.vbs  (окно: список и запуск)"
 Write-Host "  Or open RBP manually:"
 Write-Host "       Task script = compact_save.py (on share)"
 Write-Host ("       File list   = {0}" -f $OutList)

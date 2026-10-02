@@ -1,4 +1,4 @@
-# Trust unsigned BatchRvt add-in for this Windows user (HKCU CodeSigning).
+﻿# Trust unsigned BatchRvt add-in for this Windows user (HKCU CodeSigning).
 # Default: every Revit year that already has a BatchRvt .addin after RBP install.
 # Optional: -Year 2023
 

@@ -1,4 +1,4 @@
-# Launch Revit Batch Processor: compact save, Create New Local, no extra checkboxes.
+﻿# Launch Revit Batch Processor: compact save, Create New Local, no extra checkboxes.
 # ASCII-friendly messages for Windows PowerShell 5.1.
 
 $ErrorActionPreference = "Stop"
@@ -255,12 +255,340 @@ function Guess-Year([string]$Path) {
     if ($Path -match '(?i)_R(20|21|22|23|24|25|26)\b') {
         return ("20" + $Matches[1])
     }
-    if ($Path -match '(?i)RSN://revit-server-2021\.example\.local') { return "2021" }
-    if ($Path -match '(?i)RSN://revit-server-2022\.example\.local') { return "2022" }
-    if ($Path -match '(?i)RSN://revit-server-2023\.example\.local') { return "2023" }
-    if ($Path -match '(?i)RSN://revit-server-2024\.example\.local') { return "2024" }
+    if ($Path -match '(?i)RSN://revit-server-2021\.example\.local\b') { return "2021" }
+    if ($Path -match '(?i)RSN://revit-server-2022\.example\.local\b') { return "2022" }
+    if ($Path -match '(?i)RSN://revit-server-2023\.example\.local\b') { return "2023" }
+    if ($Path -match '(?i)RSN://revit-server-2024\.example\.local\b') { return "2024" }
+    if ($Path -match '(?i)RSN://revit-server-2021') { return "2021" }
+    if ($Path -match '(?i)RSN://revit-server-2022') { return "2022" }
+    if ($Path -match '(?i)RSN://revit-server-2023') { return "2023" }
+    if ($Path -match '(?i)RSN://revit-server-2024') { return "2024" }
     if ($Path -match '(?i)Revit Server 202([1-6])') { return ("202" + $Matches[1]) }
     return (Get-RvtYearFromFile $Path)
+}
+
+function Get-LiveStatusPath {
+    $dir = Join-Path $env:LOCALAPPDATA "BatchRvt\batch_compact_save"
+    if (-not (Test-Path -LiteralPath $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+    }
+    return (Join-Path $dir "live_status.txt")
+}
+
+function Save-ActiveModePointer {
+    param([string]$Mode)
+    $env:BATCH_COMPACT_MODE = $Mode
+    $dir = Join-Path $env:LOCALAPPDATA "BatchRvt\batch_compact_save"
+    if (-not (Test-Path -LiteralPath $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+    }
+    try {
+        Set-Content -LiteralPath (Join-Path $dir "active_mode.txt") -Value $Mode -Encoding UTF8 -ErrorAction Stop
+    }
+    catch { }
+}
+
+function Get-CompactRunIdPath {
+    $dir = Join-Path $env:LOCALAPPDATA "BatchRvt\batch_compact_save"
+    if (-not (Test-Path -LiteralPath $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+    }
+    return (Join-Path $dir "active_run_id.txt")
+}
+
+function Save-CompactRunId {
+    $id = [guid]::NewGuid().ToString("N")
+    $env:BATCH_COMPACT_RUN_ID = $id
+    try {
+        Set-Content -LiteralPath (Get-CompactRunIdPath) -Value $id -Encoding UTF8 -ErrorAction Stop
+    }
+    catch { }
+    return $id
+}
+
+function Get-CompactModeArgs([string]$Mode) {
+    if ($Mode -eq "deep") { return @("--audit") }
+    return @("--create_new_local")
+}
+
+function Group-ModelsByYear {
+    param([string[]]$Models)
+    $byYear = @{}
+    foreach ($m in @($Models)) {
+        $y = Guess-Year $m
+        if (-not $y) { $y = "" }
+        if (-not $byYear.ContainsKey($y)) {
+            $byYear[$y] = New-Object System.Collections.Generic.List[string]
+        }
+        [void]$byYear[$y].Add($m)
+    }
+    $ordered = @($byYear.Keys | Where-Object { $_ } | Sort-Object)
+    if ($byYear.ContainsKey("")) { $ordered += "" }
+    $groups = New-Object System.Collections.Generic.List[object]
+    foreach ($y in $ordered) {
+        $label = if ($y) { [string]$y } else { "авто" }
+        [void]$groups.Add(@{
+            Year   = [string]$y
+            Models = @($byYear[$y])
+            Label  = $label
+        })
+    }
+    return $groups
+}
+
+function Get-YearFileListPath([string]$Year) {
+    $dir = Join-Path $env:LOCALAPPDATA "BatchRvt\batch_compact_save\year_lists"
+    if (-not (Test-Path -LiteralPath $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+    }
+    $tag = if ($Year) { $Year } else { "auto" }
+    return (Join-Path $dir ("rvt_list_{0}.txt" -f $tag))
+}
+
+function Write-RvtListSafe {
+    param(
+        [string[]]$Paths,
+        [string]$ListPath = ""
+    )
+    if ([string]::IsNullOrWhiteSpace($ListPath)) { $ListPath = $FileList }
+    $unique = @(
+        $Paths |
+            ForEach-Object { $_.Trim() } |
+            Where-Object { $_ } |
+            Sort-Object -Unique
+    )
+    if ($unique.Count -eq 0) { return $false }
+    try {
+        if (Get-Command Write-TextFileLines -ErrorAction SilentlyContinue) {
+            Write-TextFileLines -Path $ListPath -Lines $unique
+        }
+        else {
+            $dir = Split-Path -Parent $ListPath
+            if ($dir -and -not (Test-Path -LiteralPath $dir)) {
+                New-Item -ItemType Directory -Path $dir -Force | Out-Null
+            }
+            $unique | Set-Content -LiteralPath $ListPath -Encoding UTF8 -ErrorAction Stop
+        }
+        return $true
+    }
+    catch {
+        return $false
+    }
+}
+
+function Find-RbpRsnPatch {
+    $candidates = @(
+        (Join-Path $ToolDir "служебное\rbp_rsn_patch\apply_rsn_support.ps1")
+        (Join-Path $ToolDir "rbp_rsn_patch\apply_rsn_support.ps1")
+    )
+    $toolsRoot = Split-Path -Parent $ToolDir
+    $candidates += (Join-Path $toolsRoot "batch_set_project_units\rbp_rsn_patch\apply_rsn_support.ps1")
+    foreach ($p in $candidates) {
+        if (Test-Path -LiteralPath $p) { return $p }
+    }
+    return $null
+}
+
+function Ensure-RbpReady {
+    param(
+        [string]$Mode,
+        [string[]]$Models,
+        [string]$Exe
+    )
+    $hasRsn = @($Models | Where-Object { $_ -match '^(?i)RSN://' }).Count -gt 0
+    if (-not ($hasRsn -or ($Mode -eq "deep"))) { return $true }
+    $patchPs = Find-RbpRsnPatch
+    if (-not $patchPs) { return $true }
+    $scriptsDir = Join-Path (Split-Path -Parent $Exe) "Scripts"
+    if (Test-Path -LiteralPath (Join-Path $scriptsDir "revit_file_list.py")) {
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $patchPs -ScriptsPath $scriptsDir -Quiet
+    }
+    else {
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $patchPs -Quiet
+    }
+    return ($LASTEXITCODE -eq 0)
+}
+
+function Start-CompactYearBatch {
+    param(
+        [Parameter(Mandatory = $true)]
+        $Group,
+        [Parameter(Mandatory = $true)]
+        [string]$Mode,
+        [Parameter(Mandatory = $true)]
+        [string]$Exe,
+        [Parameter(Mandatory = $true)]
+        [string]$ExeDir,
+        [switch]$NoWait
+    )
+
+    $year = [string]$Group.Year
+    $models = @($Group.Models)
+    $listPath = Get-YearFileListPath -Year $year
+    if (-not (Write-RvtListSafe -Paths $models -ListPath $listPath)) {
+        return @{
+            Ok      = $false
+            Message = ("Не удалось записать список для {0}." -f $Group.Label)
+            Code    = 1
+            Process = $null
+        }
+    }
+
+    $rbpArgs = @(
+        "--task_script", $TaskScript,
+        "--file_list", $listPath
+    ) + (Get-CompactModeArgs $Mode) + @(
+        "--worksets", "close_all"
+    )
+    if ($year) {
+        $rbpArgs += @("--revit_version", $year)
+    }
+
+    if ($NoWait) {
+        $argLine = @()
+        foreach ($a in $rbpArgs) {
+            if ($a -match '\s') { $argLine += ('"{0}"' -f $a) } else { $argLine += $a }
+        }
+        $proc = Start-Process -FilePath $Exe -ArgumentList ($argLine -join " ") -WorkingDirectory $ExeDir -WindowStyle Hidden -PassThru
+        return @{
+            Ok      = $true
+            Message = ("Запущен Revit {0}." -f $Group.Label)
+            Code    = 0
+            Process = $proc
+        }
+    }
+
+    & $Exe @rbpArgs
+    $code = $LASTEXITCODE
+    if ($code -eq 0) {
+        return @{ Ok = $true; Message = ("Revit {0} завершил работу." -f $Group.Label); Code = 0; Process = $null }
+    }
+    return @{
+        Ok      = $false
+        Message = ("Revit {0}, код выхода: {1}" -f $Group.Label, $code)
+        Code    = $code
+        Process = $null
+    }
+}
+
+function Invoke-CompactLaunch {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateSet("quick", "deep")]
+        [string]$Mode,
+        [string[]]$Models,
+        [switch]$NoWait
+    )
+
+    Save-ActiveModePointer -Mode $Mode
+    $env:BATCH_COMPACT_MODE = $Mode
+    [void](Save-CompactRunId)
+
+    if (-not (Test-Path -LiteralPath $TaskScript)) {
+        return @{ Ok = $false; Message = ("Нет файла задания: {0}" -f $TaskScript); Code = 1 }
+    }
+
+    $useModels = @($Models | Where-Object { $_ })
+    if ($useModels.Count -eq 0) {
+        $useModels = @(Read-ModelList)
+    }
+    else {
+        if (-not (Write-RvtListSafe -Paths $useModels -ListPath $FileList)) {
+            return @{ Ok = $false; Message = "Не удалось записать список моделей."; Code = 1 }
+        }
+        Save-ActiveListPointer -ListPath $FileList
+    }
+
+    if ($useModels.Count -eq 0) {
+        return @{ Ok = $false; Message = "Список моделей пуст."; Code = 1 }
+    }
+
+    $exe = Find-BatchRvt
+    if (-not $exe) {
+        return @{
+            Ok      = $false
+            Message = "На этом ПК не найден Revit Batch Processor (BatchRvt.exe)."
+            Code    = 1
+        }
+    }
+
+    if (-not (Ensure-RbpReady -Mode $Mode -Models $useModels -Exe $exe)) {
+        return @{
+            Ok      = $false
+            Message = "Не удалось подготовить Revit Batch Processor для этого режима. Запустите RBP один раз и повторите сжатие."
+            Code    = 1
+        }
+    }
+
+    $exeDir = Split-Path -Parent $exe
+    $batchExe = Join-Path $exeDir "BatchRvt.exe"
+    if (Test-Path -LiteralPath $batchExe) {
+        $exe = $batchExe
+        $exeDir = Split-Path -Parent $exe
+    }
+
+    $groups = @(Group-ModelsByYear -Models $useModels)
+    if ($groups.Count -eq 0) {
+        return @{ Ok = $false; Message = "Список моделей пуст."; Code = 1 }
+    }
+
+    $labels = @($groups | ForEach-Object { $_.Label })
+    $yearNote = if ($groups.Count -eq 1) {
+        ("Revit {0}" -f $groups[0].Label)
+    }
+    else {
+        ("годы по очереди: {0}" -f ($labels -join " → "))
+    }
+
+    if ($NoWait) {
+        $first = $groups[0]
+        $rest = @()
+        if ($groups.Count -gt 1) {
+            $rest = @($groups[1..($groups.Count - 1)])
+        }
+        $started = Start-CompactYearBatch -Group $first -Mode $Mode -Exe $exe -ExeDir $exeDir -NoWait
+        if (-not $started.Ok -or -not $started.Process) {
+            return $started
+        }
+        return @{
+            Ok         = $true
+            Message    = ("Запущено: {0}." -f $yearNote)
+            Code       = 0
+            Process    = $started.Process
+            YearQueue  = $rest
+            YearLabel  = $first.Label
+            YearIndex  = 1
+            YearTotal  = $groups.Count
+            Exe        = $exe
+            ExeDir     = $exeDir
+        }
+    }
+
+    $fail = @()
+    $idx = 0
+    foreach ($g in $groups) {
+        $idx++
+        Write-Host ("[{0}/{1}] Revit {2} — {3} модел(ей)" -f $idx, $groups.Count, $g.Label, @($g.Models).Count)
+        $one = Start-CompactYearBatch -Group $g -Mode $Mode -Exe $exe -ExeDir $exeDir
+        if (-not $one.Ok) { $fail += ("{0}: код {1}" -f $g.Label, $one.Code) }
+        if ($idx -lt $groups.Count) { Start-Sleep -Seconds 3 }
+    }
+    if ($fail.Count -gt 0) {
+        return @{
+            Ok      = $false
+            Message = ("Готово с ошибками ({0}). {1}" -f $yearNote, ($fail -join "; "))
+            Code    = 1
+        }
+    }
+    return @{
+        Ok      = $true
+        Message = ("Revit Batch Processor завершил работу ({0})." -f $yearNote)
+        Code    = 0
+    }
+}
+
+if ($CompactLaunchLibrary -or $script:CompactLaunchLibrary) {
+    return
 }
 
 Write-Host ""

@@ -108,6 +108,67 @@ def local_appdata():
     return None
 
 
+CSV_SUBDIR = "csv"
+
+
+def local_reports_root():
+    base = local_appdata()
+    if not base:
+        return None
+    return os.path.join(base, "BatchRvt", "batch_compact_save", OTCHETY_NAME)
+
+
+def csv_reports_dir(root):
+    return os.path.join(root, CSV_SUBDIR)
+
+
+def try_reports_root(folder):
+    if not folder:
+        return None
+    if not ensure_dir(folder):
+        return None
+    if not is_writable_dir(folder):
+        return None
+    csv_folder = csv_reports_dir(folder)
+    if not ensure_dir(csv_folder):
+        return None
+    if not is_writable_dir(csv_folder):
+        return None
+    return folder
+
+
+def xlsx_path_for(csv_path):
+    stem = os.path.splitext(os.path.basename(as_text(csv_path)))[0]
+    root = REPORTS_DIR or os.path.dirname(os.path.dirname(csv_path))
+    return os.path.join(root, stem + u".xlsx")
+
+
+def write_live_status(path, state, message=u""):
+    base = local_appdata()
+    if not base:
+        return
+    folder = os.path.join(base, "BatchRvt", "batch_compact_save")
+    if not ensure_dir(folder):
+        return
+    payload = u"\n".join(
+        [
+            u"path={}".format(as_text(path)),
+            u"state={}".format(as_text(state)),
+            u"message={}".format(as_text(message)),
+            u"",
+        ]
+    )
+    try:
+        f = open(os.path.join(folder, "live_status.txt"), "wb")
+        try:
+            f.write(codecs.BOM_UTF8)
+            f.write(payload.encode("utf-8"))
+        finally:
+            f.close()
+    except Exception:
+        pass
+
+
 def get_script_dir():
     candidates = []
     try:
@@ -204,8 +265,66 @@ def get_session_id():
         return u""
 
 
+def compact_mode_pointer_path():
+    base = local_appdata()
+    if not base:
+        return None
+    return os.path.join(base, "BatchRvt", "batch_compact_save", u"active_mode.txt")
+
+
+def normalize_compact_mode(raw):
+    t = as_text(raw).strip().lower()
+    if not t:
+        return u"deep"
+    if (
+        t in (u"quick", u"fast", u"q")
+        or t.startswith(u"quick")
+        or t.startswith(u"быстр")
+        or (u"быстр" in t)
+    ):
+        return u"quick"
+    return u"deep"
+
+
+def get_compact_mode():
+    raw = os.environ.get("BATCH_COMPACT_MODE")
+    if raw and as_text(raw).strip():
+        return normalize_compact_mode(raw)
+    try:
+        p = compact_mode_pointer_path()
+        if p and os.path.isfile(p):
+            text = read_utf8_text(p).strip()
+            if text:
+                return normalize_compact_mode(text.splitlines()[0])
+    except Exception:
+        pass
+    return u"deep"
+
+
+def compact_mode_label(mode=None):
+    m = normalize_compact_mode(mode if mode is not None else get_compact_mode())
+    if m == u"quick":
+        return MODE_LABEL_QUICK
+    return MODE_LABEL_DEEP
+
+
+def report_mode_of(rows):
+    for rec in rows or []:
+        lab = rec.get(u"режим")
+        if as_text(lab).strip():
+            return normalize_compact_mode(lab)
+    return get_compact_mode()
+
+
 def new_report_filename():
-    return datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".csv"
+    stamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    tag = report_user_tag()
+    mode = compact_mode_label()
+    parts = [stamp]
+    if tag:
+        parts.append(tag)
+    parts.append(mode)
+    return u"_".join(parts) + u".csv"
 
 
 def allocate_report_file(folder, session_id):
@@ -587,6 +706,88 @@ def as_text(value):
             return u""
 
 
+def normalize_path_for_compare(path):
+    p = as_text(path).strip().rstrip("\\/")
+    if not p:
+        return u""
+    low = p.lower()
+    if low.startswith(u"rsn://"):
+        return low.rstrip("/")
+    return low.replace(u"/", u"\\")
+
+
+def translate_error(text):
+    raw = as_text(text).strip()
+    if not raw:
+        return u""
+
+    low = raw.lower()
+
+    if "verify_worksharing_preserved" in low and "not defined" in low:
+        return (
+            u"Ошибка скрипта: не найдена проверка совместной работы. "
+            u"Обновите compact_save.py."
+        )
+    m = re.search(r"(?:global )?name ['\"](\w+)['\"] is not defined", raw, re.I)
+    if m:
+        return u"Ошибка скрипта: не найдена функция «{0}». Обновите compact_save.py.".format(
+            m.group(1)
+        )
+
+    if "no longer workshared" in low:
+        return (
+            u"После сохранения модель перестала быть совместной (workshared). "
+            u"Проверьте файл в Revit."
+        )
+    if "after saveascentral" in low and "detached" in low:
+        return u"После сохранения модель осталась отсоединённой. Глубокое сжатие не завершено."
+    if "central path mismatch" in low:
+        return u"Путь центральной модели не совпадает после Save As. Проверьте файл в Revit."
+
+    if "document is detached" in low:
+        return (
+            u"Модель открыта отсоединённой. Для ФХ и RSN используйте "
+            u"Create New Local (Detach = OFF)."
+        )
+    if "expected workshared document" in low:
+        tail = raw.split(":", 1)[-1].strip() if u":" in raw else u""
+        if tail:
+            return u"Ожидалась совместная модель для синхронизации: {0}".format(tail)
+        return u"Ожидалась совместная модель для синхронизации."
+    if "backup/copy" in low or u"резерв" in low:
+        return (
+            u"Открыта резервная копия, а не рабочая модель. "
+            u"Пересоберите список (только RVT\\*.rvt, без «Резерв»)."
+        )
+    if "central model is missing" in low:
+        return u"Центральная модель не найдена. Выберите файл из папки RVT, не из «Резерв»."
+    if "close the report in excel" in low:
+        return u"Закройте отчёт в Excel и запустите снова."
+    if "cannot write reports" in low:
+        return u"Не удалось записать отчёт. Проверьте права на папку «отчеты»."
+
+    if "central model is busy" in low or "model is busy" in low:
+        return u"Центральная модель занята другим пользователем. Повторите позже."
+    if "access to the path" in low and "denied" in low:
+        return u"Отказано в доступе к файлу."
+    if "cannot access" in low and "file" in low:
+        return u"Нет доступа к файлу (права или блокировка)."
+    if "workset" in low and "owned by" in low:
+        return u"Набор рабочих направлений занят другим пользователем."
+    if "user does not have permission" in low:
+        return u"Недостаточно прав для операции с файлом."
+    if "cannot overwrite" in low:
+        return u"Невозможно перезаписать файл — он открыт или заблокирован."
+    if "operation could not be completed" in low:
+        return u"Операция Revit не выполнена. Подробности в логе BatchRvt."
+
+    cyr = sum(1 for ch in raw if u"\u0400" <= ch <= u"\u04FF")
+    if cyr >= max(3, len(raw) // 4):
+        return raw
+
+    return u"Ошибка: {0}".format(raw)
+
+
 def csv_escape(value):
     text = as_text(value)
     if any(ch in text for ch in (u";", u'"', u"\n", u"\r")):
@@ -597,6 +798,7 @@ def csv_escape(value):
 CSV_SEP = u";"
 CSV_COLUMNS = [
     u"имя_модели",
+    u"режим",
     u"путь",
     u"открыта",
     u"сохранена",
@@ -612,13 +814,19 @@ CSV_HEADER = CSV_SEP.join(CSV_COLUMNS)
 
 XLSX_HEADERS = [u"№"] + CSV_COLUMNS
 XLSX_COL_WIDTHS = [
-    5, 42, 58, 20, 20, 20, 8, 12, 13, 12, 10, 42,
+    5, 42, 12, 58, 20, 20, 20, 8, 12, 13, 12, 10, 42,
 ]
 
 SHEET_MODELS = u_from_codes([0x041C, 0x043E, 0x0434, 0x0435, 0x043B, 0x0438])
 SHEET_SUMMARY = u_from_codes([0x0421, 0x0432, 0x043E, 0x0434, 0x043A, 0x0430])
 SHEET_DYNAMICS = u_from_codes(
     [0x0414, 0x0438, 0x043D, 0x0430, 0x043C, 0x0438, 0x043A, 0x0430]
+)
+MODE_LABEL_QUICK = u_from_codes(
+    [0x0431, 0x044B, 0x0441, 0x0442, 0x0440, 0x043E, 0x0435]
+)
+MODE_LABEL_DEEP = u_from_codes(
+    [0x0433, 0x043B, 0x0443, 0x0431, 0x043E, 0x043A, 0x043E, 0x0435]
 )
 HISTORY_MAX_RUNS = 18
 
@@ -672,9 +880,16 @@ def parse_mb_cell(text):
 
 
 def xml_esc(text):
+    t = as_text(text)
+    cleaned = []
+    for ch in t:
+        o = ord(ch)
+        if o < 32 and ch not in (u"\t", u"\n", u"\r"):
+            continue
+        cleaned.append(ch)
+    t = u"".join(cleaned)
     return (
-        as_text(text)
-        .replace(u"&", u"&amp;")
+        t.replace(u"&", u"&amp;")
         .replace(u"<", u"&lt;")
         .replace(u">", u"&gt;")
         .replace(u'"', u"&quot;")
@@ -892,8 +1107,8 @@ def build_models_sheet(rows, styles):
         u'<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>',
         u"<sheetViews>",
         u'<sheetView tabSelected="1" workbookViewId="0">',
-        u'<pane xSplit="2" ySplit="1" topLeftCell="C2" activePane="bottomRight" state="frozen"/>',
-        u'<selection pane="bottomRight" activeCell="C2" sqref="C2"/>',
+        u'<pane xSplit="3" ySplit="1" topLeftCell="D2" activePane="bottomRight" state="frozen"/>',
+        u'<selection pane="bottomRight" activeCell="D2" sqref="D2"/>',
         u"</sheetView></sheetViews>",
         u"<cols>",
     ]
@@ -1050,6 +1265,7 @@ def build_summary_sheet(rows, styles):
 
     delta_sum = after_sum - before_sum if n_before else None
     items = [
+        (u"Режим", compact_mode_label(report_mode_of(rows)), u"колонка «режим» на листе Модели", "text"),
         (u"Моделей", n, u"", "int"),
         (u"OK", n_ok, u"", "int"),
         (u"ERROR", n_err, u"фильтр по столбцу статус", "alert" if n_err else "int"),
@@ -1082,6 +1298,8 @@ def build_summary_sheet(rows, styles):
         rnum = i + 2
         if value is None or value == u"":
             val_cell = cell_inline("B{}".format(rnum), u"", styles["sum_v"])
+        elif kind == "text":
+            val_cell = cell_inline("B{}".format(rnum), as_text(value), styles["sum_v"])
         elif kind == "alert":
             val_cell = cell_num("B{}".format(rnum), int(value), styles["sum_alert"])
         elif kind == "int":
@@ -1105,9 +1323,217 @@ def build_summary_sheet(rows, styles):
     return u"".join(parts)
 
 
+def dynamics_history_path(mode=None):
+    if not REPORTS_DIR:
+        return None
+    folder = csv_reports_dir(REPORTS_DIR)
+    if not ensure_dir(folder):
+        folder = REPORTS_DIR
+    tag = normalize_compact_mode(mode if mode is not None else get_compact_mode())
+    return os.path.join(folder, u"_динамика_{0}.csv".format(tag))
+
+
+def load_dynamics_table(mode=None):
+    path = dynamics_history_path(mode)
+    dates = []
+    rows = []
+    if not path or not os.path.isfile(path):
+        return dates, rows
+    raw = read_utf8_text(path)
+    lines = [ln for ln in raw.splitlines() if as_text(ln).strip()]
+    if not lines:
+        return dates, rows
+    headers = split_csv_line(lines[0])
+    dates = [h for h in headers[2:] if h]
+    for line in lines[1:]:
+        vals = split_csv_line(line)
+        rec = {
+            u"path": vals[0] if vals else u"",
+            u"name": vals[1] if len(vals) > 1 else u"",
+            u"values": {},
+        }
+        for i, d in enumerate(dates):
+            idx = i + 2
+            rec[u"values"][d] = parse_mb_cell(vals[idx] if idx < len(vals) else u"")
+        if rec[u"path"]:
+            rows.append(rec)
+    return dates, rows
+
+
+def save_dynamics_table(dates, rows, mode=None):
+    path = dynamics_history_path(mode)
+    if not path:
+        return
+    dates = [d for d in dates if d][-HISTORY_MAX_RUNS:]
+    lines = [u"путь;имя;" + u";".join(dates)]
+    for rec in rows:
+        cells = [csv_escape(rec.get(u"path")), csv_escape(rec.get(u"name"))]
+        for d in dates:
+            mb = rec.get(u"values", {}).get(d)
+            cells.append(u"" if mb is None else u"{:.2f}".format(mb).replace(".", ","))
+        lines.append(u";".join(cells))
+    payload = u"\n".join(lines) + u"\n"
+    f = open(path, "wb")
+    try:
+        f.write(codecs.BOM_UTF8)
+        f.write(payload.encode("utf-8"))
+    finally:
+        f.close()
+
+
+def merge_dynamics_from_report(report_rows, mode=None):
+    today = datetime.datetime.now().strftime("%Y-%m-%d")
+    mode = normalize_compact_mode(mode if mode is not None else report_mode_of(report_rows))
+    dates, rows = load_dynamics_table(mode)
+    if today not in dates:
+        dates.append(today)
+    dates = sorted(set(dates))[-HISTORY_MAX_RUNS:]
+    by_path = {}
+    for rec in rows:
+        by_path[rec[u"path"]] = rec
+    for rec in report_rows:
+        p = as_text(rec.get(u"путь")).strip()
+        if not p:
+            continue
+        name = rec.get(u"имя_модели") or model_name_of(p)
+        mb = parse_mb_cell(rec.get(u"вес_после_МБ"))
+        item = by_path.get(p)
+        if not item:
+            item = {u"path": p, u"name": name, u"values": {}}
+            by_path[p] = item
+        item[u"name"] = name or item[u"name"]
+        if mb is not None:
+            item[u"values"][today] = mb
+    ordered = sorted(by_path.values(), key=lambda x: as_text(x.get(u"name")).lower())
+    save_dynamics_table(dates, ordered, mode)
+    return dates, ordered
+
+
+def build_dynamics_sheet(dates, rows, styles, mode=None):
+    dates = dates or []
+    ncols = 2 + len(dates)
+    parts = [
+        u'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+        u'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"',
+        u' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">',
+        u"<sheetViews><sheetView workbookViewId=\"0\"/></sheetViews>",
+        u"<cols>",
+        u'<col min="1" max="1" width="42" customWidth="1"/>',
+        u'<col min="2" max="2" width="58" customWidth="1"/>',
+    ]
+    if dates:
+        parts.append(
+            u'<col min="3" max="{n}" width="14" customWidth="1"/>'.format(n=ncols)
+        )
+    parts.append(u"</cols><sheetData>")
+    parts.append(u'<row r="1" ht="24" customHeight="1">')
+    parts.append(cell_inline("A1", u"имя_модели", styles["header"]))
+    parts.append(cell_inline("B1", u"путь", styles["header"]))
+    for i, d in enumerate(dates):
+        parts.append(cell_inline(col_letter(i + 3) + "1", d, styles["header"]))
+    parts.append(u"</row>")
+    totals = [0.0] * len(dates)
+    for ridx, rec in enumerate(rows):
+        rnum = ridx + 2
+        parts.append(u'<row r="{}">'.format(rnum))
+        parts.append(cell_inline("A{}".format(rnum), rec.get(u"name") or u"", styles["base"]))
+        parts.append(cell_inline("B{}".format(rnum), rec.get(u"path") or u"", styles["base"]))
+        for i, d in enumerate(dates):
+            mb = rec.get(u"values", {}).get(d)
+            ref = col_letter(i + 3) + str(rnum)
+            if mb is None:
+                parts.append(cell_inline(ref, u"", styles["base"]))
+            else:
+                parts.append(cell_num(ref, "{:.6f}".format(mb), styles["num"]))
+                totals[i] += mb
+        parts.append(u"</row>")
+    total_row = len(rows) + 2
+    parts.append(u'<row r="{}">'.format(total_row))
+    parts.append(cell_inline("A{}".format(total_row), u"Итого, МБ", styles["sum_k"]))
+    parts.append(cell_inline("B{}".format(total_row), compact_mode_label(mode), styles["sum_v"]))
+    for i, _d in enumerate(dates):
+        ref = col_letter(i + 3) + str(total_row)
+        parts.append(cell_num(ref, "{:.6f}".format(totals[i]), styles["sum_n"]))
+    parts.append(u"</row></sheetData>")
+    if dates:
+        parts.append(u'<drawing r:id="rId1"/>')
+    parts.append(u"</worksheet>")
+    return u"".join(parts), total_row, totals
+
+
+def build_dynamics_chart_xml(dates, totals, total_row, mode=None):
+    n = len(dates)
+    if n == 0:
+        return u""
+    sheet = SHEET_DYNAMICS.replace(u"'", u"''")
+    last_col = col_letter(2 + n)
+    cat_ref = u"'{s}'!$C$1:${lc}$1".format(s=sheet, lc=last_col)
+    val_ref = u"'{s}'!$C${r}:${lc}${r}".format(s=sheet, lc=last_col, r=total_row)
+    title = u"Вес после, МБ ({0})".format(compact_mode_label(mode))
+    cat_pts = []
+    val_pts = []
+    for i, d in enumerate(dates):
+        cat_pts.append(u'<c:pt idx="{i}"><c:v>{v}</c:v></c:pt>'.format(i=i, v=xml_esc(d)))
+        val_pts.append(
+            u'<c:pt idx="{i}"><c:v>{v}</c:v></c:pt>'.format(i=i, v="{:.6f}".format(totals[i]))
+        )
+    return (
+        u'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        u'<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"'
+        u' xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"'
+        u' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+        u"<c:chart><c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/>"
+        u"<a:p><a:r><a:t>{title}</a:t></a:r></a:p></c:rich></c:tx>"
+        u'<c:overlay val="0"/></c:title>'
+        u"<c:plotArea><c:layout/>"
+        u'<c:lineChart><c:grouping val="standard"/>'
+        u'<c:ser><c:idx val="0"/><c:order val="0"/>'
+        u"<c:tx><c:v>Итого</c:v></c:tx>"
+        u"<c:cat><c:strRef><c:f>{cat}</c:f><c:strCache><c:ptCount val=\"{n}\"/>{cats}</c:strCache></c:strRef></c:cat>"
+        u"<c:val><c:numRef><c:f>{val}</c:f><c:numCache><c:formatCode>0.00</c:formatCode>"
+        u'<c:ptCount val="{n}"/>{vals}</c:numCache></c:numRef></c:val>'
+        u"</c:ser><c:marker val=\"1\"/><c:axId val=\"1\"/><c:axId val=\"2\"/></c:lineChart>"
+        u'<c:catAx><c:axId val="1"/><c:scaling><c:orientation val="minMax"/></c:scaling>'
+        u'<c:axPos val="b"/><c:tickLblPos val="nextTo"/><c:crossAx val="2"/></c:catAx>'
+        u'<c:valAx><c:axId val="2"/><c:scaling><c:orientation val="minMax"/></c:scaling>'
+        u'<c:axPos val="l"/><c:majorGridlines/><c:tickLblPos val="nextTo"/>'
+        u'<c:crossAx val="1"/></c:valAx></c:plotArea>'
+        u'<c:legend><c:legendPos val="b"/></c:legend>'
+        u"</c:chart></c:chartSpace>"
+    ).format(
+        title=xml_esc(title),
+        cat=xml_esc(cat_ref),
+        val=xml_esc(val_ref),
+        n=n,
+        cats=u"".join(cat_pts),
+        vals=u"".join(val_pts),
+    )
+
+
+def build_dynamics_drawing_xml():
+    return (
+        u'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        u'<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"'
+        u' xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"'
+        u' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+        u"<xdr:twoCellAnchor>"
+        u"<xdr:from><xdr:col>0</xdr:col><xdr:colOff>0</xdr:colOff>"
+        u"<xdr:row>14</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from>"
+        u"<xdr:to><xdr:col>10</xdr:col><xdr:colOff>0</xdr:colOff>"
+        u"<xdr:row>30</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to>"
+        u'<xdr:graphicFrame macro="false">'
+        u'<xdr:nvGraphicFramePr><xdr:cNvPr id="2" name="Chart 1"/>'
+        u"<xdr:cNvGraphicFramePr><a:graphicFrameLocks noGrp=\"1\"/></xdr:cNvGraphicFramePr>"
+        u"</xdr:nvGraphicFramePr>"
+        u"<xdr:xfrm><a:off x=\"0\" y=\"0\"/><a:ext cx=\"0\" cy=\"0\"/></xdr:xfrm>"
+        u'<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart">'
+        u'<c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" r:id="rId1"/>'
+        u"</a:graphicData></a:graphic></xdr:graphicFrame><xdr:clientData/>"
+        u"</xdr:twoCellAnchor></xdr:wsDr>"
+    )
+
+
 def write_xlsx(path, parts_map):
-    if os.path.isfile(path):
-        raise Exception("XLSX already exists, refuse overwrite: {}".format(path))
     tmp = path + u".tmp"
     if os.path.isfile(tmp):
         try:
@@ -1129,21 +1555,26 @@ def write_xlsx(path, parts_map):
         zf.close()
     if os.path.isfile(path):
         try:
-            os.remove(tmp)
+            os.remove(path)
         except Exception:
-            pass
-        raise Exception("XLSX already exists, refuse overwrite: {}".format(path))
+            try:
+                os.remove(tmp)
+            except Exception:
+                pass
+            raise Exception("Close the report in Excel, then run again: {}".format(path))
     os.rename(tmp, path)
 
 
 def rebuild_xlsx(csv_path):
     xlsx_path = xlsx_path_for(csv_path)
-    if os.path.isfile(xlsx_path):
-        return xlsx_path
     rows = read_report_rows(csv_path)
+    mode = report_mode_of(rows)
+    dates, dyn_rows = merge_dynamics_from_report(rows, mode)
     styles_xml, styles = build_styles()
     models_xml = build_models_sheet(rows, styles)
     summary_xml = build_summary_sheet(rows, styles)
+    dyn_xml, total_row, totals = build_dynamics_sheet(dates, dyn_rows, styles, mode)
+    has_chart = len(dates) > 0
     ct = (
         u'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         u'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
@@ -1152,9 +1583,15 @@ def rebuild_xlsx(csv_path):
         u'<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
         u'<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
         u'<Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+        u'<Override PartName="/xl/worksheets/sheet3.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
         u'<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
-        u"</Types>"
     )
+    if has_chart:
+        ct += (
+            u'<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>'
+            u'<Override PartName="/xl/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>'
+        )
+    ct += u"</Types>"
     rels_root = (
         u'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         u'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
@@ -1166,7 +1603,8 @@ def rebuild_xlsx(csv_path):
         u'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
         u'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
         u'<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>'
-        u'<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+        u'<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet3.xml"/>'
+        u'<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
         u"</Relationships>"
     )
     workbook = (
@@ -1176,26 +1614,40 @@ def rebuild_xlsx(csv_path):
         u"<sheets>"
         u'<sheet name="{m}" sheetId="1" r:id="rId1"/>'
         u'<sheet name="{s}" sheetId="2" r:id="rId2"/>'
+        u'<sheet name="{d}" sheetId="3" r:id="rId3"/>'
         u"</sheets>"
         u"<definedNames>"
         u'<definedName name="_xlnm.Print_Titles">\'{m}\'!$1:$1</definedName>'
         u"</definedNames>"
         u"</workbook>"
-    ).format(m=xml_esc(SHEET_MODELS), s=xml_esc(SHEET_SUMMARY))
-    write_xlsx(
-        xlsx_path,
-        {
-            "[Content_Types].xml": ct,
-            "_rels/.rels": rels_root,
-            "xl/workbook.xml": workbook,
-            "xl/_rels/workbook.xml.rels": rels_wb,
-            "xl/styles.xml": styles_xml,
-            "xl/worksheets/sheet1.xml": models_xml,
-            "xl/worksheets/sheet2.xml": summary_xml,
-        },
-    )
+    ).format(m=xml_esc(SHEET_MODELS), s=xml_esc(SHEET_SUMMARY), d=xml_esc(SHEET_DYNAMICS))
+    parts_map = {
+        "[Content_Types].xml": ct,
+        "_rels/.rels": rels_root,
+        "xl/workbook.xml": workbook,
+        "xl/_rels/workbook.xml.rels": rels_wb,
+        "xl/styles.xml": styles_xml,
+        "xl/worksheets/sheet1.xml": models_xml,
+        "xl/worksheets/sheet2.xml": summary_xml,
+        "xl/worksheets/sheet3.xml": dyn_xml,
+    }
+    if has_chart:
+        parts_map["xl/worksheets/_rels/sheet3.xml.rels"] = (
+            u'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            u'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            u'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/>'
+            u"</Relationships>"
+        )
+        parts_map["xl/drawings/drawing1.xml"] = build_dynamics_drawing_xml()
+        parts_map["xl/drawings/_rels/drawing1.xml.rels"] = (
+            u'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            u'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            u'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart1.xml"/>'
+            u"</Relationships>"
+        )
+        parts_map["xl/charts/chart1.xml"] = build_dynamics_chart_xml(dates, totals, total_row, mode)
+    write_xlsx(xlsx_path, parts_map)
     return xlsx_path
-
 
 def init_report():
     global REPORTS_DIR, REPORT_PATH
@@ -1212,7 +1664,7 @@ def init_report():
             continue
         try:
             csv_folder = csv_reports_dir(root)
-            path = allocate_report_file(csv_folder, root, get_session_id())
+            path = allocate_report_file(csv_folder, get_session_id())
             REPORTS_DIR = root
             REPORT_PATH = path
             if is_local:
@@ -1255,6 +1707,7 @@ def append_report_row(
         delta = fmt_mb_cell(size_after - size_before)
     rec = {
         u"имя_модели": name,
+        u"режим": compact_mode_label(),
         u"путь": as_text(path),
         u"открыта": as_text(opened_at),
         u"сохранена": as_text(saved_at),
@@ -1264,7 +1717,7 @@ def append_report_row(
         u"вес_после_МБ": fmt_mb_cell(size_after),
         u"дельта_МБ": delta,
         u"статус": as_text(status),
-        u"ошибка": as_text(error),
+        u"ошибка": translate_error(error) if as_text(error) else u"",
     }
     line = CSV_SEP.join(csv_escape(rec[k]) for k in CSV_COLUMNS) + u"\n"
     new_file = not os.path.isfile(REPORT_PATH)
@@ -1482,6 +1935,69 @@ def save_compact_in_place(document, path, force_save_as=False):
     return target
 
 
+_last_verify_warning = {u"text": u""}
+
+
+def clear_verify_warning():
+    _last_verify_warning[u"text"] = u""
+
+
+def get_verify_warning():
+    return _last_verify_warning.get(u"text") or u""
+
+
+def verify_worksharing_preserved(document, saved_path):
+    """После deep SaveAsCentral: контроль worksharing.
+
+    SaveAs к этому моменту уже выполнен — не прерываем прогон (raise),
+    только громкий лог и текст для отчёта/UI. Финальный Sync идёт дальше.
+    """
+    if not saved_path:
+        Output("WARN verify_worksharing: empty saved_path, skip.")
+        return u""
+
+    warnings = []
+    try:
+        if not document.IsWorkshared:
+            warnings.append(
+                u"После Save As модель перестала быть совместной (workshared): "
+                u"{}. Проверьте файл в Revit.".format(saved_path)
+            )
+
+        if getattr(document, "IsDetached", False):
+            warnings.append(
+                u"После Save As модель отсоединённая — ожидался центральный файл: "
+                u"{}.".format(saved_path)
+            )
+
+        central = central_user_path(document)
+        saved_norm = normalize_path_for_compare(saved_path)
+        central_norm = normalize_path_for_compare(central)
+
+        if central_norm and saved_norm and central_norm != saved_norm:
+            warnings.append(
+                u"Путь центральной модели после Save As не совпадает: "
+                u"ожидался {}, Revit сообщает {}.".format(saved_path, central)
+            )
+
+        if warnings:
+            msg = u" ".join(warnings)
+            Output("ERROR CHECK verify_worksharing: {}".format(msg))
+            _last_verify_warning[u"text"] = msg
+            return msg
+
+        Output(
+            "verify_worksharing OK: workshared={}, central={}".format(
+                document.IsWorkshared, central or saved_path
+            )
+        )
+        _last_verify_warning[u"text"] = u""
+        return u""
+    except Exception as ex:
+        Output("WARN verify_worksharing_preserved: {}".format(ex))
+        return u""
+
+
 def deep_save_as_and_sync(document, path):
     """Ручной эталон: Save As ФХ (Compact+Задать) → Sync со сжатием."""
     Output(
@@ -1489,7 +2005,10 @@ def deep_save_as_and_sync(document, path):
         "OpenWorksetsDefault=Задать (AskUserToSpecify)."
     )
     saved = save_compact_in_place(document, path, force_save_as=True)
-    verify_worksharing_preserved(document, saved)
+    try:
+        verify_worksharing_preserved(document, saved)
+    except Exception as ex:
+        Output("WARN verify_worksharing_preserved (unexpected): {}".format(ex))
 
     # Шаг эталона: «Синхронизироваться с сжатием и закрыть»
     try:
@@ -1510,6 +2029,8 @@ def deep_save_as_and_sync(document, path):
 
 
 def compact_document(document, path):
+    clear_verify_warning()
+
     if is_backup_copy_path(path):
         raise Exception(
             "Opened a backup/copy, not a live model: {}. "
@@ -1522,6 +2043,26 @@ def compact_document(document, path):
         is_detached = document.IsDetached
     except Exception:
         is_detached = False
+
+    mode = get_compact_mode()
+    Output("Compact mode: {}".format(compact_mode_label(mode)))
+
+    if mode == u"deep":
+        if is_rsn_path(path):
+            Output("Path type: Revit Server (RSN), deep")
+            return deep_save_as_and_sync(document, path), "deep-rsn"
+        if (
+            document.IsWorkshared
+            and (not is_detached)
+            and document.GetWorksharingCentralModelPath() is not None
+        ):
+            Output("Path type: workshared local/UNC, deep")
+            return deep_save_as_and_sync(document, path), "deep-workshared"
+        if is_detached and document.IsWorkshared:
+            Output("Path type: detached workshared, deep SaveAs")
+            return save_compact_in_place(document, path, force_save_as=True), "deep-detached"
+        Output("Path type: non-workshared file, deep SaveAs")
+        return save_compact_in_place(document, path, force_save_as=True), "deep-file"
 
     if is_rsn_path(path):
         Output("Path type: Revit Server (RSN)")
@@ -1544,6 +2085,22 @@ def compact_document(document, path):
 
     Output("Path type: non-workshared file")
     return save_compact_in_place(document, path), "file-save"
+
+
+# При неполном копировании/рефакторинге — падать до открытия моделей, не после SaveAs.
+_REQUIRED_SYMBOLS = (
+    "save_compact_in_place",
+    "verify_worksharing_preserved",
+    "deep_save_as_and_sync",
+    "sync_compact",
+    "translate_error",
+    "compact_document",
+)
+for _sym in _REQUIRED_SYMBOLS:
+    if _sym not in globals() or not callable(globals()[_sym]):
+        raise RuntimeError(
+            "compact_save.py incomplete: missing or broken '{}'".format(_sym)
+        )
 
 
 opened_at = now_stamp()
@@ -1582,21 +2139,41 @@ try:
 
     finished_at = now_stamp()
     Output("Times open/save/end: {} / {} / {}".format(opened_at, saved_at, finished_at))
-    append_report_row(
-        saved or revitFilePath,
-        opened_at,
-        saved_at,
-        finished_at,
-        size_before,
-        size_after,
-        "OK",
-        "",
-    )
+    verify_warn = get_verify_warning()
+    if verify_warn:
+        append_report_row(
+            saved or revitFilePath,
+            opened_at,
+            saved_at,
+            finished_at,
+            size_before,
+            size_after,
+            "WARN",
+            verify_warn,
+        )
+        Output("WARN verify_worksharing: {}".format(verify_warn))
+        write_live_status(saved or revitFilePath, u"warn", verify_warn)
+    else:
+        append_report_row(
+            saved or revitFilePath,
+            opened_at,
+            saved_at,
+            finished_at,
+            size_before,
+            size_after,
+            "OK",
+            "",
+        )
+        write_live_status(saved or revitFilePath, u"ok")
 
     Output("Done: {}".format(saved))
-    Output("OK")
+    Output("OK" if not verify_warn else "OK (with verify warning)")
 except Exception as ex:
     Output("ERROR: {}".format(ex))
+    try:
+        write_live_status(revitFilePath, u"error", translate_error(ex))
+    except Exception:
+        pass
     try:
         append_report_row(
             revitFilePath,

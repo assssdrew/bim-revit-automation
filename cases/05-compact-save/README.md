@@ -8,12 +8,12 @@ Workshared Revit centrals grow after months of Sync. The Autodesk control is **C
 
 ## Solution
 
-An operator window (`Сжатие.cmd` → WinForms). The person picks models (files / folders / `RSN://`), chooses a mode, presses Compact. The toolkit groups the list by Revit year and runs the API job; [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor) is only the batch host.
+An operator window (`Сжатие.vbs` → WinForms). The person picks models (files / folders / `RSN://`), chooses a mode, presses Compact. The toolkit groups the list by Revit year and runs the API job; [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor) is only the batch host.
 
 | Mode | When | What it does |
 |------|------|----------------|
 | **Fast** | Anytime; others may stay in the files | Create New Local, close worksets, `SynchronizeWithCentral` with **Compact = True**, Relinquish. Does not invalidate other people’s locals. |
-| **Deep** | Monthly / quarterly | Everyone out first. Open the **central with Audit** (no new local, no Detach) → Save As central with Compact → Sync Compact. After the run, teammates recreate their locals. |
+| **Deep** | Monthly / quarterly | Open the **central with Audit** (no new local, no Detach, worksets closed) → Save As the **same** central with Compact → Sync Compact. Does not invalidate other people’s locals. |
 
 Excel report: size before / after, run summary, history vs previous runs.
 
@@ -40,7 +40,7 @@ Details: [docs/SAFETY.md](../../docs/SAFETY.md)
 
 1. Copy `src/` to a PC that has Revit + RBP
 2. Edit `servers.cfg` with your Revit Server hosts (placeholders in this repo)
-3. Double-click `Сжатие.cmd` (Russian for “Compact”)
+3. Double-click `Сжатие.vbs` (Russian for “Compact”)
 4. Add models → choose Fast or Deep → Compact
 5. First Revit launch: if BatchRvt is blocked, use `служебное\разрешить_надстройку_BatchRvt.cmd`
 
