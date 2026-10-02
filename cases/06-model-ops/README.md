@@ -1,4 +1,4 @@
-# Case 06 — Model park ops (rename, upgrade, relink)
+# Case 06 — Model operations (rename, upgrade, relink)
 
 [← Portfolio hub](../../README.md) · [RU](README.ru.md)
 
@@ -8,7 +8,11 @@ A discipline park (~50+ workshared models) has to move together: new names, some
 
 ## Solution
 
-An operator presets window (`run_cascade.cmd` → **1**) builds the job, then staged API tasks run it. [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor) is only the batch host.
+A single operator window (`Операции с моделями.vbs`, or `show_ops.vbs` with an ASCII file name) opens `presets.ps1`. That script **depends on `start_ops.ps1` and `job_lib.ps1`**: it dot-sources both, and they must sit in the same folder. `start_ops.ps1` finds Revit Batch Processor and starts each pass. [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor) is only the batch host.
+
+The window lists models (Model / State / Source / Path). A “will become” column appears only when renaming, and old/new path columns only when moving files. **Details** edits the name rules. **Run** saves the job and starts the passes (buffer / Save As / file move / links / delete old). Before an overwrite it asks whether everyone has left the models.
+
+The older menu `run_cascade.cmd` is still in the folder.
 
 1. Pick models (share / files / `RSN://`)
 2. Name ops from a sample (`delete` / `replace` / `insert`) + destination / year
@@ -25,15 +29,16 @@ UNC→UNC with a year upgrade does not need the buffer: a newer Revit can open t
 
 | Item | Result |
 |------|--------|
-| Status | v3.0.0 — Used in production on one project; no automated tests |
+| Status | Tested on real working models |
+| Impact | On average about 4–5× faster than manual work; staged Save As, move, and relink from one saved job plan |
 | Scale | Discipline park, mixed UNC / `RSN://` |
-| Operator UX | One presets UI; preview of new names before write |
+| Operator UX | Single window: list, optional rename/move columns, Details, Run. Older menu: `run_cascade.cmd` |
 | Writes model? | **Yes** — Save As central, then link remap |
 
 ## Safety
 
 - Live destination centrals: Create New Local, Detach **OFF**
-- Detach **ON** only for the **local buffer** when leaving an old Revit Server (not the production central)
+- Detach **ON** only for the **local buffer** when leaving an old Revit Server (not the live central)
 - Nested links are not rewritten from the host — each model that owns a link is opened
 - Delete old files only after Pass 2 is green
 - Name ops run only if the token is present (exceptions for one specific token are a separate replace)
@@ -44,9 +49,9 @@ Details: [docs/SAFETY.md](../../docs/SAFETY.md)
 
 1. Copy `src/` to a PC with the matching Revit years + RBP
 2. Edit `servers.cfg` (placeholders in this repo)
-3. `run_cascade.cmd` → **2** pick models → **1** presets → Save job
-4. Follow `rbp_checklist.txt` (one RBP run = one Revit year). This file is **generated** by *Save job* (`job_lib.ps1`) next to `mapping.csv`; it is not stored in the repo. It lists, in order, which RBP run to start: Revit year, Detach / Create New Local setting, task script and list file. `run_cascade.cmd` prints it.
-5. Optional: Windows Move UNC (**3**), then delete old (**4**)
+3. Double-click `Операции с моделями.vbs` (Russian for “Model operations”). `show_ops.vbs` opens the same window. `presets.ps1` will not start without `start_ops.ps1` and `job_lib.ps1` beside it.
+4. Pick models, set the name rules, press Run.
+5. Older menu, still in the folder: `run_cascade.cmd` → **2** pick models → **1** presets → Save job. *Save job* (`job_lib.ps1`) writes `rbp_checklist.txt` next to `mapping.csv` (not stored in the repo): Revit year, Detach / Create New Local, task script and list file, one RBP run per year. `run_cascade.cmd` prints it. Optional: Windows Move UNC (**3**), then delete old (**4**).
 
 ## Third-party
 

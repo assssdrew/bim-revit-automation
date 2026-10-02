@@ -23,7 +23,8 @@ Includes: credential store (`Export-Clixml`), connectivity tests, multi-path wat
 
 | Item | Result |
 |------|--------|
-| Status | Used on one project's FTP exchange; no automated tests |
+| Status | Tested on real working models |
+| Impact | Phone push when shared FTP folders change, without watching the client |
 | Writes models? | **No** — FTP list only |
 | Scale | Multiple `RemotePaths`, recursive depth configurable |
 

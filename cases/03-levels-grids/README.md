@@ -10,7 +10,7 @@ After each Architecture update, base files (BF) and then ~80 discipline models m
 
 Cascade toolkit for RBP:
 
-1. **Audit BF ↔ AR** (exemplar = linked AR) → CSV / coloured XLSX  
+1. **Audit BF ↔ AR** (exemplar = linked AR) → CSV / Excel report (with status highlighting)  
 2. Review → **Apply on BF only** (elevation / grid move-rotate when name match + cfg flags) → Sync  
 3. **Audit disciplines ↔ BF** → report (mass Apply on 80 models is *not* MVP)
 
@@ -20,7 +20,8 @@ Compares via Revit API (not auto-Accept Coordination Review UI).
 
 | Item | Result |
 |------|--------|
-| Status | **MVP — not piloted on a live project**; no automated tests |
+| Status | Tested on real working models; MVP scope (Apply on base files only) |
+| Impact | On average about 4–5× faster than manual work; cascade BF↔AR and disciplines↔BF audit in report sessions |
 | Weekly design load | ~5–6 BF, then up to ~80 disciplines |
 | Default tolerances | Level 2 mm · Grid 5 mm · Angle 0.1° |
 

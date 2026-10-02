@@ -1,4 +1,4 @@
-# Adds RSN:// support to the installed Revit Batch Processor scripts.
+﻿# Adds RSN:// support to the installed Revit Batch Processor scripts.
 # No Python required. Safe to run repeatedly.
 # v2: avoid IronPython str()/ascii on Cyrillic RSN paths.
 # v3: RSN + Detach allowed (superseded for deep).
@@ -313,7 +313,7 @@ try {
     }
     if (-not (Test-RbpScripts $ScriptsPath)) {
         Write-Fail "BatchRvt Scripts folder not found."
-        Write-Fail "Keep Revit Batch Processor open, then run Сжатие.cmd again."
+        Write-Fail "Keep Revit Batch Processor open, then run Сжатие.vbs again."
         exit 2
     }
 

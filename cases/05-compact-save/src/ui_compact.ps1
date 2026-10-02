@@ -1,16 +1,21 @@
-# Main window for compact save. UTF-8 WITH BOM required (PowerShell 5.1).
-# Double-click Сжатие.cmd — no console menu.
+﻿# Main window for compact save. UTF-8 WITH BOM required (PowerShell 5.1).
+# Double-click Сжатие.vbs — no console menu.
 
 $ErrorActionPreference = "Continue"
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
+$script:ListSortCol = -1
+$script:ListSortAsc = $true
+
 $ToolDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$script:CompactUiLibrary = $true
+$script:CompactLaunchLibrary = $true
+$CompactUiLibrary = $true
+$CompactLaunchLibrary = $true
 
 try {
-    $CompactUiLibrary = $true
-    $CompactLaunchLibrary = $true
     . (Join-Path $ToolDir "choose_models.ps1")
     . (Join-Path $ToolDir "start_compact.ps1")
     # start_compact sets Stop — for the window that makes Test-Path on a dead UNC crash the form.
@@ -32,6 +37,7 @@ catch {
 
 $script:SelectedModels = New-Object System.Collections.Generic.List[string]
 $script:ModelStatus = @{}
+$script:ModelComments = @{}
 $script:RunState = @{
     Active     = $false
     Process    = $null
@@ -45,6 +51,9 @@ $script:RunState = @{
     ExeDir     = ""
     Mode       = "deep"
     ExitCodes  = @()
+    LastReport = ""
+    CurrentKey = ""
+    CurrentStarted = $null
 }
 $script:Ui = @{}
 
@@ -85,17 +94,34 @@ function Get-StatusText([string]$Path) {
     return ""
 }
 
+function Get-ModelComment([string]$Path) {
+    $key = Get-ModelKey $Path
+    if ($script:ModelComments.ContainsKey($key)) { return [string]$script:ModelComments[$key] }
+    return ""
+}
+
+function Format-CommentDisplay([string]$Text) {
+    if ([string]::IsNullOrWhiteSpace($Text)) { return "" }
+    $t = $Text.Trim()
+    if ($t.Length -le 60) { return $t }
+    return ($t.Substring(0, 57) + "...")
+}
+
 function Get-ModelDisplayName([string]$Path) {
     if ([string]::IsNullOrWhiteSpace($Path)) { return "" }
     if ($Path -match '^(?i)RSN://') {
         $tail = $Path.Substring(6).Trim("/")
         $parts = @($tail -split "/")
-        if ($parts.Count -ge 2) {
-            return ("{0}  ({1})" -f $parts[-1], $parts[0])
-        }
+        if ($parts.Count -ge 1 -and $parts[-1]) { return $parts[-1] }
         return $Path
     }
     return [System.IO.Path]::GetFileName($Path)
+}
+
+function Format-Elapsed([datetime]$From) {
+    if (-not $From) { return "0:00" }
+    $sec = [Math]::Max(0, [int]((Get-Date) - $From).TotalSeconds)
+    return ("{0}:{1:d2}" -f [int][Math]::Floor($sec / 60), ($sec % 60))
 }
 
 function Get-ModelSource([string]$Path) {
@@ -106,6 +132,12 @@ function Get-ModelSource([string]$Path) {
 
 function Refresh-ModelList {
     $lv = $script:Ui.List
+    $prev = @{}
+    if ($lv) {
+        foreach ($it in @($lv.Items)) {
+            if ($it.Tag) { $prev[(Get-ModelKey $it.Tag)] = [bool]$it.Checked }
+        }
+    }
     $lv.BeginUpdate()
     try {
         $lv.Items.Clear()
@@ -114,17 +146,106 @@ function Refresh-ModelList {
             [void]$item.SubItems.Add((Get-StatusText $p))
             [void]$item.SubItems.Add((Get-ModelSource $p))
             [void]$item.SubItems.Add($p)
+            $comment = Get-ModelComment $p
+            [void]$item.SubItems.Add((Format-CommentDisplay $comment))
+            if ($comment) { $item.ToolTipText = $comment }
             $item.Tag = $p
+            $key = Get-ModelKey $p
+            $item.Checked = if ($prev.ContainsKey($key)) { [bool]$prev[$key] } else { $false }
             [void]$lv.Items.Add($item)
         }
     }
     finally {
         $lv.EndUpdate()
     }
+    Apply-ListSort
+    Update-ListCountLabel
+}
+
+function Update-ListCountLabel {
     $n = $script:SelectedModels.Count
-    $script:Ui.CountLabel.Text = if ($n -eq 0) { "Модели не выбраны" } else { ("Выбрано моделей: {0}" -f $n) }
+    $chk = 0
+    if ($script:Ui.List) {
+        foreach ($it in @($script:Ui.List.Items)) {
+            if ($it.Checked) { $chk++ }
+        }
+    }
+    if ($script:Ui.CountLabel) {
+        if ($n -eq 0) {
+            $script:Ui.CountLabel.Text = "Модели не выбраны"
+        }
+        else {
+            $script:Ui.CountLabel.Text = ("В списке: {0}  ·  отмечено: {1}" -f $n, $chk)
+        }
+    }
     $busy = [bool]$script:RunState.Active
-    $script:Ui.BtnRun.Enabled = ($n -gt 0) -and (-not $busy)
+    if ($script:Ui.BtnRun) {
+        $script:Ui.BtnRun.Enabled = ($chk -gt 0) -and (-not $busy)
+    }
+}
+
+function Get-ListItemSortText($Item, [int]$Column) {
+    if (-not $Item) { return "" }
+    if ($Column -le 0) { return [string]$Item.Text }
+    if ($Column -lt $Item.SubItems.Count) { return [string]$Item.SubItems[$Column].Text }
+    return ""
+}
+
+function Apply-ListSort {
+    $lv = $script:Ui.List
+    if (-not $lv -or $script:ListSortCol -lt 0 -or $lv.Items.Count -lt 2) { return }
+    $col = [int]$script:ListSortCol
+    $rows = New-Object System.Collections.Generic.List[System.Windows.Forms.ListViewItem]
+    foreach ($it in @($lv.Items)) { [void]$rows.Add($it) }
+    $sorted = @(
+        $rows | Sort-Object -Property @{
+            Expression = { Get-ListItemSortText $_ $col }
+            Descending = -not [bool]$script:ListSortAsc
+        }
+    )
+    $lv.BeginUpdate()
+    try {
+        $lv.ListViewItemSorter = $null
+        $lv.Items.Clear()
+        foreach ($it in $sorted) { [void]$lv.Items.Add($it) }
+    }
+    finally {
+        $lv.EndUpdate()
+    }
+}
+
+function On-ListColumnClick {
+    param($Sender, $EventArgs)
+    try {
+        $col = [int]$EventArgs.Column
+        if ($col -eq $script:ListSortCol) {
+            $script:ListSortAsc = -not $script:ListSortAsc
+        }
+        else {
+            $script:ListSortCol = $col
+            $script:ListSortAsc = $true
+        }
+        Apply-ListSort
+    }
+    catch { }
+}
+
+function Get-CheckedUiModels {
+    $lv = $script:Ui.List
+    $out = New-Object System.Collections.Generic.List[string]
+    if ($lv) {
+        foreach ($it in @($lv.Items)) {
+            if ($it.Checked -and $it.Tag) { [void]$out.Add([string]$it.Tag) }
+        }
+    }
+    return @($out)
+}
+
+function Set-AllUiChecks([bool]$On) {
+    $lv = $script:Ui.List
+    if (-not $lv) { return }
+    foreach ($it in @($lv.Items)) { $it.Checked = $On }
+    Update-ListCountLabel
 }
 
 function Set-ModelStatus {
@@ -140,11 +261,36 @@ function Set-ModelStatus {
     }
 }
 
+function Set-ModelComment {
+    param([string]$Path, [string]$Text)
+    if ([string]::IsNullOrWhiteSpace($Path)) { return }
+    $key = Get-ModelKey $Path
+    if ([string]::IsNullOrWhiteSpace($Text)) {
+        if ($script:ModelComments.ContainsKey($key)) { [void]$script:ModelComments.Remove($key) }
+        $display = ""
+        $tip = ""
+    }
+    else {
+        $tip = $Text.Trim()
+        $script:ModelComments[$key] = $tip
+        $display = Format-CommentDisplay $tip
+    }
+    $lv = $script:Ui.List
+    if (-not $lv) { return }
+    foreach ($item in @($lv.Items)) {
+        if ((Get-ModelKey ([string]$item.Tag)) -eq $key) {
+            if ($item.SubItems.Count -gt 4) { $item.SubItems[4].Text = $display }
+            $item.ToolTipText = $tip
+            break
+        }
+    }
+}
+
 function Update-RunProgressBar {
     $done = 0
     foreach ($p in @($script:SelectedModels)) {
         $st = Get-StatusText $p
-        if ($st -match 'Готово|Ошибка|Пропуск') { $done++ }
+        if ($st -match 'Готово|Ошибка|Пропуск|Не обработана') { $done++ }
     }
     $total = [Math]::Max(1, [int]$script:RunState.Total)
     if ($script:Ui.Progress) {
@@ -154,7 +300,7 @@ function Update-RunProgressBar {
     }
     $current = ""
     foreach ($p in @($script:SelectedModels)) {
-        if ((Get-StatusText $p) -eq "Идёт") {
+        if ((Get-StatusText $p) -match '^Идёт') {
             $current = Get-ModelDisplayName $p
             break
         }
@@ -191,6 +337,7 @@ function Add-UiModels([string[]]$Paths) {
 }
 
 function Get-ModelsFromFolder([string]$Folder) {
+    $Folder = Resolve-PickedFolderPath $Folder
     if ([string]::IsNullOrWhiteSpace($Folder)) { return @() }
 
     $found = New-Object System.Collections.Generic.List[string]
@@ -287,14 +434,25 @@ function Add-FromFolders {
             return
         }
         $script:Ui.Form.Cursor = [System.Windows.Forms.Cursors]::WaitCursor
-        Set-UiStatus "Ищу модели в папке…"
+        Set-UiStatus ("Ищу модели в: {0}" -f $folder)
+        [System.Windows.Forms.Application]::DoEvents()
         $picked = @(Get-ModelsFromFolder $folder)
         $n = Add-UiModels $picked
         if ($n -gt 0) {
-            Set-UiStatus ("Из папки добавлено: {0}" -f $n)
+            Set-UiStatus ("Из папки добавлено: {0}  ({1})" -f $n, $folder)
         }
         else {
-            Set-UiStatus "В папке нет рабочих .rvt (резервы пропускаются)"
+            Set-UiStatus ("В папке нет рабочих .rvt: {0}" -f $folder)
+            [System.Windows.Forms.MessageBox]::Show(
+                $script:Ui.Form,
+                "В этой папке не нашлось рабочих моделей." + [Environment]::NewLine + [Environment]::NewLine +
+                $folder + [Environment]::NewLine + [Environment]::NewLine +
+                "Нужна родительская папка с дисциплинами (внутри должны быть папки RVT)." + [Environment]::NewLine +
+                "Берутся только *.rvt из папок RVT. «Резерв», Backup и «Семейства» пропускаются.",
+                "Папки",
+                [System.Windows.Forms.MessageBoxButtons]::OK,
+                [System.Windows.Forms.MessageBoxIcon]::Information
+            ) | Out-Null
         }
     }
     catch {
@@ -343,6 +501,7 @@ function Remove-SelectedUiModels {
 function Clear-UiModels {
     $script:SelectedModels.Clear()
     $script:ModelStatus = @{}
+    $script:ModelComments = @{}
     Refresh-ModelList
     Set-UiStatus "Список очищен"
 }
@@ -353,8 +512,15 @@ function Get-SelectedMode {
 }
 
 function Update-ModeUi {
+    if (-not $script:Ui.Hint) { return }
     $deep = -not $script:Ui.RadioQuick.Checked
-    $script:Ui.Hint.Visible = $deep
+    $script:Ui.Hint.Visible = $true
+    if ($deep) {
+        $script:Ui.Hint.Text = "Открывает хранилище с проверкой и пересохраняет его со сжатием."
+    }
+    else {
+        $script:Ui.Hint.Text = "Открывает локаль и сжимает хранилище синхронизацией."
+    }
 }
 
 function Read-LiveStatusFile {
@@ -381,24 +547,43 @@ function Apply-LiveStatus {
     if (-not $live) { return }
     $state = [string]$live["state"]
     $path = [string]$live["path"]
+    $message = [string]$live["message"]
+    $key = Get-ModelKey $path
     $text = "Идёт"
     if ($state -eq "ok") { $text = "Готово" }
     elseif ($state -eq "warn") { $text = "Готово" }
     elseif ($state -eq "error") { $text = "Ошибка" }
-    elseif ($state -eq "start") { $text = "Идёт" }
+    elseif ($state -eq "start") {
+        if ($script:RunState.CurrentKey -ne $key) {
+            $script:RunState.CurrentKey = $key
+            $script:RunState.CurrentStarted = Get-Date
+        }
+        $text = ("Идёт {0}" -f (Format-Elapsed $script:RunState.CurrentStarted))
+    }
+    if ($state -eq "ok" -or $state -eq "warn" -or $state -eq "error") {
+        if ($script:RunState.CurrentKey -eq $key) {
+            $script:RunState.CurrentKey = ""
+            $script:RunState.CurrentStarted = $null
+        }
+    }
     Set-ModelStatus -Path $path -Text $text
+    if ($state -eq "error" -or $state -eq "warn") {
+        Set-ModelComment -Path $path -Text $message
+    }
+    elseif ($state -eq "ok" -or $state -eq "start") {
+        Set-ModelComment -Path $path -Text ""
+    }
     Update-RunProgressBar
 }
 
 function Set-UiBusy([bool]$Busy) {
     $script:RunState.Active = $Busy
-    foreach ($name in @("BtnFiles", "BtnFolders", "BtnServer", "BtnRemove", "BtnClear", "BtnImport", "RadioDeep", "RadioQuick")) {
+    foreach ($name in @("BtnFiles", "BtnFolders", "BtnServer", "BtnRemove", "BtnClear", "BtnExport", "BtnImport", "BtnCheckAll", "BtnUncheck", "RadioDeep", "RadioQuick")) {
         if ($script:Ui.ContainsKey($name) -and $script:Ui[$name]) {
             $script:Ui[$name].Enabled = -not $Busy
         }
     }
-    $n = $script:SelectedModels.Count
-    $script:Ui.BtnRun.Enabled = ($n -gt 0) -and (-not $Busy)
+    Update-ListCountLabel
     if ($script:Ui.Progress) { $script:Ui.Progress.Visible = $Busy }
 }
 
@@ -422,7 +607,7 @@ function Complete-CompactRun {
     Apply-LiveStatus
     foreach ($p in @($script:SelectedModels)) {
         $st = Get-StatusText $p
-        if ($st -eq "Ожидание" -or $st -eq "Идёт") {
+        if ($st -eq "Ожидание" -or $st -match '^Идёт') {
             Set-ModelStatus -Path $p -Text "Не обработана"
         }
     }
@@ -453,8 +638,96 @@ function Complete-CompactRun {
     Set-UiStatus $msg
 
     $xlsx = Find-LatestReportXlsx
+    $script:RunState.LastReport = if ($xlsx) { [string]$xlsx } else { "" }
+    if ($script:Ui.BtnOpenReport) {
+        $script:Ui.BtnOpenReport.Enabled = -not [string]::IsNullOrWhiteSpace($script:RunState.LastReport)
+    }
     if ($script:RunState.OpenReport -and $xlsx) {
         try { Start-Process -FilePath $xlsx | Out-Null } catch { }
+    }
+    if ($err -gt 0 -or $code -ne 0) {
+        Show-CompactRunError -OkCount $ok -ErrCount $err -Code $code
+    }
+}
+
+function Show-CompactRunError {
+    param(
+        [int]$OkCount,
+        [int]$ErrCount,
+        [int]$Code
+    )
+    $lines = New-Object System.Collections.Generic.List[string]
+    [void]$lines.Add(("Готово: {0}. Ошибок: {1}." -f $OkCount, $ErrCount))
+    if ($Code -ne 0) { [void]$lines.Add(("Код Revit Batch Processor: {0}." -f $Code)) }
+    foreach ($p in @($script:SelectedModels)) {
+        if ((Get-StatusText $p) -eq "Ошибка") {
+            $name = Get-ModelDisplayName $p
+            $comment = Get-ModelComment $p
+            if ($comment) {
+                [void]$lines.Add(("• {0}" -f $name))
+                [void]$lines.Add(("  {0}" -f $comment))
+            }
+            else {
+                [void]$lines.Add(("• {0}" -f $name))
+            }
+        }
+    }
+    $log = Find-LatestRbpLog
+    if ($log) {
+        [void]$lines.Add("")
+        [void]$lines.Add("Лог:")
+        [void]$lines.Add($log)
+    }
+    [System.Windows.Forms.MessageBox]::Show(
+        $script:Ui.Form,
+        ($lines -join [Environment]::NewLine),
+        "Ошибка сжатия",
+        [System.Windows.Forms.MessageBoxButtons]::OK,
+        [System.Windows.Forms.MessageBoxIcon]::Warning
+    ) | Out-Null
+}
+
+function Find-LatestRbpLog {
+    $dirs = @(
+        (Join-Path $env:LOCALAPPDATA "RevitBatchProcessor")
+        (Join-Path $env:LOCALAPPDATA "Revit Batch Processor")
+    )
+    $files = @()
+    foreach ($d in $dirs) {
+        if (-not (Test-Path -LiteralPath $d)) { continue }
+        $files += @(Get-ChildItem -LiteralPath $d -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.Extension -match '(?i)\.(log|txt)$' })
+        $files += @(Get-ChildItem -LiteralPath $d -Directory -ErrorAction SilentlyContinue |
+            ForEach-Object {
+                Get-ChildItem -LiteralPath $_.FullName -File -ErrorAction SilentlyContinue |
+                    Where-Object { $_.Extension -match '(?i)\.(log|txt)$' }
+            })
+    }
+    if ($files.Count -eq 0) { return $null }
+    return ($files | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
+}
+
+function Open-LastReport {
+    $p = [string]$script:RunState.LastReport
+    if ([string]::IsNullOrWhiteSpace($p) -or -not (Test-Path -LiteralPath $p)) {
+        $p = Find-LatestReportXlsx
+    }
+    if ([string]::IsNullOrWhiteSpace($p) -or -not (Test-Path -LiteralPath $p)) {
+        [System.Windows.Forms.MessageBox]::Show(
+            $script:Ui.Form,
+            "Отчёта этого прогона ещё нет.",
+            "Отчёт",
+            [System.Windows.Forms.MessageBoxButtons]::OK,
+            [System.Windows.Forms.MessageBoxIcon]::Information
+        ) | Out-Null
+        return
+    }
+    try { Start-Process -FilePath $p | Out-Null } catch {
+        [System.Windows.Forms.MessageBox]::Show(
+            $script:Ui.Form, $_.Exception.Message, "Отчёт",
+            [System.Windows.Forms.MessageBoxButtons]::OK,
+            [System.Windows.Forms.MessageBoxIcon]::Error
+        ) | Out-Null
     }
 }
 
@@ -484,6 +757,16 @@ function Start-NextYearIfNeeded {
 function Tick-CompactRun {
     if (-not $script:RunState.Active) { return }
     Apply-LiveStatus
+    if ($script:RunState.CurrentKey -and $script:RunState.CurrentStarted) {
+        $elapsed = ("Идёт {0}" -f (Format-Elapsed $script:RunState.CurrentStarted))
+        foreach ($p in @($script:SelectedModels)) {
+            if ((Get-ModelKey $p) -eq $script:RunState.CurrentKey) {
+                Set-ModelStatus -Path $p -Text $elapsed
+                break
+            }
+        }
+        Update-RunProgressBar
+    }
     $proc = $script:RunState.Process
     if ($proc) {
         try { $proc.Refresh() } catch { }
@@ -564,17 +847,18 @@ function Import-UiList {
     if (-not $append) {
         $script:SelectedModels.Clear()
         $script:ModelStatus = @{}
+        $script:ModelComments = @{}
     }
     $n = Add-UiModels $paths
     Set-UiStatus ("Импортировано: {0}" -f $n)
 }
 
 function Start-UiCompact {
-    $models = @($script:SelectedModels)
+    $models = @(Get-CheckedUiModels)
     if ($models.Count -eq 0) {
         [System.Windows.Forms.MessageBox]::Show(
             $script:Ui.Form,
-            "Сначала добавьте модели.",
+            "Отметьте модели галочками (или нажмите «Выделить все»).",
             "Сжатие",
             [System.Windows.Forms.MessageBoxButtons]::OK,
             [System.Windows.Forms.MessageBoxIcon]::Information
@@ -586,10 +870,9 @@ function Start-UiCompact {
     if ($mode -eq "deep") {
         $ask = [System.Windows.Forms.MessageBox]::Show(
             $script:Ui.Form,
-            "Глубокое сжатие перезапишет хранилище (ФХ)." + [Environment]::NewLine + [Environment]::NewLine +
-            "Если кто-то ещё в модели — его работу можно повредить." + [Environment]::NewLine +
-            "После прогона локали у остальных нужно создать заново." + [Environment]::NewLine + [Environment]::NewLine +
-            "Все вышли из файлов. Продолжить?",
+            "Глубокое сжатие откроет хранилище с проверкой" + [Environment]::NewLine +
+            "и пересохранит его со сжатием." + [Environment]::NewLine + [Environment]::NewLine +
+            "Продолжить?",
             "Глубокое сжатие",
             [System.Windows.Forms.MessageBoxButtons]::YesNo,
             [System.Windows.Forms.MessageBoxIcon]::Warning,
@@ -604,10 +887,25 @@ function Start-UiCompact {
     $script:Ui.Form.UseWaitCursor = $false
     $script:Ui.Form.Cursor = [System.Windows.Forms.Cursors]::Default
     $script:ModelStatus = @{}
-    foreach ($p in $models) { Set-ModelStatus -Path $p -Text "Ожидание" }
-    Refresh-ModelList
+    $script:ModelComments = @{}
+    $runKeys = @{}
+    foreach ($p in $models) { $runKeys[(Get-ModelKey $p)] = $true }
+    foreach ($p in @($script:SelectedModels)) {
+        if ($runKeys.ContainsKey((Get-ModelKey $p))) {
+            Set-ModelStatus -Path $p -Text "Ожидание"
+            Set-ModelComment -Path $p -Text ""
+        }
+        else {
+            Set-ModelStatus -Path $p -Text ""
+            Set-ModelComment -Path $p -Text ""
+        }
+    }
     $script:RunState.Total = $models.Count
     $script:RunState.OpenReport = [bool]$script:Ui.ChkOpenReport.Checked
+    $script:RunState.LastReport = ""
+    $script:RunState.CurrentKey = ""
+    $script:RunState.CurrentStarted = $null
+    if ($script:Ui.BtnOpenReport) { $script:Ui.BtnOpenReport.Enabled = $false }
     Save-UiSettings
     try { Remove-Item -LiteralPath (Get-LiveStatusPath) -Force -ErrorAction SilentlyContinue } catch { }
 
@@ -657,8 +955,8 @@ function New-MainForm {
 
     $form = New-Object System.Windows.Forms.Form
     $form.Text = "Сжатие моделей Revit"
-    $form.Size = New-Object System.Drawing.Size(840, 650)
-    $form.MinimumSize = New-Object System.Drawing.Size(720, 520)
+    $form.Size = New-Object System.Drawing.Size(1040, 690)
+    $form.MinimumSize = New-Object System.Drawing.Size(1040, 560)
     $form.StartPosition = "CenterScreen"
     $form.Font = $font
     $form.BackColor = [System.Drawing.SystemColors]::Window
@@ -686,68 +984,85 @@ function New-MainForm {
 
     $lblCount = New-Object System.Windows.Forms.Label
     $lblCount.Text = "Модели не выбраны"
-    $lblCount.Location = New-Object System.Drawing.Point(16, 88)
-    $lblCount.AutoSize = $true
+    $lblCount.Location = New-Object System.Drawing.Point(698, 40)
+    $lblCount.Size = New-Object System.Drawing.Size(310, 36)
+    $lblCount.TextAlign = [System.Drawing.ContentAlignment]::MiddleRight
+    $lblCount.Anchor = "Top,Right"
 
     $list = New-Object System.Windows.Forms.ListView
-    $list.Location = New-Object System.Drawing.Point(16, 112)
-    $list.Size = New-Object System.Drawing.Size(792, 250)
+    $list.Location = New-Object System.Drawing.Point(16, 84)
+    $list.Size = New-Object System.Drawing.Size(992, 320)
     $list.Anchor = "Top,Bottom,Left,Right"
     $list.View = [System.Windows.Forms.View]::Details
     $list.FullRowSelect = $true
     $list.MultiSelect = $true
     $list.HideSelection = $false
     $list.GridLines = $true
-    [void]$list.Columns.Add("Модель", 220)
-    [void]$list.Columns.Add("Состояние", 110)
-    [void]$list.Columns.Add("Откуда", 100)
-    [void]$list.Columns.Add("Путь", 340)
+    $list.CheckBoxes = $true
+    $list.ShowItemToolTips = $true
+    [void]$list.Columns.Add("Модель", 180)
+    [void]$list.Columns.Add("Состояние", 90)
+    [void]$list.Columns.Add("Откуда", 90)
+    [void]$list.Columns.Add("Путь", 300)
+    [void]$list.Columns.Add("Комментарий", 220)
+
+    $btnCheckAll = New-Object System.Windows.Forms.Button
+    $btnCheckAll.Text = "Выделить все"
+    $btnCheckAll.Location = New-Object System.Drawing.Point(16, 412)
+    $btnCheckAll.Size = New-Object System.Drawing.Size(150, 30)
+    $btnCheckAll.Anchor = "Bottom,Left"
+
+    $btnUncheck = New-Object System.Windows.Forms.Button
+    $btnUncheck.Text = "Снять выделение"
+    $btnUncheck.Location = New-Object System.Drawing.Point(176, 412)
+    $btnUncheck.Size = New-Object System.Drawing.Size(150, 30)
+    $btnUncheck.Anchor = "Bottom,Left"
 
     $btnRemove = New-Object System.Windows.Forms.Button
-    $btnRemove.Text = "Убрать выбранные"
-    $btnRemove.Location = New-Object System.Drawing.Point(16, 372)
-    $btnRemove.Size = New-Object System.Drawing.Size(160, 30)
+    $btnRemove.Text = "Очистить выбранные"
+    $btnRemove.Location = New-Object System.Drawing.Point(336, 412)
+    $btnRemove.Size = New-Object System.Drawing.Size(150, 30)
     $btnRemove.Anchor = "Bottom,Left"
 
     $btnClear = New-Object System.Windows.Forms.Button
     $btnClear.Text = "Очистить список"
-    $btnClear.Location = New-Object System.Drawing.Point(184, 372)
+    $btnClear.Location = New-Object System.Drawing.Point(496, 412)
     $btnClear.Size = New-Object System.Drawing.Size(150, 30)
     $btnClear.Anchor = "Bottom,Left"
 
     $btnExport = New-Object System.Windows.Forms.Button
     $btnExport.Text = "Экспорт списка…"
-    $btnExport.Location = New-Object System.Drawing.Point(342, 372)
+    $btnExport.Location = New-Object System.Drawing.Point(698, 412)
     $btnExport.Size = New-Object System.Drawing.Size(150, 30)
-    $btnExport.Anchor = "Bottom,Left"
+    $btnExport.Anchor = "Bottom,Right"
 
     $btnImport = New-Object System.Windows.Forms.Button
     $btnImport.Text = "Импорт списка…"
-    $btnImport.Location = New-Object System.Drawing.Point(500, 372)
+    $btnImport.Location = New-Object System.Drawing.Point(858, 412)
     $btnImport.Size = New-Object System.Drawing.Size(150, 30)
-    $btnImport.Anchor = "Bottom,Left"
+    $btnImport.Anchor = "Bottom,Right"
 
     $grpMode = New-Object System.Windows.Forms.GroupBox
     $grpMode.Text = "Режим"
-    $grpMode.Location = New-Object System.Drawing.Point(16, 414)
-    $grpMode.Size = New-Object System.Drawing.Size(600, 128)
+    $grpMode.Location = New-Object System.Drawing.Point(16, 454)
+    $grpMode.Size = New-Object System.Drawing.Size(672, 112)
     $grpMode.Anchor = "Bottom,Left,Right"
 
     $radioDeep = New-Object System.Windows.Forms.RadioButton
-    $radioDeep.Text = "Глубокое сжатие (хранилище, проверка ФХ)"
+    $radioDeep.Text = "Глубокое сжатие"
     $radioDeep.Location = New-Object System.Drawing.Point(14, 24)
     $radioDeep.AutoSize = $true
     $radioDeep.Checked = $true
 
     $radioQuick = New-Object System.Windows.Forms.RadioButton
-    $radioQuick.Text = "Быстрое сжатие (локаль + синхронизация)"
+    $radioQuick.Text = "Быстрое сжатие"
     $radioQuick.Location = New-Object System.Drawing.Point(14, 48)
     $radioQuick.AutoSize = $true
 
     $hint = New-Object System.Windows.Forms.Label
-    $hint.Text = "Перезаписывает хранилище. Перед запуском все должны выйти из моделей. Локали после прогона создают заново."
-    $hint.Location = New-Object System.Drawing.Point(14, 76)
-    $hint.Size = New-Object System.Drawing.Size(570, 42)
+    $hint.Text = "Открывает хранилище с проверкой и пересохраняет его со сжатием."
+    $hint.Location = New-Object System.Drawing.Point(14, 74)
+    $hint.Size = New-Object System.Drawing.Size(640, 24)
     $hint.Anchor = "Top,Left,Right"
     $hint.ForeColor = [System.Drawing.SystemColors]::GrayText
 
@@ -755,27 +1070,34 @@ function New-MainForm {
 
     $chkOpenReport = New-Object System.Windows.Forms.CheckBox
     $chkOpenReport.Text = "Открыть отчёт после прогона"
-    $chkOpenReport.Location = New-Object System.Drawing.Point(640, 414)
-    $chkOpenReport.Size = New-Object System.Drawing.Size(168, 36)
+    $chkOpenReport.Location = New-Object System.Drawing.Point(698, 454)
+    $chkOpenReport.Size = New-Object System.Drawing.Size(310, 32)
     $chkOpenReport.Anchor = "Bottom,Right"
+
+    $btnOpenReport = New-Object System.Windows.Forms.Button
+    $btnOpenReport.Text = "Открыть отчёт"
+    $btnOpenReport.Location = New-Object System.Drawing.Point(698, 488)
+    $btnOpenReport.Size = New-Object System.Drawing.Size(310, 28)
+    $btnOpenReport.Anchor = "Bottom,Right"
+    $btnOpenReport.Enabled = $false
 
     $btnRun = New-Object System.Windows.Forms.Button
     $btnRun.Text = "Сжать"
-    $btnRun.Location = New-Object System.Drawing.Point(640, 448)
-    $btnRun.Size = New-Object System.Drawing.Size(168, 48)
+    $btnRun.Location = New-Object System.Drawing.Point(698, 522)
+    $btnRun.Size = New-Object System.Drawing.Size(310, 44)
     $btnRun.Anchor = "Bottom,Right"
     $btnRun.Font = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
 
     $progress = New-Object System.Windows.Forms.ProgressBar
-    $progress.Location = New-Object System.Drawing.Point(16, 546)
-    $progress.Size = New-Object System.Drawing.Size(792, 14)
+    $progress.Location = New-Object System.Drawing.Point(16, 574)
+    $progress.Size = New-Object System.Drawing.Size(992, 14)
     $progress.Anchor = "Bottom,Left,Right"
     $progress.Visible = $false
 
     $status = New-Object System.Windows.Forms.Label
     $status.Text = "Добавьте модели и нажмите «Сжать»."
-    $status.Location = New-Object System.Drawing.Point(16, 564)
-    $status.Size = New-Object System.Drawing.Size(792, 22)
+    $status.Location = New-Object System.Drawing.Point(16, 592)
+    $status.Size = New-Object System.Drawing.Size(992, 22)
     $status.Anchor = "Bottom,Left,Right"
     $status.ForeColor = [System.Drawing.SystemColors]::GrayText
 
@@ -785,8 +1107,9 @@ function New-MainForm {
 
     $form.Controls.AddRange(@(
         $lblAdd, $btnFiles, $btnFolders, $btnServer,
-        $lblCount, $list, $btnRemove, $btnClear, $btnExport, $btnImport,
-        $grpMode, $chkOpenReport, $btnRun, $progress, $status
+        $lblCount, $btnCheckAll, $btnUncheck, $list,
+        $btnRemove, $btnClear, $btnExport, $btnImport,
+        $grpMode, $chkOpenReport, $btnOpenReport, $btnRun, $progress, $status
     ))
 
     $script:Ui = @{
@@ -802,11 +1125,15 @@ function New-MainForm {
         BtnServer    = $btnServer
         BtnRemove    = $btnRemove
         BtnClear     = $btnClear
+        BtnExport    = $btnExport
         BtnImport    = $btnImport
         RadioQuick   = $radioQuick
         RadioDeep    = $radioDeep
         Hint         = $hint
         ChkOpenReport = $chkOpenReport
+        BtnOpenReport = $btnOpenReport
+        BtnCheckAll  = $btnCheckAll
+        BtnUncheck   = $btnUncheck
     }
     $script:UiOwner = $form
 
@@ -818,6 +1145,11 @@ function New-MainForm {
     $btnExport.Add_Click({ Export-UiList })
     $btnImport.Add_Click({ Import-UiList })
     $btnRun.Add_Click({ Start-UiCompact })
+    $btnOpenReport.Add_Click({ Open-LastReport })
+    $btnCheckAll.Add_Click({ Set-AllUiChecks $true })
+    $btnUncheck.Add_Click({ Set-AllUiChecks $false })
+    $list.Add_ItemChecked({ Update-ListCountLabel })
+    $list.Add_ColumnClick({ On-ListColumnClick $list $_ })
     $radioDeep.Add_CheckedChanged({ Update-ModeUi })
     $radioQuick.Add_CheckedChanged({ Update-ModeUi })
     $chkOpenReport.Add_CheckedChanged({ Save-UiSettings })

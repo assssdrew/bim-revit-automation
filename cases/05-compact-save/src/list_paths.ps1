@@ -1,4 +1,4 @@
-# Shared paths for rvt_list.txt: share when writable, else per-user local copy.
+﻿# Shared paths for rvt_list.txt: share when writable, else per-user local copy.
 # Optional sidecar: scripts also embed these helpers if this file is missing on the share.
 
 function Remove-LeftoverWriteProbes {
