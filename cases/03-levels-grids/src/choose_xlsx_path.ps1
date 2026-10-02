@@ -1,11 +1,11 @@
-﻿# Choose local folder for colored XLSX report (shared by several users; each saves locally).
+﻿# Choose local folder for Excel report (shared by several users; each saves locally).
 Add-Type -AssemblyName System.Windows.Forms | Out-Null
 
 $ToolDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $CfgPath = Join-Path $ToolDir "xlsx_out_path.cfg"
 
 $dlg = New-Object System.Windows.Forms.FolderBrowserDialog
-$dlg.Description = "Выберите ЛОКАЛЬНУЮ папку для сохранения цветного XLSX (не сетевой диск)."
+$dlg.Description = "Выберите ЛОКАЛЬНУЮ папку для сохранения отчёта в Excel (не сетевой диск)."
 $dlg.ShowNewFolderButton = $true
 
 if (Test-Path -LiteralPath $CfgPath) {

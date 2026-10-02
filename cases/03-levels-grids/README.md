@@ -10,7 +10,7 @@ After each Architecture update, base files (BF) and then ~80 discipline models m
 
 Cascade toolkit for RBP:
 
-1. **Audit BF ↔ AR** (exemplar = linked AR) → CSV / coloured XLSX  
+1. **Audit BF ↔ AR** (exemplar = linked AR) → CSV / Excel report (with status highlighting)  
 2. Review → **Apply on BF only** (elevation / grid move-rotate when name match + cfg flags) → Sync  
 3. **Audit disciplines ↔ BF** → report (mass Apply on 80 models is *not* MVP)
 

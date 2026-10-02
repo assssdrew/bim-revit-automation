@@ -12,7 +12,7 @@ Read-only RBP audit (**v1.4.0**):
 
 - Metrics in waves A / B / C (links, families, views/sheets, MEP connectors estimate, far elements, …)
 - Traffic-light status from `thresholds.cfg`
-- CSV append per model + **one coloured XLSX** at end of batch (OpenXML, no Excel COM)
+- CSV append per model + **one Excel report** at end of batch (OpenXML, no Excel COM; with status highlighting)
 - Sheets: Summary + RVT Links
 
 ## Screenshot
@@ -26,7 +26,7 @@ Excel sheet of the link health check. Model names and paths are blurred.
 | Item | Result |
 |------|--------|
 | Status | Tested on real working models; read-only (no model changes) |
-| Impact | On average about 4–5× faster than manual work; health metrics and RVT links in one coloured XLSX and CSV batch |
+| Impact | On average about 4–5× faster than manual work; health metrics and RVT links in one Excel report and CSV batch |
 | Writes model? | **No** |
 | Scale | Same picker as units — local / UNC / RSN lists |
 
@@ -40,7 +40,7 @@ Excel sheet of the link health check. Model names and paths are blurred.
 
 1. Copy `src/` to RBP Scripts
 2. `choose_models_path.cmd` → list
-3. `reset_report_session.cmd` → local XLSX folder
+3. `reset_report_session.cmd` → local folder for Excel reports
 4. RBP: `health_check.py` + `rvt_list.txt` (Create New Local, Detach OFF)
 5. Optional rebuild: `color_latest_report.cmd`
 

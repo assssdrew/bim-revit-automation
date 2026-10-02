@@ -1,4 +1,4 @@
-# Case 06 — Model park ops (rename, upgrade, relink)
+# Case 06 — Model operations (rename, upgrade, relink)
 
 [← Portfolio hub](../../README.md) · [RU](README.ru.md)
 

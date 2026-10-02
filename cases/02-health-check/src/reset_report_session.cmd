@@ -9,7 +9,7 @@ if exist "reports\cvc\_active_links.txt" del /f /q "reports\cvc\_active_links.tx
 
 echo.
 echo === New Health Check session ===
-echo 1) Choose LOCAL folder for colored XLSX...
+echo 1) Choose LOCAL folder for Excel report...
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0choose_xlsx_path.ps1"
 if errorlevel 1 (
   echo.

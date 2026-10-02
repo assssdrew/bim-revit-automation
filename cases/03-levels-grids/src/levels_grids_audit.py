@@ -3,7 +3,7 @@
 Revit Batch Processor — Levels & Grids Audit (только отчёт).
 
 Сравнивает уровни и оси host-модели с эталонной RVT-связью.
-CSV на шаре + цветной XLSX один раз в конце батча.
+CSV на шаре + отчёт в Excel один раз в конце батча.
 
 Важно:
   - Save / Sync / Relinquish НЕ вызываются
