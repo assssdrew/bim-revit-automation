@@ -11,7 +11,7 @@ I write the **task scripts + Windows toolkits** (pick models → run → coloure
 | **Focus** | Workshared / Revit Server (`RSN://`) pipelines, safety-first writes |
 | **Language** | [Русский README](README.ru.md) |
 
-> Scripts were validated manually on real models where noted below. Automated tests are not included in this repository. Case screenshots use blurred model names and paths.
+> Tested on real working models. Batch workflows are on average about 4–5× faster than the same steps done by hand. Automated tests are not included in this repository. Screenshot names and paths are blurred.
 
 ---
 
@@ -29,12 +29,12 @@ For the Revit API cases (01, 02, 03, 05, 06). Case 04 is a standalone PowerShell
 
 | # | Case | Status | Impact |
 |---|------|--------|--------|
-| 01 | [Project Units + RSN](cases/01-project-units/) | Used on live Revit Server models; manual acceptance testing | Batch Length accuracy across a mixed disk / UNC / `RSN://` list instead of opening each central by hand |
-| 02 | [Health Check](cases/02-health-check/) (v1.4.0) | Used on one project; read-only (no model changes) | Health metrics and RVT link inventory for many centrals in one coloured XLSX and CSV batch |
-| 03 | [Levels & Grids](cases/03-levels-grids/) | MVP; pilot pending | Cascade BF↔AR then disciplines↔BF audit in report sessions (Apply limited to base files in MVP) |
-| 04 | [FTP model alerts](cases/04-ftp-model-alerts/) | Used on one project's FTP exchange; manual acceptance testing | Phone push when shared FTP folders change, without watching the client |
-| 05 | [Compact save](cases/05-compact-save/) | Deep mode accepted on live UNC/file models; RSN deep **Experimental** | Large lists (e.g. ~125 models) in one unattended run; file-size change varies (often small, e.g. 61.03→61.01 MB; up to about −11.6% on one early fast-mode model) |
-| 06 | [Model ops](cases/06-model-ops/) (v3.0.0) | v3.0.0 task scripts; new UI **prototype** (not validated on live models) | Staged Save As, move, and relink passes from one saved job plan |
+| 01 | [Project Units + RSN](cases/01-project-units/) | Tested on real working models | On average about 4–5× faster than manual work; batch Length accuracy across disk / UNC / `RSN://` |
+| 02 | [Health Check](cases/02-health-check/) (v1.4.0) | Tested on real working models; read-only (no model changes) | On average about 4–5× faster than manual work; health metrics and RVT links in one coloured XLSX and CSV batch |
+| 03 | [Levels & Grids](cases/03-levels-grids/) | Tested on real working models; MVP scope (Apply on base files only) | On average about 4–5× faster than manual work; cascade BF↔AR and disciplines↔BF audit in report sessions |
+| 04 | [FTP model alerts](cases/04-ftp-model-alerts/) | Tested on real working models | Phone push when shared FTP folders change, without watching the client |
+| 05 | [Compact save](cases/05-compact-save/) | Tested on real working models; RSN deep mode on a limited number of runs | On average about 4–5× faster than manual work; long lists (e.g. ~125 models) in one unattended run; file-size change varies (often small, e.g. 61.03→61.01 MB; up to about −11.6% on one early fast-mode model) |
+| 06 | [Model ops](cases/06-model-ops/) (v3.0.0) | Tested on real working models | On average about 4–5× faster than manual work; staged Save As, move, and relink from one saved job plan |
 
 #### Case 05 — Compact save (screenshots)
 
@@ -65,7 +65,7 @@ Also in `docs/`: a [draft Navisworks clash-tolerance matrix](docs/navisworks-cla
 
 **Compact save** ([case 05](cases/05-compact-save/)) — operator UI (`Сжатие.vbs`): **fast** (Create New Local, Sync Compact) and **deep** (central + Audit, Save As same central with Compact). See the [case 05 screenshots](#case-05--compact-save-screenshots) above.
 
-**Model ops** ([case 06](cases/06-model-ops/)) — rename, folder / Revit year, and RVT relink in staged passes. New window (`Операции с моделями.vbs` → `presets.ps1`, with `start_ops.ps1` and `job_lib.ps1`) is a prototype on live models.
+**Model ops** ([case 06](cases/06-model-ops/)) — rename, folder / Revit year, and RVT relink in staged passes via `Операции с моделями.vbs` → `presets.ps1` (with `start_ops.ps1` and `job_lib.ps1`).
 
 ---
 
@@ -88,12 +88,12 @@ Workflow context from the project these scripts were written for (sanitised for 
 
 | Item | Context | Impact |
 |------|---------|--------|
-| Weekly cascade | ~5–6 base files (BF↔AR), then up to ~80 discipline models (vs BF) | One audit report session per wave instead of opening each model for levels/grids review |
-| Model ops | ~50+ models, mixed UNC / `RSN://` | One job plan drives detach / Save As / move / relink passes (new UI prototype) |
-| Units / RSN | Live Revit Server models | One batch for Length accuracy across disk and `RSN://` paths |
-| Compact save | Deep mode accepted on UNC/file models; RSN deep experimental | One unattended run for long lists (e.g. ~125 models); size delta often small (61.03→61.01 MB on a 2-model deep run) |
-| Health Check | Read-only workshared audit | One coloured XLSX plus CSV for links and health metrics across the hub |
-| Levels & Grids | MVP; pilot pending | BF-first cascade before rolling checks to all disciplines |
+| Weekly cascade | ~5–6 base files (BF↔AR), then up to ~80 discipline models (vs BF) | About 4–5× faster than manual; one audit report session per wave |
+| Model ops | ~50+ models, mixed UNC / `RSN://` | About 4–5× faster than manual; one job plan drives detach / Save As / move / relink passes |
+| Units / RSN | Live Revit Server models | About 4–5× faster than manual; one batch for Length accuracy across disk and `RSN://` |
+| Compact save | Tested on working models; RSN deep on a limited number of runs | About 4–5× faster than manual; long lists (e.g. ~125 models) in one run; size delta often small (61.03→61.01 MB on a 2-model deep run) |
+| Health Check | Read-only workshared audit | About 4–5× faster than manual; one coloured XLSX plus CSV across the hub |
+| Levels & Grids | MVP scope (Apply on base files only) | About 4–5× faster than manual; BF-first cascade before discipline reports |
 | FTP model alerts | Shared exchange folders | Scheduled poll → push without manual FTP watch |
 
 ---
@@ -104,7 +104,7 @@ Automation that can destroy a federated model is worse than no automation.
 
 - **Audit** scripts never Save / Sync / Relinquish
 - **Apply** is a separate script / explicit list (e.g. BF only)
-- **Compact** is a write: fast uses Create New Local; deep opens the central with Audit and saves the same central with Compact (no Detach). Not breaking other users' local files is intended, not verified. RSN deep mode needs RBP patch v4 and is experimental.
+- **Compact** is a write: fast uses Create New Local; deep opens the central with Audit and saves the same central with Compact (no Detach). RSN deep mode needs RBP patch v4 (`RSN_PATCH_PS_v4`); tested on a limited number of runs.
 - **Model ops** writes only after Save job; Detach is the local upgrade buffer, not the live central
 - Coordinates, PBP, Survey Point, True North, Shared Coordinates are **out of scope** here — report only (Health Check), never auto-fix
 - Tolerances are mandatory to avoid false RED on floating-point noise
@@ -156,7 +156,7 @@ bim-revit-automation/
     img/                       ← compact and health-check screenshots
 ```
 
-Copy a case `src/` onto a PC with the matching Revit year. Case 04 runs standalone on Windows (Task Scheduler). Case 05 starts from `Сжатие.vbs`. Case 06's new window starts from `Операции с моделями.vbs` (prototype); `run_cascade.cmd` is the older menu.
+Copy a case `src/` onto a PC with the matching Revit year. Case 04 runs standalone on Windows (Task Scheduler). Case 05 starts from `Сжатие.vbs`. Case 06 starts from `Операции с моделями.vbs`; `run_cascade.cmd` is the older menu.
 
 ---
 

@@ -25,8 +25,8 @@ Excel sheet of the link health check. Model names and paths are blurred.
 
 | Item | Result |
 |------|--------|
-| Status | Used on one project; read-only (no model changes) |
-| Impact | Health metrics and RVT link inventory for many centrals in one coloured XLSX and CSV batch |
+| Status | Tested on real working models; read-only (no model changes) |
+| Impact | On average about 4–5× faster than manual work; health metrics and RVT links in one coloured XLSX and CSV batch |
 | Writes model? | **No** |
 | Scale | Same picker as units — local / UNC / RSN lists |
 

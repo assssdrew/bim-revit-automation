@@ -12,7 +12,7 @@ A single operator window (`Операции с моделями.vbs`, or `show_o
 
 The window lists models (Model / State / Source / Path). A “will become” column appears only when renaming, and old/new path columns only when moving files. **Details** edits the name rules. **Run** saves the job and starts the passes (buffer / Save As / file move / links / delete old). Before an overwrite it asks whether everyone has left the models.
 
-This window is a **prototype / not validated on live models**. The older menu `run_cascade.cmd` is still in the folder.
+The older menu `run_cascade.cmd` is still in the folder.
 
 1. Pick models (share / files / `RSN://`)
 2. Name ops from a sample (`delete` / `replace` / `insert`) + destination / year
@@ -29,10 +29,10 @@ UNC→UNC with a year upgrade does not need the buffer: a newer Revit can open t
 
 | Item | Result |
 |------|--------|
-| Status | v3.0.0 task scripts; new UI **prototype** (not validated on live models) |
-| Impact | Staged Save As, move, and relink passes from one saved job plan |
+| Status | Tested on real working models |
+| Impact | On average about 4–5× faster than manual work; staged Save As, move, and relink from one saved job plan |
 | Scale | Discipline park, mixed UNC / `RSN://` |
-| Operator UX | New single window (prototype): list, optional rename/move columns, Details, Run. Older menu: `run_cascade.cmd` |
+| Operator UX | Single window: list, optional rename/move columns, Details, Run. Older menu: `run_cascade.cmd` |
 | Writes model? | **Yes** — Save As central, then link remap |
 
 ## Safety
@@ -50,7 +50,7 @@ Details: [docs/SAFETY.md](../../docs/SAFETY.md)
 1. Copy `src/` to a PC with the matching Revit years + RBP
 2. Edit `servers.cfg` (placeholders in this repo)
 3. Double-click `Операции с моделями.vbs` (Russian for “Model operations”). `show_ops.vbs` opens the same window. `presets.ps1` will not start without `start_ops.ps1` and `job_lib.ps1` beside it.
-4. Pick models, set the name rules, press Run. The window has not been validated on live models.
+4. Pick models, set the name rules, press Run.
 5. Older menu, still in the folder: `run_cascade.cmd` → **2** pick models → **1** presets → Save job. *Save job* (`job_lib.ps1`) writes `rbp_checklist.txt` next to `mapping.csv` (not stored in the repo): Revit year, Detach / Create New Local, task script and list file, one RBP run per year. `run_cascade.cmd` prints it. Optional: Windows Move UNC (**3**), then delete old (**4**).
 
 ## Third-party

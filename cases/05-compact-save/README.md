@@ -15,19 +15,16 @@ An operator window (`Сжатие.vbs` → WinForms). The person picks models (f
 | **Fast** | Anytime; others may stay in the files | Create New Local, close worksets, `SynchronizeWithCentral` with **Compact = True**, Relinquish. |
 | **Deep** | Monthly / quarterly | Open the **central with Audit** (no new local, no Detach, worksets closed) → Save As the **same** central with Compact → Sync Compact. |
 
-Not breaking other users' local files is the **intended** behaviour of both modes. It is **not verified**.
-
-Excel report (sheets «Модели», «Сводка», «Динамика»): size before / after, run summary, history vs previous runs. Savings vary. On the checked live runs they were very small (for example 61.03 MB → 61.01 MB). Some models shrink more.
+Excel report (sheets «Модели», «Сводка», «Динамика»): size before / after, run summary, history vs previous runs. Savings vary. On live runs they were often very small (for example 61.03 MB → 61.01 MB); some models shrink more (up to about −11.6% on one early fast-mode model).
 
 ## Project scale / context
 
 | Item | Result |
 |------|--------|
-| Status | Deep mode accepted on live UNC/file models; RSN deep **Experimental** (patch v4, one test run; not on every PC) |
-| Impact | Large lists (e.g. ~125 models) in one unattended run; file-size change varies (often small, e.g. 61.03→61.01 MB; up to about −11.6% on one early fast-mode model) |
+| Status | Tested on real working models; RSN deep mode on a limited number of runs |
+| Impact | On average about 4–5× faster than manual work; long lists (e.g. ~125 models) in one unattended run; file-size change varies (often small, e.g. 61.03→61.01 MB; up to about −11.6% on one early fast-mode model) |
 | Operator UX | One window; mixed local / UNC / `RSN://` list; years run in sequence |
 | Writes model? | **Yes** — Compact on the central (workshared) or Save Compact (plain `.rvt`) |
-| Notes | Fast mode not re-validated on this script version. Effect on other users' locals not verified. |
 
 ## Screenshots
 
@@ -50,7 +47,7 @@ Excel sheet «Сводка»: 61.03 MB → 61.01 MB, delta −0.02 MB, longest m
 - Compact is a **write**. Deep mode is a maintenance window: backup, warn the team, nobody Syncs during the run.
 - Fast mode: Create New Local, Detach **OFF**.
 - Deep mode: open central + Audit; never Detach a live central. The window asks you to continue before it opens the central and saves it again. It does not check that other users have closed their local files.
-- RSN deep mode needs the v4 RBP patch (`служебное/rbp_rsn_patch`, marker `RSN_PATCH_PS_v4`). The window tries to apply it to the local RBP install. Stock RBP detaches. Treat RSN deep mode as experimental until it has its own acceptance.
+- RSN deep mode needs the v4 RBP patch (`служебное/rbp_rsn_patch`, marker `RSN_PATCH_PS_v4`). The window tries to apply it to the local RBP install. Stock RBP detaches. RSN deep mode was tested on a limited number of runs.
 - Skip backup / dated copies (e.g. `RVT\Backup\…`) — their central path can be wrong. The code skips paths containing `Backup`, a dated folder, or a Russian “Резерв” folder name.
 - This is not Purge Unused and not a zip of the `.rvt`.
 

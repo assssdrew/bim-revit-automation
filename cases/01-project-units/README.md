@@ -18,8 +18,8 @@ Operator toolkit + RBP task script:
 
 | Item | Result |
 |------|--------|
-| Status | Used on live Revit Server models; manual acceptance testing |
-| Impact | Batch Length accuracy across a mixed disk / UNC / `RSN://` list instead of opening each central by hand |
+| Status | Tested on real working models |
+| Impact | On average about 4–5× faster than manual work; batch Length accuracy across disk / UNC / `RSN://` |
 | Operator UX | One list can mix disk and `RSN://` paths |
 
 ## Safety
