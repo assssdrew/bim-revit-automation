@@ -19,11 +19,11 @@ PowerShell toolkit that:
 
 Includes: credential store (`Export-Clixml`), connectivity tests, multi-path watch, NEW/UPD/DEL lines with **FTP time** + local check time.
 
-## Impact
+## Project scale / context
 
 | Item | Result |
 |------|--------|
-| Status | **Production-ready** (field-tested) |
+| Status | Used on one project's FTP exchange; no automated tests |
 | Writes models? | **No** — FTP list only |
 | Scale | Multiple `RemotePaths`, recursive depth configurable |
 

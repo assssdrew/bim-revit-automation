@@ -1472,7 +1472,7 @@ function Show-DisciplineFolderChecklist {
 
 function Select-LocalFolder {
     Write-Host ""
-    Write-Host "Step 1/2: open PARENT folder (e.g. ...\4_Razrabotka proekta)"
+    Write-Host "Step 1/2: open PARENT folder (e.g. ...\ExampleProject)"
     $typed = Show-FolderPathDialog
     if ([string]::IsNullOrWhiteSpace($typed)) {
         return @()

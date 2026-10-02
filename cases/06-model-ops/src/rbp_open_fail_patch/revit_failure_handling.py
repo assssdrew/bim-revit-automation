@@ -2,6 +2,8 @@
 # Revit Batch Processor
 #
 # Copyright (c) 2020 Dan Rumery, BVN
+# Source: https://github.com/bvn-architecture/RevitBatchProcessor (GPL-3.0).
+# This file is a MODIFIED copy; see NOTICE and LICENSE-GPL-3.0.txt.
 #
 # Patched: OPEN_FAIL_PATCH_v2
 # - never str() Cyrillic failure text (IronPython ascii)
