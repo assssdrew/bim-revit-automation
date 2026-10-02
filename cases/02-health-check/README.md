@@ -15,6 +15,12 @@ Read-only RBP audit (**v1.4.0**):
 - CSV append per model + **one coloured XLSX** at end of batch (OpenXML, no Excel COM)
 - Sheets: Summary + RVT Links
 
+## Screenshot
+
+Excel sheet of the link health check. Model names and paths are blurred.
+
+![Excel health check of Revit links. Model names and paths are blurred.](../../docs/img/health_check_links.jpg)
+
 ## Project scale / context
 
 | Item | Result |

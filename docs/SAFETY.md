@@ -5,7 +5,7 @@ These toolkits were written for a real Revit Server / workshared environment. Th
 ## Hard rules
 
 1. **Create New Local** for workshared / `RSN://` models. Never Detach live centrals for Apply jobs.
-   Exceptions: compact-save **deep** mode opens the central with Audit (no new local, no Detach) after the team is out of the files. **Fast** compact still uses Create New Local. Model-ops **Detach ON** only for a local upgrade buffer when leaving an old Revit Server — never as the production central.
+   Exceptions: compact-save **deep** mode opens the central with Audit (no new local, no Detach) and Save As the same central with Compact. **Fast** compact still uses Create New Local. Not breaking other users' local files is intended, not verified. RSN deep mode needs RBP patch v4 and is experimental (one test run; the patch is not on every PC). Model-ops **Detach ON** only for a local upgrade buffer when leaving an old Revit Server — never as the live central.
 2. **Audit ≠ Apply.** Report scripts must not Save, Sync, or Relinquish.
 3. **Apply scope is narrow.** Prefer an explicit model list (e.g. base files only), not “all 80 disciplines”.
 4. **No automatic coordinate surgery.** Internal Origin, PBP / Survey Point, True North, Shared Coordinates / Site stay manual or report-only.
