@@ -5,7 +5,7 @@ Publish new automation as a numbered folder. Keep the hub README in sync (EN + R
 ## Checklist
 
 1. Create `cases/NN-short-name/`
-2. Add `README.md` + `README.ru.md` (problem → solution → project scale / context → safety → how to run)
+2. Add `README.md` + `README.ru.md` (problem → solution → project scale / context with **Status** + **Impact** rows → safety → how to run)
 3. Put sanitised scripts in `src/`
    - No corporate UNC / internal IPs / personal paths
    - Use `*.example.cfg` or placeholder hosts in `servers.cfg`

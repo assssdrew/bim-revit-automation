@@ -20,7 +20,8 @@ Compares via Revit API (not auto-Accept Coordination Review UI).
 
 | Item | Result |
 |------|--------|
-| Status | **MVP — not piloted on a live project**; no automated tests |
+| Status | MVP; pilot pending |
+| Impact | Cascade BF↔AR then disciplines↔BF audit in report sessions (Apply limited to base files in MVP) |
 | Weekly design load | ~5–6 BF, then up to ~80 disciplines |
 | Default tolerances | Level 2 mm · Grid 5 mm · Angle 0.1° |
 

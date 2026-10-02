@@ -25,7 +25,8 @@ Excel sheet of the link health check. Model names and paths are blurred.
 
 | Item | Result |
 |------|--------|
-| Status | Used on one project; no automated tests |
+| Status | Used on one project; read-only (no model changes) |
+| Impact | Health metrics and RVT link inventory for many centrals in one coloured XLSX and CSV batch |
 | Writes model? | **No** |
 | Scale | Same picker as units — local / UNC / RSN lists |
 

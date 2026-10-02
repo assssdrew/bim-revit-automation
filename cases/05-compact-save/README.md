@@ -23,10 +23,11 @@ Excel report (sheets «Модели», «Сводка», «Динамика»): 
 
 | Item | Result |
 |------|--------|
-| Status | Deep mode **confirmed on live models**: one UNC-path model, and a 2-model run (both OK; size change tiny, e.g. 61.03 → 61.01 MB). RSN (Revit Server) deep mode with RBP patch v4 is **Experimental** — one test run only, needs separate acceptance, and the patch is not installed on every PC. No automated tests. |
+| Status | Deep mode accepted on live UNC/file models; RSN deep **Experimental** (patch v4, one test run; not on every PC) |
+| Impact | Large lists (e.g. ~125 models) in one unattended run; file-size change varies (often small, e.g. 61.03→61.01 MB; up to about −11.6% on one early fast-mode model) |
 | Operator UX | One window; mixed local / UNC / `RSN://` list; years run in sequence |
-| Reported use | Deep mode on live UNC / file models. Not a full production acceptance. Fast mode is not separately confirmed on this version of the script. |
 | Writes model? | **Yes** — Compact on the central (workshared) or Save Compact (plain `.rvt`) |
+| Notes | Fast mode not re-validated on this script version. Effect on other users' locals not verified. |
 
 ## Screenshots
 

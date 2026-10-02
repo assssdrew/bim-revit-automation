@@ -29,7 +29,8 @@ UNC→UNC with a year upgrade does not need the buffer: a newer Revit can open t
 
 | Item | Result |
 |------|--------|
-| Status | v3.0.0 task scripts. The new single window is a **prototype / not validated on live models**. No automated tests. |
+| Status | v3.0.0 task scripts; new UI **prototype** (not validated on live models) |
+| Impact | Staged Save As, move, and relink passes from one saved job plan |
 | Scale | Discipline park, mixed UNC / `RSN://` |
 | Operator UX | New single window (prototype): list, optional rename/move columns, Details, Run. Older menu: `run_cascade.cmd` |
 | Writes model? | **Yes** — Save As central, then link remap |

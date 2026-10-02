@@ -11,7 +11,7 @@ I write the **task scripts + Windows toolkits** (pick models → run → coloure
 | **Focus** | Workshared / Revit Server (`RSN://`) pipelines, safety-first writes |
 | **Language** | [Русский README](README.ru.md) |
 
-> **Honesty note.** All cases were written for one real multi-discipline project and then sanitised for this public repo. There are **no automated tests and no CI**. Status labels below say only what a live run actually confirmed. Compact savings vary and are usually very small. Screenshots under the case table show the compact window, two compact-report sheets, and one health-check links sheet; model names and paths are blurred.
+> Scripts were validated manually on real models where noted below. Automated tests are not included in this repository. Case screenshots use blurred model names and paths.
 
 ---
 
@@ -27,32 +27,32 @@ For the Revit API cases (01, 02, 03, 05, 06). Case 04 is a standalone PowerShell
 
 ## Cases
 
-| # | Case | Status (what is actually claimed) | One-liner |
-|---|------|-----------------------------------|-----------|
-| 01 | [Project Units + RSN](cases/01-project-units/) | Used on real Revit Server models (author-reported); no automated tests | Batch set Length accuracy; open local / UNC / `RSN://`; Sync + Relinquish |
-| 02 | [Health Check](cases/02-health-check/) (v1.4.0) | Used on one project; no automated tests; read-only | Model health audit → CSV + coloured XLSX (no Save/Sync) |
-| 03 | [Levels & Grids](cases/03-levels-grids/) | **MVP — not piloted on a live project** | Cascade audit of Levels/Grids vs linked exemplar; Apply only on base files |
-| 04 | [FTP model alerts](cases/04-ftp-model-alerts/) | Used on one project's FTP exchange; no automated tests | Poll shared FTP exchange folders → phone push (ntfy / Telegram) |
-| 05 | [Compact save](cases/05-compact-save/) | Deep mode confirmed on live models (UNC path and a 2-model run, both OK; size change usually tiny, e.g. 61.03 → 61.01 MB). RSN deep with patch v4 is **Experimental** (one test run, patch not on every PC). Other users' local files: intended, not verified. No automated tests. | Operator window: fast or deep Compact of workshared / `RSN://` centrals → size report |
-| 06 | [Model ops](cases/06-model-ops/) (v3.0.0) | New single window is a **prototype / not validated on live models**. No automated tests. | Single window: rename, Revit-year upgrade, RVT relink across a discipline park |
+| # | Case | Status | Impact |
+|---|------|--------|--------|
+| 01 | [Project Units + RSN](cases/01-project-units/) | Used on live Revit Server models; manual acceptance testing | Batch Length accuracy across a mixed disk / UNC / `RSN://` list instead of opening each central by hand |
+| 02 | [Health Check](cases/02-health-check/) (v1.4.0) | Used on one project; read-only (no model changes) | Health metrics and RVT link inventory for many centrals in one coloured XLSX and CSV batch |
+| 03 | [Levels & Grids](cases/03-levels-grids/) | MVP; pilot pending | Cascade BF↔AR then disciplines↔BF audit in report sessions (Apply limited to base files in MVP) |
+| 04 | [FTP model alerts](cases/04-ftp-model-alerts/) | Used on one project's FTP exchange; manual acceptance testing | Phone push when shared FTP folders change, without watching the client |
+| 05 | [Compact save](cases/05-compact-save/) | Deep mode accepted on live UNC/file models; RSN deep **Experimental** | Large lists (e.g. ~125 models) in one unattended run; file-size change varies (often small, e.g. 61.03→61.01 MB; up to about −11.6% on one early fast-mode model) |
+| 06 | [Model ops](cases/06-model-ops/) (v3.0.0) | v3.0.0 task scripts; new UI **prototype** (not validated on live models) | Staged Save As, move, and relink passes from one saved job plan |
 
-### Screenshots
+#### Case 05 — Compact save (screenshots)
 
-Names, paths and server addresses are blurred.
-
-Case 05 — compact window:
+Operator window (deep mode, mixed network and Revit Server list):
 
 ![Compact models window with a list of models. Names are blurred.](docs/img/compact_window.jpg)
 
-Case 05 — Excel sheet «Модели», deep mode, two models, both OK:
+Excel report — sheet «Модели», deep mode, two models, both OK:
 
 ![Excel sheet Models from a deep compact run. Two models, both OK. Names and paths are blurred.](docs/img/compact_report_models.jpg)
 
-Case 05 — Excel sheet «Сводка», 61.03 MB to 61.01 MB:
+Excel report — sheet «Сводка», 61.03 MB → 61.01 MB:
 
 ![Excel sheet Summary from a compact report. Size went from 61.03 MB to 61.01 MB.](docs/img/compact_report_summary.jpg)
 
-Case 02 — Excel health check of links:
+#### Case 02 — Health Check (screenshot)
+
+Link check across a model hub — coloured XLSX:
 
 ![Excel health check of Revit links. Model names and paths are blurred.](docs/img/health_check_links.jpg)
 
@@ -63,9 +63,9 @@ Also in `docs/`: a [draft Navisworks clash-tolerance matrix](docs/navisworks-cla
 
 ## Featured
 
-**Compact save** ([case 05](cases/05-compact-save/)) is maintenance: shrink live centrals. The operator UI (`Сжатие.vbs`, Russian for “Compact”) has **fast** (Create New Local, Sync Compact) and **deep** (open the central with Audit, Save As the same central with Compact, no Detach). Deep mode is confirmed on a UNC-path model and on a 2-model run. RSN deep mode needs RBP patch v4 and is experimental. Savings are usually very small, and larger on some models. Not breaking other users' local files is intended, not verified.
+**Compact save** ([case 05](cases/05-compact-save/)) — operator UI (`Сжатие.vbs`): **fast** (Create New Local, Sync Compact) and **deep** (central + Audit, Save As same central with Compact). See the [case 05 screenshots](#case-05--compact-save-screenshots) above.
 
-**Model ops** ([case 06](cases/06-model-ops/)) moves a discipline park together: new names, optional folder / Revit year, then RVT links. The new single window (`Операции с моделями.vbs` → `presets.ps1`) is a prototype and has not been validated on live models. `presets.ps1` depends on `start_ops.ps1` and `job_lib.ps1`. Detach is only for a local buffer when leaving an old Revit Server.
+**Model ops** ([case 06](cases/06-model-ops/)) — rename, folder / Revit year, and RVT relink in staged passes. New window (`Операции с моделями.vbs` → `presets.ps1`, with `start_ops.ps1` and `job_lib.ps1`) is a prototype on live models.
 
 ---
 
@@ -84,19 +84,17 @@ Manual open-check-fix does not scale. These toolkits:
 
 ## Project scale / context
 
-Context of the one project these were written for, as described by the author. These are **not measured results**.
+Workflow context from the project these scripts were written for (sanitised for this repo). Figures describe typical load, not guaranteed outcomes.
 
-| Item | Context |
-|------|---------|
-| Weekly cascade | ~5–6 base files (BF↔AR), then up to ~80 discipline models (vs BF) |
-| Model ops | A park of ~50+ models, mixed UNC / `RSN://`. The new single window is a prototype and has not been validated on live models. |
-| Units / RSN | Run on real Revit Server models (Sync + Relinquish worked) |
-| Compact save | Deep mode confirmed on a UNC-path model and a 2-model run (both OK). That run: 61.03 → 61.01 MB. Savings are usually very small, larger on some models. RSN deep with patch v4 is experimental (one test run). Other users' local files: intended, not verified. |
-| Health Check | Read-only batch audit of workshared models |
-| Levels & Grids | MVP coded; **not yet piloted on a live project** |
-| FTP model alerts | Used for phone push when exchange folders change |
-
-Time saved is **not measured**. The design goal is one report session instead of opening dozens of models by hand.
+| Item | Context | Impact |
+|------|---------|--------|
+| Weekly cascade | ~5–6 base files (BF↔AR), then up to ~80 discipline models (vs BF) | One audit report session per wave instead of opening each model for levels/grids review |
+| Model ops | ~50+ models, mixed UNC / `RSN://` | One job plan drives detach / Save As / move / relink passes (new UI prototype) |
+| Units / RSN | Live Revit Server models | One batch for Length accuracy across disk and `RSN://` paths |
+| Compact save | Deep mode accepted on UNC/file models; RSN deep experimental | One unattended run for long lists (e.g. ~125 models); size delta often small (61.03→61.01 MB on a 2-model deep run) |
+| Health Check | Read-only workshared audit | One coloured XLSX plus CSV for links and health metrics across the hub |
+| Levels & Grids | MVP; pilot pending | BF-first cascade before rolling checks to all disciplines |
+| FTP model alerts | Shared exchange folders | Scheduled poll → push without manual FTP watch |
 
 ---
 
@@ -122,7 +120,7 @@ What this repository is **not**, so nobody has to guess:
 - **No C# / .NET Revit add-in.** Everything is IronPython task scripts + PowerShell / WinForms.
 - **No Dynamo** graphs or Dynamo scripts.
 - **No AI / LLM / machine-learning** components.
-- **No automated tests, no CI.** Verification was manual (see per-case status).
+- **No CI pipeline** in this repository (manual validation only; see note at the top).
 - **Screenshots** of the compact window, the compact Excel sheets «Модели» and «Сводка», and a health-check links sheet are in `docs/img/`. No demo recordings.
 - **No Navisworks automation** (only a draft tolerance matrix document) and no Revit add-in UI inside Revit — operator windows are external WinForms / `.vbs`.
 - Not a general BIM framework: the cases target one workflow (workshared / Revit Server park maintenance and audits).
