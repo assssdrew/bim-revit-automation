@@ -14,12 +14,12 @@ Operator toolkit + RBP task script:
 - Automatic (or manual) **RSN patch v2** for installed RBP Scripts (Cyrillic-safe IronPython)
 - `set_length_accuracy.py` sets Length accuracy (mm), then **SynchronizeWithCentral + Relinquish** for workshared / RSN; SaveAs for plain files
 
-## Impact
+## Project scale / context
 
 | Item | Result |
 |------|--------|
-| Status | Production-ready |
-| Proof | Real RSN run: open local of central → set accuracy → Sync OK |
+| Status | Used on real Revit Server models (author-reported); no automated tests |
+| Reported check | Real RSN run: open local of central → set accuracy → Sync OK (manual, not automated) |
 | Operator UX | One list can mix disk and `RSN://` paths |
 
 ## Safety
@@ -27,6 +27,10 @@ Operator toolkit + RBP task script:
 - Live centrals: **Create New Local**, Detach **OFF**
 - Changes only Length accuracy (optionally force mm) — not coordinates
 - Smoke test script before batch
+
+## Third-party
+
+Needs [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor) (GPL-3.0, not included). `src/rbp_rsn_patch/` is original PowerShell that edits your *installed* RBP `Scripts` (backups `*.bak_before_rsn`). The patch README and some comments are in Russian. See [NOTICE](../../NOTICE).
 
 ## How to run
 

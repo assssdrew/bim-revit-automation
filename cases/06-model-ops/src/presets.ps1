@@ -348,7 +348,7 @@ $btnRmOp.Width = 200
 $lblNameHelp = New-Object System.Windows.Forms.Label
 $lblNameHelp.Location = New-Object System.Drawing.Point (8, 384)
 $lblNameHelp.Size = New-Object System.Drawing.Size (1100, 70)
-$lblNameHelp.Text = "Example: sample  ..._01_K01_R24  ->  ..._K01_R24  builds DELETE 01.`r`nThen add REPLACE STLB -> K03-K05-K07-K10-STLB and DELETE 02. Replace runs only if the token exists."
+$lblNameHelp.Text = "Example: sample  ..._01_K01_R24  ->  ..._K01_R24  builds DELETE 01.`r`nThen add REPLACE ANNEX -> B03-B05-B07-B10-ANNEX and DELETE 02. Replace runs only if the token exists."
 $tabNames.Controls.AddRange(@(
         $lblOldS, $txtOldSample, $lblNewS, $txtNewSample, $btnParse,
         $lblOps, $lstOps, $lblTok, $txtOpToken, $txtOpFrom, $lblTo, $txtOpTo, $txtOpAfter,

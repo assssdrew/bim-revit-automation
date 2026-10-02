@@ -16,15 +16,15 @@ Cascade toolkit for RBP:
 
 Compares via Revit API (not auto-Accept Coordination Review UI).
 
-## Impact
+## Project scale / context
 
 | Item | Result |
 |------|--------|
-| Status | **MVP ready** (not yet piloted live) |
+| Status | **MVP — not piloted on a live project**; no automated tests |
 | Weekly design load | ~5–6 BF, then up to ~80 disciplines |
 | Default tolerances | Level 2 mm · Grid 5 mm · Angle 0.1° |
 
-## Safety (interview highlight)
+## Safety
 
 | In scope | Out of scope |
 |----------|--------------|

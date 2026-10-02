@@ -4,7 +4,7 @@
 # Skips Backup / _backup / Revit_temp / Reserve / Families / .0001.rvt
 #
 # Usage:
-#   powershell -ExecutionPolicy Bypass -File make_rvt_list.ps1 -Root "\\share\...\4_Razrabotka" -Out ".\rvt_list.txt"
+#   powershell -ExecutionPolicy Bypass -File make_rvt_list.ps1 -Root "\\share\...\Models" -Out ".\rvt_list.txt"
 #   powershell -ExecutionPolicy Bypass -File make_rvt_list.ps1 -Roots @("...\5_1_EOM","...\5_2_VK") -Out ".\rvt_list.txt"
 
 param(

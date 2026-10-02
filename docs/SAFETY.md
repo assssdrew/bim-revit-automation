@@ -1,6 +1,6 @@
 # Safety rules
 
-These toolkits are built for **production BIM servers**. The public code keeps the same safety boundaries.
+These toolkits were written for a real Revit Server / workshared environment. The public code keeps the same safety boundaries.
 
 ## Hard rules
 
@@ -12,8 +12,4 @@ These toolkits are built for **production BIM servers**. The public code keeps t
 5. **Tolerances required.** Without mm/degree tolerances, floating noise becomes false RED.
 6. **Do not auto-delete** levels/grids in MVP Apply. Missing items → report; extras → report.
 7. **XLSX without Excel COM** on UNC (OpenXML + local output folder).
-8. **RSN patch** (units toolkit) is optional infrastructure: stock RBP rejects `RSN://` on `File.Exists`. Patch only your installed RBP Scripts after understanding the change.
-
-## Why this matters in interviews
-
-It shows process automation with **risk control**, not “script that changes everything”.
+8. **RSN patch** (units toolkit) is optional infrastructure: stock [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor) (GPL-3.0) rejects `RSN://` on `File.Exists`. Patch only your installed RBP Scripts after understanding the change.

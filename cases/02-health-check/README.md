@@ -15,11 +15,11 @@ Read-only RBP audit (**v1.4.0**):
 - CSV append per model + **one coloured XLSX** at end of batch (OpenXML, no Excel COM)
 - Sheets: Summary + RVT Links
 
-## Impact
+## Project scale / context
 
 | Item | Result |
 |------|--------|
-| Status | Production-ready |
+| Status | Used on one project; no automated tests |
 | Writes model? | **No** |
 | Scale | Same picker as units — local / UNC / RSN lists |
 

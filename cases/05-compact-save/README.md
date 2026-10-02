@@ -17,13 +17,13 @@ An operator window (`Сжатие.cmd` → WinForms). The person picks models (f
 
 Excel report: size before / after, run summary, history vs previous runs.
 
-## Impact
+## Project scale / context
 
 | Item | Result |
 |------|--------|
-| Status | Production-ready |
+| Status | Used in production on one project; no automated tests |
 | Operator UX | One window; mixed local / UNC / `RSN://` list; years run in sequence |
-| Proof | Used on live workshared / Revit Server models |
+| Reported use | Live workshared / Revit Server models (author-reported) |
 | Writes model? | **Yes** — Compact on the central (workshared) or Save Compact (plain `.rvt`) |
 
 ## Safety
@@ -31,7 +31,7 @@ Excel report: size before / after, run summary, history vs previous runs.
 - Compact is a **write**. Deep mode is a maintenance window: backup, warn the team, nobody Syncs during the run.
 - Fast mode: Create New Local, Detach **OFF**.
 - Deep mode: open central + Audit; never Detach a live central. Confirm “everyone is out” in the UI.
-- Skip backup copies under `RVT\Резерв\…` — their central path can be wrong.
+- Skip backup / dated copies (e.g. `RVT\Backup\…`) — their central path can be wrong. The code skips paths containing `Backup`, a dated folder, or a Russian “Резерв” folder name.
 - This is not Purge Unused and not a zip of the `.rvt`.
 
 Details: [docs/SAFETY.md](../../docs/SAFETY.md)
@@ -40,7 +40,7 @@ Details: [docs/SAFETY.md](../../docs/SAFETY.md)
 
 1. Copy `src/` to a PC that has Revit + RBP
 2. Edit `servers.cfg` with your Revit Server hosts (placeholders in this repo)
-3. Double-click `Сжатие.cmd`
+3. Double-click `Сжатие.cmd` (Russian for “Compact”)
 4. Add models → choose Fast or Deep → Compact
 5. First Revit launch: if BatchRvt is blocked, use `служебное\разрешить_надстройку_BatchRvt.cmd`
 

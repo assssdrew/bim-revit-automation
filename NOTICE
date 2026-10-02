@@ -1,0 +1,35 @@
+Third-party notices
+===================
+
+This repository is MIT-licensed (see LICENSE) EXCEPT for the files listed
+under "GPL-3.0 files" below.
+
+Revit Batch Processor (RBP)
+---------------------------
+Project : https://github.com/bvn-architecture/RevitBatchProcessor
+Authors : Dan Rumery, BVN (Copyright (c) 2020 Dan Rumery, BVN, per the
+          headers of the original files)
+License : GNU General Public License v3.0 (see LICENSE.txt in the RBP repo)
+
+RBP is NOT included in this repository. Install it separately. Cases 01, 02,
+03, 05 and 06 use it as the batch host for their IronPython task scripts.
+
+GPL-3.0 files
+-------------
+cases/06-model-ops/src/rbp_open_fail_patch/revit_dialog_util.py
+cases/06-model-ops/src/rbp_open_fail_patch/revit_failure_handling.py
+
+These two files are modified copies of the RBP scripts of the same name
+(marker "OPEN_FAIL_PATCH_v2" shows the local modifications). They are
+derivative works of RBP and remain under GPL-3.0, with the original copyright
+notice of Dan Rumery, BVN. The full licence text is in
+cases/06-model-ops/src/rbp_open_fail_patch/LICENSE-GPL-3.0.txt.
+They are installed over the user's own RBP Scripts folder by
+cases/06-model-ops/src/patch_rbp_open_failures.ps1 (with backups).
+
+Not third-party code
+--------------------
+cases/01-project-units/src/rbp_rsn_patch/apply_rsn_support.ps1 (and its copy
+under cases/05-compact-save/src/) is original PowerShell that modifies an
+already-installed RBP Scripts folder (backups: *.bak_before_rsn). It does not
+contain RBP source code.
