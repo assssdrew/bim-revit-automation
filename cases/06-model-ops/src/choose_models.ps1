@@ -1,9 +1,10 @@
-﻿# Unified model picker for Revit Batch Processor (same UX as other batch_* toolkits).
-# Sources: local folder / local files / Revit Server (RSN://).
-# Writes rvt_list.txt (default) — for Pass 1 use OLD ...IOS... paths.
-# Any .rvt in RVT\ (no *_R## required). Skip backups.
-# Encoding: ASCII-friendly messages for Windows PowerShell 5.1.
-
+﻿# Name: choose_models.ps1
+# Version: 1.0
+# What it does: Model picker writing rvt_list.txt (default) for Pass 1 old paths.
+# Inputs: servers.cfg; -OutFile optional.
+# Outputs: rvt_list.txt.
+# How to run: choose_models_path.cmd.
+# Notes: Any .rvt under RVT\ folders; skips backups.
 param(
     [string]$OutFile = "rvt_list.txt"
 )

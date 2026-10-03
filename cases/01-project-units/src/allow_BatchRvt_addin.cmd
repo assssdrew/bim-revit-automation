@@ -1,3 +1,10 @@
+REM Name: allow_BatchRvt_addin.cmd
+REM Version: 1.0
+REM What it does: Trust the BatchRvt Revit add-in via CodeSigning registry (suppress unsigned add-in prompt).
+REM Inputs: Revit year (prompt); BatchRvt .addin under %APPDATA%\Autodesk\Revit\Addins.
+REM Outputs: HKCU CodeSigning DWORD for the add-in GUID.
+REM How to run: Run once per Windows user on the RBP/Revit PC; follow on-screen year prompt.
+REM Notes: Restart Revit after success.
 @echo off
 chcp 65001 >nul
 setlocal EnableExtensions

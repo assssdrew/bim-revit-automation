@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-RBP — SaveAs новой централи по job_paths.csv (новое имя и/или новая папка).
-
-Список = rvt_list.txt (старые) ИЛИ rvt_list_staging.txt (буфер после Detach).
-RBP: Create New Local, Detach OFF.
-"""
+# Name: saveas_central.py
+# Version: 3.0.0
+# What it does: RBP Save As new central per job_paths.csv (rename and/or new folder).
+# Inputs: rvt_list.txt or rvt_list_staging.txt, job_paths.csv.
+# Outputs: New central paths; CSV log rows.
+# How to run: start_ops.ps1 pass from presets UI.
+# Notes: Create New Local, Detach off.
 
 from __future__ import print_function
 

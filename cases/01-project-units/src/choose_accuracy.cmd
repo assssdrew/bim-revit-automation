@@ -1,4 +1,11 @@
-﻿@echo off
+﻿REM Name: choose_accuracy.cmd
+REM Version: 1.0
+REM What it does: Prompt for Length rounding accuracy (mm) and write accuracy.cfg.
+REM Inputs: Interactive numeric value from the operator.
+REM Outputs: accuracy.cfg in the toolkit folder.
+REM How to run: Double-click; enter value at the prompt.
+REM Notes: UNC-safe pushd; cancel leaves cfg unchanged if input empty.
+@echo off
 setlocal EnableExtensions
 REM IMPORTANT: UNC cannot be current directory for cmd.exe, use pushd.
 pushd "%~dp0" 2>nul

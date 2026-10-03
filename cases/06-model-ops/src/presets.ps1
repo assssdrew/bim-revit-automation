@@ -1,6 +1,10 @@
-﻿# UTF-8 WITH BOM required (PowerShell 5.1)
-# Вариант Б: одно окно операций с моделями. Двойной клик по VBS - без консоли.
-
+﻿# Name: presets.ps1
+# Version: 1.0
+# What it does: Single WinForms window to plan rename/move/year/relink passes and export job files.
+# Inputs: Operator inputs; rvt_list paths.
+# Outputs: job_paths.csv, mapping.csv, rbp_checklist.txt.
+# How to run: Операции с моделями.vbs or presets.cmd.
+# Notes: UTF-8 BOM; re-execs self in STA if needed.
 if ([Threading.Thread]::CurrentThread.GetApartmentState() -ne "STA") {
     $arg = "-NoProfile -ExecutionPolicy Bypass -STA -File `"$PSCommandPath`""
     Start-Process -FilePath "powershell.exe" -ArgumentList $arg -Wait -NoNewWindow

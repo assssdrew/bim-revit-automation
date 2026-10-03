@@ -1,19 +1,11 @@
 ﻿# -*- coding: utf-8 -*-
-"""
-Revit Batch Processor — Levels & Grids Apply (только БФ).
-
-Безопасные правки host относительно эталонной связи:
-  - elevation уровня при match по имени (cfg apply_elevation=1)
-  - сдвиг/поворот оси по имени (cfg apply_grid_curve=1)
-  - rename — только если apply_rename=1 (по умолчанию выкл)
-
-Модели: как в HC/units — choose_models → rvt_list (кладите только БФ).
-Эталон: exemplar_link.cfg / tolerances.cfg (project_map опционален).
-
-НЕ делает: удаление лишних, создание missing, координаты/PBP/Survey/True North.
-
-После правок: Sync+Relinquish (workshared/RSN) или SaveAs.
-"""
+# Name: levels_grids_apply.py
+# Version: 1.0.2
+# What it does: RBP apply safe level/grid edits on base files vs exemplar link (cfg-gated renames/curves).
+# Inputs: rvt_list.txt, exemplar link, lg cfg flags, xlsx_out_path.cfg.
+# Outputs: Modified hosts (transactional); CSV/Excel session output.
+# How to run: RBP Apply script on selected base files only (see case README).
+# Notes: Rename/elevation/grid moves controlled by cfg; Sync after changes.
 
 import clr
 import math

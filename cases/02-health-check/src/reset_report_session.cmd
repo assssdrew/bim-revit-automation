@@ -1,4 +1,11 @@
-﻿@echo off
+﻿REM Name: reset_report_session.cmd
+REM Version: 1.0
+REM What it does: Start a new health-check report session: clear active markers and set Excel folder.
+REM Inputs: Operator picks local Excel folder via choose_xlsx_path.ps1.
+REM Outputs: Fresh reports\cvc session; xlsx_out_path.cfg updated.
+REM How to run: Run before each batch audit.
+REM Notes: Clears _active_report.txt and _active_links.txt.
+@echo off
 chcp 65001 >nul
 pushd "%~dp0" 2>nul
 

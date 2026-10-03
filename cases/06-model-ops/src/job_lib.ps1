@@ -1,6 +1,10 @@
-﻿# Job helpers for batch_model_ops (Windows PowerShell 5.1).
-# Naming ops, path rewrite, mapping/list export. ASCII source.
-
+﻿# Name: job_lib.ps1
+# Version: 1.0
+# What it does: PowerShell job helpers: naming, path rewrite, mapping/list export for model ops.
+# Inputs: job JSON/CSV from presets.
+# Outputs: job_paths.csv, mapping.csv, lists.
+# How to run: Dot-sourced from presets.ps1/start_ops.ps1.
+# Notes: StrictMode enabled.
 Set-StrictMode -Version Latest
 
 function Get-ToolDir {

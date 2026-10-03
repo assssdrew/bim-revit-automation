@@ -1,16 +1,11 @@
 ﻿# -*- coding: utf-8 -*-
-"""
-Revit Batch Processor — смена округления Длины.
-
-Поддерживает в одном списке:
-  - файлы на диске / UNC (C:\\..., \\\\server\\share\\...)
-  - модели Revit Server (RSN://...)
-
-Важно для worksharing / RSN:
-  - в RBP: Create New Local, Detach = OFF
-  - правка → SynchronizeWithCentral + Relinquish
-  - для обычных не-workshared файлов → SaveAs in place
-"""
+# Name: set_length_accuracy.py
+# Version: 1.0
+# What it does: RBP task: set project Length display accuracy (mm) on disk, UNC, and RSN:// models.
+# Inputs: rvt_list.txt, accuracy.cfg; workshared via Create New Local, Detach off.
+# Outputs: Updated models (Sync+Relinquish or SaveAs); RBP log output.
+# How to run: Run as Revit Batch Processor script on rvt_list.txt after choose_accuracy.cmd.
+# Notes: SynchronizeWithCentral for workshared; non-workshared uses SaveAs in place.
 
 import clr
 import System

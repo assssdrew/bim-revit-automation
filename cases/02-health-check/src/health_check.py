@@ -1,16 +1,11 @@
 ﻿# -*- coding: utf-8 -*-
-"""
-Revit Batch Processor — Health Check (только отчёт, без правок модели).
-
-CSV на шаре — сырой бэкап метрик (без списка связей).
-XLSX (основной отчёт) — один раз после последней модели из rvt_list.txt:
-  лист «Сводка» + лист «Связи» (только RVT).
-
-Важно:
-  - Save / Sync / Relinquish НЕ вызываются
-  - в RBP для общих моделей: Create New Local, Detach выкл
-  - после прогона лучше закрыть локалы без сохранения
-"""
+# Name: health_check.py
+# Version: 1.4.0
+# What it does: Read-only RBP audit: health metrics (waves A/B/C) and RVT link inventory per model.
+# Inputs: rvt_list.txt, thresholds.cfg, xlsx_out_path.cfg; RBP Create New Local, Detach off.
+# Outputs: Per-model CSV append; one Excel report (Summary + RVT Links) after the last model.
+# How to run: RBP task on rvt_list.txt; optional color_latest_report.cmd to rebuild Excel.
+# Notes: Never Save, Sync, or Relinquish; prefer closing locals without saving.
 
 import clr
 import codecs

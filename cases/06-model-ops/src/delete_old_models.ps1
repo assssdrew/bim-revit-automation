@@ -1,5 +1,10 @@
-# After green Pass 2: delete OLD UNC models + local buffer. RSN -> to_delete_rsn.txt
-
+# Name: delete_old_models.ps1
+# Version: 1.0
+# What it does: After successful Pass 2: delete old UNC models and list RSN paths for manual removal.
+# Inputs: job_paths.csv, optional -ForceDeleteOldWithoutNewCheck.
+# Outputs: Deleted UNC files; to_delete_rsn.txt.
+# How to run: delete_old_models.cmd after green Pass 2.
+# Notes: Confirms destructive deletes.
 param(
     [switch]$ForceDeleteOldWithoutNewCheck
 )

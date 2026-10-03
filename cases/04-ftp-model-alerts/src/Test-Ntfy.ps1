@@ -1,7 +1,10 @@
-# Quick check: can this PC reach ntfy.sh?
-# Run:
-#   powershell -NoProfile -ExecutionPolicy Bypass -File .\Test-Ntfy.ps1
-
+# Name: Test-Ntfy.ps1
+# Version: 1.0
+# What it does: Send a test message via ntfy.sh to verify outbound HTTPS.
+# Inputs: config.json ntfy settings.
+# Outputs: Test notification.
+# How to run: powershell -File Test-Ntfy.ps1
+# Notes: Quick connectivity check.
 $ErrorActionPreference = "Stop"
 
 try {

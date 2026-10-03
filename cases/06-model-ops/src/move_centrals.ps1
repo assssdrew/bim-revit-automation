@@ -1,6 +1,10 @@
-﻿# Windows Move UNC centrals using job_paths.csv (same storage, no version upgrade).
-# RSN paths are skipped. Confirms before moving unless -Yes.
-
+﻿# Name: move_centrals.ps1
+# Version: 1.0
+# What it does: Move UNC central files per job_paths.csv (same storage, no year upgrade).
+# Inputs: job_paths.csv.
+# Outputs: Moved files on disk.
+# How to run: move_centrals.cmd; confirm unless -Yes.
+# Notes: Skips RSN:// paths.
 param(
     [switch]$Yes
 )

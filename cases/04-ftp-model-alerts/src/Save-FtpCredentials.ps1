@@ -1,8 +1,10 @@
-<#
-.SYNOPSIS
-  Один раз сохраняет логин/пароль FTP в зашифрованном credentials.xml (под текущим Windows-пользователем).
-#>
-
+# Name: Save-FtpCredentials.ps1
+# Version: 1.0
+# What it does: Store FTP password in encrypted credentials.xml for the current Windows user.
+# Inputs: Get-Credential prompt.
+# Outputs: credentials.xml in src\.
+# How to run: powershell -File Save-FtpCredentials.ps1
+# Notes: Clixml; readable only under the same Windows account.
 param(
     [string]$Username = "ftpuser"
 )

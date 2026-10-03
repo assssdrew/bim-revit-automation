@@ -1,16 +1,11 @@
 ﻿# -*- coding: utf-8 -*-
-"""
-Revit Batch Processor — Levels & Grids Audit (только отчёт).
-
-Сравнивает уровни и оси host-модели с эталонной RVT-связью.
-CSV на шаре + отчёт в Excel один раз в конце батча.
-
-Важно:
-  - Save / Sync / Relinquish НЕ вызываются
-  - в RBP: Create New Local, Detach = OFF
-  - эталон: choose_exemplar_link → exemplar_model.cfg (путь модели АР/БФ);
-    в host ищется соответствующая RVT-связь
-"""
+# Name: levels_grids_audit.py
+# Version: 1.0.2
+# What it does: Read-only RBP compare of host levels/grids against an exemplar RVT link.
+# Inputs: rvt_list.txt, exemplar link cfg, tolerances.cfg, xlsx_out_path.cfg.
+# Outputs: CSV per model; one Excel report (Summary + Details) at end of batch.
+# How to run: RBP task after choose_exemplar_link and reset_report_session.
+# Notes: Report-only; no model edits.
 
 import clr
 import os

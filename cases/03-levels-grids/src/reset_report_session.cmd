@@ -1,4 +1,11 @@
-﻿@echo off
+﻿REM Name: reset_report_session.cmd
+REM Version: 1.0
+REM What it does: New levels/grids report session and Excel folder.
+REM Inputs: choose_xlsx_path.ps1 interaction.
+REM Outputs: Cleared _active_* markers under reports\cvc.
+REM How to run: Before each audit batch.
+REM Notes: Also sets xlsx path.
+@echo off
 chcp 65001 >nul
 pushd "%~dp0" 2>nul
 

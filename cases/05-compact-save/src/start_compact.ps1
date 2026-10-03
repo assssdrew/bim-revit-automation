@@ -1,6 +1,10 @@
-﻿# Launch Revit Batch Processor: compact save, Create New Local, no extra checkboxes.
-# ASCII-friendly messages for Windows PowerShell 5.1.
-
+﻿# Name: start_compact.ps1
+# Version: 1.0
+# What it does: Launch Revit Batch Processor for compact_save.py with preset checkboxes.
+# Inputs: rvt_list.txt, compact mode flags.
+# Outputs: Starts RBP process.
+# How to run: Called from ui_compact.ps1.
+# Notes: Locks Revit year when entire list shares one _R## suffix.
 $ErrorActionPreference = "Stop"
 $ToolDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 

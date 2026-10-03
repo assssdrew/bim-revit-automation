@@ -1,3 +1,10 @@
+' Name: Операции с моделями.vbs
+' Version: 1.0
+' What it does: Primary hidden STA launcher for the model-ops presets window.
+' Inputs: presets.ps1 beside script.
+' Outputs: PowerShell presets UI.
+' How to run: Double-click in src\.
+' Notes: ShellExecute with hidden PowerShell.
 Set fso = CreateObject("Scripting.FileSystemObject")
 Set app = CreateObject("Shell.Application")
 tool = fso.GetParentFolderName(Wscript.ScriptFullName)

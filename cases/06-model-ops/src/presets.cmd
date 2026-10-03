@@ -1,3 +1,10 @@
+REM Name: presets.cmd
+REM Version: 1.0
+REM What it does: Console launcher for presets.ps1 (STA).
+REM Inputs: None.
+REM Outputs: Model ops UI.
+REM How to run: run_cascade menu option 1 or direct.
+REM Notes: UNC-safe pushd.
 @echo off
 chcp 65001 >nul
 pushd "%~dp0" 2>nul
