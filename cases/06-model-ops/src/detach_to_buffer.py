@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-RBP — выгрузка с RSN на буфер ПК: Detach уже включён в RBP.
-
-Список = rvt_list.txt (старые RSN).
-RBP: Detach from Central = ON. Create New Local = OFF.
-SaveAs в staging_path из job_paths.csv (обычный файл, не боевая централь).
-"""
+# Name: detach_to_buffer.py
+# Version: 3.0.0
+# What it does: RBP detach RSN centrals to local staging files per job_paths.csv.
+# Inputs: rvt_list.txt (old RSN paths), job_paths.csv staging_path.
+# Outputs: Detached files on buffer disk.
+# How to run: RBP with Detach on, Create New Local off.
+# Notes: Pre-pass before Save As when moving off RSN.
 
 from __future__ import print_function
 

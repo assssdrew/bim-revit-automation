@@ -1,7 +1,10 @@
-# Register watcher as Scheduled Task (every 5 minutes).
-# Run:
-#   powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-ScheduledTask.ps1
-
+# Name: Register-ScheduledTask.ps1
+# Version: 1.0
+# What it does: Register Watch-FtpModels.ps1 as a Windows scheduled task (every 5 minutes).
+# Inputs: Watch-FtpModels.ps1 path.
+# Outputs: Scheduled task in Task Scheduler.
+# How to run: powershell -File Register-ScheduledTask.ps1
+# Notes: Run once on the watcher PC.
 $ErrorActionPreference = "Stop"
 
 $scriptPath = Join-Path $PSScriptRoot "Watch-FtpModels.ps1"

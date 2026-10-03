@@ -1,8 +1,10 @@
-﻿# Unified model picker for Revit Batch Processor.
-# Sources: local folder / local files / Revit Server (RSN://).
-# Writes rvt_list.txt - can replace or append.
-# Encoding: ASCII-friendly messages for Windows PowerShell 5.1.
-
+﻿# Name: choose_models.ps1
+# Version: 1.0
+# What it does: WinForms picker: build rvt_list.txt from a folder, picked files, or Revit Server (RSN://).
+# Inputs: servers.cfg, optional models_path.cfg; user selection in the UI.
+# Outputs: rvt_list.txt, last_selection.cfg.
+# How to run: Double-click choose_models_path.cmd or: powershell -File choose_models.ps1.
+# Notes: ASCII-friendly messages for Windows PowerShell 5.1.
 Add-Type -AssemblyName System.Windows.Forms
 
 $ToolDir = Split-Path -Parent $MyInvocation.MyCommand.Path

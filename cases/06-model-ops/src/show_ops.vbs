@@ -1,3 +1,10 @@
+' Name: show_ops.vbs
+' Version: 1.0
+' What it does: Launch presets.ps1 with ShellExecute (visible window).
+' Inputs: presets.ps1 path.
+' Outputs: Opens model ops UI.
+' How to run: Double-click show_ops.vbs.
+' Notes: Alternative to Операции с моделями.vbs.
 Set fso = CreateObject("Scripting.FileSystemObject")
 Set app = CreateObject("Shell.Application")
 tool = fso.GetParentFolderName(Wscript.ScriptFullName)

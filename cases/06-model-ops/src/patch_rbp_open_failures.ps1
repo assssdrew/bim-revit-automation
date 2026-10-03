@@ -1,5 +1,10 @@
-# Same installer as tools/rbp_patches/apply_open_fail.ps1
-# Kept here so a standalone copy of this toolkit still patches RBP.
+# Name: patch_rbp_open_failures.ps1
+# Version: 1.0
+# What it does: Install OPEN_FAIL_PATCH into local RBP so Cyrillic warnings do not cancel Open.
+# Inputs: Optional -ScriptsPath.
+# Outputs: Patched revit_failure_handling in RBP.
+# How to run: patch_rbp_open_failures.cmd.
+# Notes: Close RBP before patching.
 param(
     [string]$ScriptsPath = ""
 )

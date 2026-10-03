@@ -1,4 +1,11 @@
-﻿@echo off
+﻿REM Name: smoke_test.cmd
+REM Version: 1.0
+REM What it does: Verify case 01 toolkit files and default accuracy.cfg without opening Revit.
+REM Inputs: Toolkit folder layout under src\.
+REM Outputs: Console PASS/FAIL and optional default accuracy.cfg creation.
+REM How to run: Double-click before first RBP run on a new copy.
+REM Notes: Does not exercise Revit API or RBP.
+@echo off
 setlocal EnableExtensions
 pushd "%~dp0" 2>nul
 if errorlevel 1 (

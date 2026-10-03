@@ -1,12 +1,10 @@
-﻿# Unified model picker for Revit Batch Processor.
-# Sources: local folder / local files / Revit Server (RSN://).
-# Writes rvt_list.txt - can replace or append.
-# Encoding: ASCII-friendly messages for Windows PowerShell 5.1.
-#
-# Modes:
-#   (default)  select host models -> rvt_list.txt
-#   -Purpose Exemplar  select ONE reference model -> exemplar_model.cfg
-
+﻿# Name: choose_models.ps1
+# Version: 1.0
+# What it does: Model picker with default host list or -Purpose Exemplar for one reference model.
+# Inputs: servers.cfg; UI selection.
+# Outputs: rvt_list.txt or exemplar_model.cfg.
+# How to run: choose_models_path.cmd or -Purpose Exemplar via choose_exemplar_link.
+# Notes: Same RSN/folder/files sources as other cases.
 param(
     [ValidateSet("Models", "Exemplar")]
     [string]$Purpose = "Models"

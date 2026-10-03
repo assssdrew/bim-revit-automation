@@ -1,8 +1,11 @@
 ﻿# -*- coding: utf-8 -*-
-"""
-Общие хелперы Levels & Grids (IronPython / RBP).
-Импортируется audit/apply после добавления SCRIPT_DIR в sys.path.
-"""
+# Name: lg_lib.py
+# Version: 1.0
+# What it does: Shared IronPython helpers for levels/grids audit and apply scripts.
+# Inputs: Imported by audit/apply after SCRIPT_DIR on sys.path.
+# Outputs: Utility functions only (no standalone run).
+# How to run: Not run directly; used from levels_grids_*.py in RBP.
+# Notes: IronPython 2.7 / RBP compatible.
 
 import codecs
 import math

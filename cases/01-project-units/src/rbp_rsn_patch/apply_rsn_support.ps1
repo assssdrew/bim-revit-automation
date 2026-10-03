@@ -1,7 +1,10 @@
-﻿# Adds RSN:// support to the installed Revit Batch Processor scripts.
-# No Python required. Safe to run repeatedly.
-# v2: avoid IronPython str()/ascii on Cyrillic RSN paths.
-
+﻿# Name: apply_rsn_support.ps1
+# Version: 2.0
+# What it does: Copy RSN-aware helpers into the installed Revit Batch Processor Scripts tree.
+# Inputs: Optional -ScriptsPath; auto-detects default RBP location when empty.
+# Outputs: Modified revit_script_util and related files under RBP Scripts.
+# How to run: powershell -ExecutionPolicy Bypass -File apply_rsn_support.ps1
+# Notes: Safe to re-run; v2 avoids IronPython ascii issues on Cyrillic RSN paths.
 [CmdletBinding()]
 param(
     [string]$ScriptsPath = "",

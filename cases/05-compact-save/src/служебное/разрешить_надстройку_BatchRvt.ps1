@@ -1,6 +1,10 @@
-﻿# Trust unsigned BatchRvt add-in for this Windows user (HKCU CodeSigning).
-# Default: every Revit year that already has a BatchRvt .addin after RBP install.
-# Optional: -Year 2023
+﻿# Name: разрешить_надстройку_BatchRvt.ps1
+# Version: 1.0
+# What it does: Add CodeSigning trust DWORDs for BatchRvt across Revit add-in folders.
+# Inputs: Optional -Year; when empty, every year with a BatchRvt .addin.
+# Outputs: HKCU CodeSigning registry values per add-in GUID.
+# How to run: разрешить_надстройку_BatchRvt.cmd or powershell -File разрешить_надстройку_BatchRvt.ps1
+# Notes: Trusts unsigned BatchRvt for the current Windows user.
 
 param(
     [string]$Year = ""

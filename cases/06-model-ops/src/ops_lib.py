@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Shared helpers for batch_model_ops (IronPython 2.7)."""
+# Name: ops_lib.py
+# Version: 1.0
+# What it does: Shared IronPython helpers for batch_model_ops RBP scripts.
+# Inputs: Imported by saveas/detach/update scripts.
+# Outputs: Library functions.
+# How to run: Not run standalone.
+# Notes: IronPython 2.7.
 
 from __future__ import print_function
 

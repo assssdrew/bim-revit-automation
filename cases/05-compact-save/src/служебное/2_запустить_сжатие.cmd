@@ -1,3 +1,10 @@
+REM Name: 2_запустить_сжатие.cmd
+REM Version: 1.0
+REM What it does: Legacy launcher: open compact UI to run compact (step 2).
+REM Inputs: None.
+REM Outputs: ui_compact.ps1.
+REM How to run: Double-click.
+REM Notes: Operator flow documented in case README.
 @echo off
 chcp 65001 >nul
 setlocal EnableExtensions

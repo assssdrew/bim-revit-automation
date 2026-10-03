@@ -1,6 +1,10 @@
-﻿# Main window for compact save. UTF-8 WITH BOM required (PowerShell 5.1).
-# Double-click Сжатие.vbs — no console menu.
-
+﻿# Name: ui_compact.ps1
+# Version: 1.0
+# What it does: WinForms operator UI for fast/deep compact save and model list management.
+# Inputs: rvt_list.txt, servers.cfg, list_paths.ps1 helpers.
+# Outputs: Updated rvt_list; starts RBP via start_compact.ps1.
+# How to run: Сжатие.vbs or служебное launchers.
+# Notes: UTF-8 with BOM required for PowerShell 5.1.
 $ErrorActionPreference = "Continue"
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing

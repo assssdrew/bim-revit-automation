@@ -1,3 +1,10 @@
+REM Name: 1_выбрать_модели.cmd
+REM Version: 1.0
+REM What it does: Legacy launcher: open compact UI to select models (step 1).
+REM Inputs: None.
+REM Outputs: ui_compact.ps1.
+REM How to run: Double-click.
+REM Notes: Same hidden PowerShell launch as other служебное wrappers.
 @echo off
 chcp 65001 >nul
 setlocal EnableExtensions

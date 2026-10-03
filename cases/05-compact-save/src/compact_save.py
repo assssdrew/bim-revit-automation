@@ -1,18 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-Revit Batch Processor — пересохранение со сжатием (Compact).
-
-Галочка «Сжать файл» из «Параметры сохранения файла»:
-  - обычный .rvt           → Save / SaveAs, Compact = True
-  - workshared / RSN://    → SynchronizeWithCentral, Compact = True
-    (сжимается хранилище, не только локаль)
-
-Преднастроек нет: Compact всегда включён.
-
-Важно для worksharing / RSN:
-  - в RBP: Create New Local, Detach = OFF
-  - после сжатия: Relinquish
-"""
+# Name: compact_save.py
+# Version: 1.0
+# What it does: RBP compact save: Sync/SaveAs with Compact for disk, UNC, and RSN:// workshared models.
+# Inputs: rvt_list.txt, mode from UI/env, servers.cfg.
+# Outputs: Compacted models; Excel/size report per case README.
+# How to run: start_compact.ps1 / ui_compact.ps1 launches RBP with this script.
+# Notes: Create New Local, Detach off; Relinquish after compact.
 
 import clr
 import System

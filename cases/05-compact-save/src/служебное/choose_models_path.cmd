@@ -1,3 +1,10 @@
+REM Name: choose_models_path.cmd
+REM Version: 1.0
+REM What it does: Open compact UI from the служебное subfolder (parent src as toolkit root).
+REM Inputs: None.
+REM Outputs: ui_compact.ps1.
+REM How to run: Double-click.
+REM Notes: Handles UNC parent path via pushd when possible.
 @echo off
 chcp 65001 >nul
 setlocal EnableExtensions

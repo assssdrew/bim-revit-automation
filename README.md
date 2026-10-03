@@ -1,8 +1,16 @@
 # BIM Revit Automation Portfolio
 
+[![License: MIT](https://img.shields.io/github/license/assssdrew/bim-revit-automation)](LICENSE)
+[![Language](https://img.shields.io/badge/Language-Python%20%7C%20IronPython%20%7C%20PowerShell-3776AB?logo=python&logoColor=white)](cases/)
+[![Tested on real working models](https://img.shields.io/badge/Tested%20on-real%20working%20models-2ea44f)](cases/)
+
 Operator-facing automation for Autodesk Revit: **compact workshared models**, rename / year-upgrade / relink across many models, weekly health audits, units / levels alignment, alerts on exchange folders.
 
 I write the **task scripts + Windows toolkits** (pick models → run → Excel report). [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor) (RBP) is one open-source batch host I use for Revit API jobs — not my product, and not every case needs it (see [Third-party](#third-party)).
+
+![Excel health check of Revit links. Model names and paths are blurred.](docs/img/health_check_links.jpg)
+
+*Case 02 health-check Excel report: summary metrics and RVT link inventory.*
 
 | | |
 |---|---|

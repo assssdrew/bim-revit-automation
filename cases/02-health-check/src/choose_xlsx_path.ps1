@@ -1,4 +1,10 @@
-﻿# Choose local folder for Excel report (shared by several users; each saves locally).
+﻿# Name: choose_xlsx_path.ps1
+# Version: 1.0
+# What it does: Pick a local folder for Excel reports and save xlsx_out_path.cfg.
+# Inputs: Folder browser dialog.
+# Outputs: xlsx_out_path.cfg with the chosen path.
+# How to run: reset_report_session.cmd or choose_xlsx_path.cmd.
+# Notes: Prefer a local disk path, not a network share.
 Add-Type -AssemblyName System.Windows.Forms | Out-Null
 
 $ToolDir = Split-Path -Parent $MyInvocation.MyCommand.Path

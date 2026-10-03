@@ -1,8 +1,16 @@
 # Портфолио: автоматизация BIM / Revit
 
+[![License: MIT](https://img.shields.io/github/license/assssdrew/bim-revit-automation)](LICENSE)
+[![Language](https://img.shields.io/badge/Language-Python%20%7C%20IronPython%20%7C%20PowerShell-3776AB?logo=python&logoColor=white)](cases/)
+[![Tested on real working models](https://img.shields.io/badge/Tested%20on-real%20working%20models-2ea44f)](cases/)
+
 Операторская автоматизация Autodesk Revit: **сжатие workshared-моделей**, переименование / апгрейд года / relink парка разделов, еженедельный health-аудит, единицы / уровни-оси, оповещения по папкам обмена.
 
 Я пишу **task-скрипты и Windows-toolkit’и** (выбор моделей → прогон → отчёт в Excel). [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor) (RBP) — открытый батч-хост для Revit API, не мой продукт; не каждый кейс его использует (см. [Сторонние компоненты](#сторонние-компоненты)).
+
+![Excel, проверка связей Revit. Имена моделей и пути размыты.](docs/img/health_check_links.jpg)
+
+*Отчёт Excel health-check (кейс 02): сводка метрик и лист связей RVT.*
 
 | | |
 |---|---|

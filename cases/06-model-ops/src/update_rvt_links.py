@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-RBP Pass 2 — обновление путей RVT Links на новые имена.
-
-Список = НОВЫЕ имена (rvt_list_new.txt после build_new_list.ps1).
-Только связи из mapping.csv (old basename).
-После успешного батча — удаление старых: delete_old_models.cmd
-  (UNC авто; RSN — список to_delete_rsn.txt для ручного удаления в Admin).
-"""
+# Name: update_rvt_links.py
+# Version: 3.0.0
+# What it does: RBP Pass 2: repoint RVT links to new basenames from mapping.csv.
+# Inputs: rvt_list_new.txt, mapping.csv.
+# Outputs: Updated link paths; report CSV.
+# How to run: After build_new_list in presets flow.
+# Notes: Then delete_old_models.cmd for old UNC; RSN listed for manual admin delete.
 
 from __future__ import print_function
 

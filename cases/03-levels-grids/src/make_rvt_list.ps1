@@ -1,4 +1,10 @@
-﻿# Collects all .rvt paths under a root folder into a text list for Revit Batch Processor.
+﻿# Name: make_rvt_list.ps1
+# Version: 1.0
+# What it does: Collect .rvt under a root into rvt_list.txt.
+# Inputs: -Root, -Out, optional -SkipBackups.
+# Outputs: rvt_list.txt.
+# How to run: powershell -File make_rvt_list.ps1 -Root "..."
+# Notes: Skips backups when -SkipBackups.
 param(
     [Parameter(Mandatory = $true)]
     [string]$Root,

@@ -1,4 +1,11 @@
-﻿@echo off
+﻿REM Name: color_latest_report.cmd
+REM Version: 1.0
+REM What it does: Rebuild Excel from the latest health CSV batch in reports\cvc.
+REM Inputs: xlsx_out_path.cfg, reports\cvc\health_*.csv.
+REM Outputs: Colored .xlsx in the folder from xlsx_out_path.cfg.
+REM How to run: Double-click after an RBP health_check run.
+REM Notes: Prompts for xlsx folder if cfg is missing.
+@echo off
 chcp 65001 >nul
 pushd "%~dp0" 2>nul
 

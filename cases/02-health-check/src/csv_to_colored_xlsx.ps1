@@ -1,4 +1,11 @@
-﻿param(
+﻿# Name: csv_to_colored_xlsx.ps1
+# Version: 1.0
+# What it does: Build a colored Excel health report from the latest health_*.csv and *_links.csv.
+# Inputs: Optional -CsvPath, -LinksCsvPath, -OutputDir; reads xlsx_out_path.cfg when omitted.
+# Outputs: health_*.xlsx in the configured local folder; xlsx_export.log on errors.
+# How to run: color_latest_report.cmd or: powershell -File csv_to_colored_xlsx.ps1
+# Notes: OpenXML only (no Excel COM); status highlighting from thresholds.
+param(
     [Parameter(Mandatory = $false)]
     [string]$CsvPath,
     [Parameter(Mandatory = $false)]

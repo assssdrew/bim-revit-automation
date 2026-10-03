@@ -1,4 +1,11 @@
-﻿param(
+﻿# Name: csv_to_colored_xlsx.ps1
+# Version: 1.0
+# What it does: Build colored Excel levels/grids report from latest audit CSV files.
+# Inputs: Optional -CsvPath, -DetailsCsvPath, -OutputDir; xlsx_out_path.cfg.
+# Outputs: levels_grids_*.xlsx in configured folder.
+# How to run: color_latest_report.cmd or powershell -File csv_to_colored_xlsx.ps1
+# Notes: OpenXML; Summary and Details sheets.
+param(
     [Parameter(Mandatory = $false)]
     [string]$CsvPath,
     [Parameter(Mandatory = $false)]

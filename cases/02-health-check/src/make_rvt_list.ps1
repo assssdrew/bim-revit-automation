@@ -1,7 +1,10 @@
-﻿# Collects all .rvt paths under a root folder into a text list for Revit Batch Processor.
-# Usage:
-#   powershell -ExecutionPolicy Bypass -File make_rvt_list.ps1 -Root "D:\Projects\Models" -Out ".\rvt_list.txt"
-
+﻿# Name: make_rvt_list.ps1
+# Version: 1.0
+# What it does: Collect .rvt paths under a root folder into a list file for RBP.
+# Inputs: -Root, optional -Out.
+# Outputs: rvt_list.txt.
+# How to run: powershell -ExecutionPolicy Bypass -File make_rvt_list.ps1 -Root "..." -Out .\rvt_list.txt
+# Notes: Used by the model picker for folder mode.
 param(
     [Parameter(Mandatory = $true)]
     [string]$Root,

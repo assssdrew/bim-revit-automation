@@ -1,3 +1,10 @@
+REM Name: разрешить_надстройку_BatchRvt.cmd
+REM Version: 1.0
+REM What it does: Trust BatchRvt add-in for installed Revit years (registry + optional UI wait).
+REM Inputs: None.
+REM Outputs: HKCU CodeSigning entries; operator may confirm Revit load dialog.
+REM How to run: Double-click.
+REM Notes: Calls разрешить_надстройку_BatchRvt.ps1 from the same folder.
 @echo off
 chcp 65001 >nul
 setlocal EnableExtensions

@@ -1,4 +1,11 @@
-﻿@echo off
+﻿REM Name: color_latest_report.cmd
+REM Version: 1.0
+REM What it does: Rebuild Excel from latest levels/grids CSV session.
+REM Inputs: xlsx_out_path.cfg, reports\cvc CSV.
+REM Outputs: Colored xlsx.
+REM How to run: Double-click.
+REM Notes: Prompts for folder if cfg missing.
+@echo off
 chcp 65001 >nul
 pushd "%~dp0" 2>nul
 

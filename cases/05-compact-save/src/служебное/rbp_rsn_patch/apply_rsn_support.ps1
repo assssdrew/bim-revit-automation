@@ -1,10 +1,10 @@
-﻿# Adds RSN:// support to the installed Revit Batch Processor scripts.
-# No Python required. Safe to run repeatedly.
-# v2: avoid IronPython str()/ascii on Cyrillic RSN paths.
-# v3: RSN + Detach allowed (superseded for deep).
-# v4: deep = open CENTRAL with Audit only (no Create New Local, no Detach).
-#     RBP stock always routes workshared centrals to RunDetachedDocumentAction;
-#     for BATCH_COMPACT_MODE=deep we force RunDocumentAction (DoNotDetach).
+﻿# Name: apply_rsn_support.ps1
+# Version: 2.0
+# What it does: Install RSN:// and deep-compact routing patch into local Revit Batch Processor scripts.
+# Inputs: Optional -ScriptsPath, -Quiet.
+# Outputs: Patched RBP Scripts tree (marker RSN_PATCH_PS_v4).
+# How to run: установить_поддержку_RSN_в_RBP.cmd or powershell -File apply_rsn_support.ps1
+# Notes: Deep mode forces RunDocumentAction (DoNotDetach); safe to re-run; no Python required.
 
 [CmdletBinding()]
 param(

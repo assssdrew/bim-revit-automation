@@ -1,3 +1,10 @@
+' Name: Сжатие.vbs
+' Version: 1.0
+' What it does: Hidden launcher for the compact-save WinForms UI (no console).
+' Inputs: ui_compact.ps1 beside this script.
+' Outputs: Starts PowerShell STA hidden.
+' How to run: Double-click Сжатие.vbs in src\.
+' Notes: Primary entry point for operators.
 Set sh = CreateObject("Wscript.Shell")
 Set fso = CreateObject("Scripting.FileSystemObject")
 tool = fso.GetParentFolderName(Wscript.ScriptFullName)

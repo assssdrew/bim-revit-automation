@@ -1,6 +1,10 @@
-﻿# Shared paths for rvt_list.txt: share when writable, else per-user local copy.
-# Optional sidecar: scripts also embed these helpers if this file is missing on the share.
-
+﻿# Name: list_paths.ps1
+# Version: 1.0
+# What it does: Resolve shared vs per-user paths for rvt_list.txt on a network toolkit copy.
+# Inputs: Tool folder writability.
+# Outputs: Path helpers used by ui_compact/start_compact.
+# How to run: Dot-sourced from sibling scripts.
+# Notes: Embedded fallbacks exist if this file is missing on the share.
 function Remove-LeftoverWriteProbes {
     param(
         [string]$Folder,

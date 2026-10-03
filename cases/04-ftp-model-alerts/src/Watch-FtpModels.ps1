@@ -1,7 +1,10 @@
-# FTP folder watcher -> Telegram (or ntfy) alerts
-# Run:
-#   powershell -NoProfile -ExecutionPolicy Bypass -File .\Watch-FtpModels.ps1
-
+# Name: Watch-FtpModels.ps1
+# Version: 1.0
+# What it does: Poll FTP folders for new/changed .rvt files and send Telegram or ntfy alerts.
+# Inputs: config.json, credentials.xml, state.json.
+# Outputs: Push notifications; updated state.json.
+# How to run: powershell -File Watch-FtpModels.ps1 or via scheduled task.
+# Notes: Requires Save-FtpCredentials.ps1 first.
 param(
     [string]$ConfigPath = (Join-Path $PSScriptRoot "config.json")
 )

@@ -1,7 +1,10 @@
-# Quick check: can this PC reach Telegram API?
-# Run:
-#   powershell -NoProfile -ExecutionPolicy Bypass -File .\Test-Telegram.ps1
-
+# Name: Test-Telegram.ps1
+# Version: 1.0
+# What it does: Send a test Telegram message to verify API access.
+# Inputs: config.json bot settings.
+# Outputs: Test chat message.
+# How to run: powershell -File Test-Telegram.ps1
+# Notes: Quick connectivity check.
 $ErrorActionPreference = "Stop"
 
 try {

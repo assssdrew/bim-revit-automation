@@ -1,4 +1,11 @@
-﻿@echo off
+﻿REM Name: choose_models_path.cmd
+REM Version: 1.0
+REM What it does: Launch case 03 host model picker.
+REM Inputs: None.
+REM Outputs: choose_models.ps1.
+REM How to run: Double-click.
+REM Notes: UNC-safe pushd.
+@echo off
 chcp 65001 >nul
 REM pushd works with UNC (maps a temp drive); cd /d does not
 pushd "%~dp0" 2>nul
