@@ -61,7 +61,7 @@ function Find-RbpScripts {
         }
     }
 
-    # Known path from potapov logs
+    # Known path from RBP workstation logs
     if ($env:LOCALAPPDATA) {
         $candidates.Add((Join-Path $env:LOCALAPPDATA "RevitBatchProcessor\Scripts"))
     }
