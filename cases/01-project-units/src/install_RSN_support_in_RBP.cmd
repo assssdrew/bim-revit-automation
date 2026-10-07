@@ -13,7 +13,7 @@ cd /d "%~dp0"
 echo.
 echo ============================================================
 echo  Patch Revit Batch Processor for RSN:// (Revit Server)
-echo  Must run on the PC where RBP is installed (e.g. potapov)
+echo  Must run on the PC where RBP is installed (the RBP workstation)
 echo ============================================================
 echo.
 

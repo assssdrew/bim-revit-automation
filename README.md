@@ -28,7 +28,7 @@ I write the **task scripts + Windows toolkits** (pick models → run → Excel r
 For the Revit API cases (01, 02, 03, 05, 06). Case 04 is a standalone PowerShell watcher — see its README.
 
 1. **Prepare a PC** with Windows, PowerShell, the Revit year that matches your models, and [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor). Copy the case `src/` folder next to it and edit `servers.cfg` (placeholder Revit Server hosts in this repo).
-2. **Build the model list** with the case's picker (`choose_models_path.cmd`; case 05 is `Сжатие.vbs`, case 06's new window is `Операции с моделями.vbs`).
+2. **Build the model list** with the case's picker (`choose_models_path.cmd`; case 05 is `Сжатие.vbs` (Compact launcher), case 06's new window is `Операции с моделями.vbs` (Model operations launcher)).
 3. **Run the task** in RBP (e.g. `health_check.py`) on a **disposable local copy first**, then read the report (CSV and Excel report). Details and the exact RBP settings are in each case README.
 
 ---
@@ -37,12 +37,12 @@ For the Revit API cases (01, 02, 03, 05, 06). Case 04 is a standalone PowerShell
 
 | # | Case | Status | Impact |
 |---|------|--------|--------|
-| 01 | [Project Units + RSN](cases/01-project-units/) | Tested on real working models | On average about 4–5× faster than manual work; batch Length accuracy across disk / UNC / `RSN://` |
-| 02 | [Health Check](cases/02-health-check/) (v1.4.0) | Tested on real working models; read-only (no model changes) | On average about 4–5× faster than manual work; health metrics and RVT links in one Excel report and CSV batch |
-| 03 | [Levels & Grids](cases/03-levels-grids/) | Tested on real working models; MVP scope (Apply on base files only) | On average about 4–5× faster than manual work; cascade BF↔AR and disciplines↔BF audit in report sessions |
+| 01 | [Project Units + RSN](cases/01-project-units/) | Tested on real working models | Batch Length accuracy across disk / UNC / `RSN://` |
+| 02 | [Health Check](cases/02-health-check/) (v1.4.0) | Tested on real working models; read-only (no model changes) | Health metrics and RVT links in one Excel report and CSV batch |
+| 03 | [Levels & Grids](cases/03-levels-grids/) | Tested on real working models; MVP scope (Apply on base files only) | Cascade BF↔AR and disciplines↔BF audit in report sessions |
 | 04 | [FTP model alerts](cases/04-ftp-model-alerts/) | Tested on real working models | Phone push when shared FTP folders change, without watching the client |
-| 05 | [Compact save](cases/05-compact-save/) | Tested on real working models; RSN deep mode on a limited number of runs | On average about 4–5× faster than manual work; long lists (e.g. ~125 models) in one unattended run; file-size change varies (often small, e.g. 61.03→61.01 MB; up to about −11.6% on one early fast-mode model) |
-| 06 | [Model operations](cases/06-model-ops/) (v3.0.0) | Tested on real working models | On average about 4–5× faster than manual work; staged Save As, move, and relink from one saved job plan |
+| 05 | [Compact save](cases/05-compact-save/) | Tested on real working models; RSN deep mode on a limited number of runs | Long lists (e.g. ~125 models) in one unattended run; file-size change varies (often small, e.g. 61.03→61.01 MB; up to about −11.6% on one early fast-mode model) |
+| 06 | [Model operations](cases/06-model-ops/) (v3.0.0) | Tested on real working models | Staged Save As, move, and relink from one saved job plan |
 
 #### Case 05 — Compact save (screenshots)
 
@@ -71,9 +71,9 @@ Also in `docs/`: a [draft Navisworks clash-tolerance matrix](docs/navisworks-cla
 
 ## Featured
 
-**Compact save** ([case 05](cases/05-compact-save/)) — operator UI (`Сжатие.vbs`): **fast** (Create New Local, Sync Compact) and **deep** (central + Audit, Save As same central with Compact). See the [case 05 screenshots](#case-05--compact-save-screenshots) above.
+**Compact save** ([case 05](cases/05-compact-save/)) — operator UI (`Сжатие.vbs`, Compact launcher): **fast** (Create New Local, Sync Compact) and **deep** (central + Audit, Save As same central with Compact). See the [case 05 screenshots](#case-05--compact-save-screenshots) above.
 
-**Model operations** ([case 06](cases/06-model-ops/)) — rename, folder / Revit year, and RVT relink in staged passes via `Операции с моделями.vbs` → `presets.ps1` (with `start_ops.ps1` and `job_lib.ps1`).
+**Model operations** ([case 06](cases/06-model-ops/)) — rename, folder / Revit year, and RVT relink in staged passes via `Операции с моделями.vbs` (Model operations launcher) → `presets.ps1` (with `start_ops.ps1` and `job_lib.ps1`).
 
 ---
 
@@ -96,12 +96,12 @@ Typical workflow context (anonymised examples). Figures describe usual batch siz
 
 | Item | Context | Impact |
 |------|---------|--------|
-| Weekly cascade | ~5–6 base files (BF↔AR), then up to ~80 discipline models (vs BF) | About 4–5× faster than manual; one audit report session per wave |
-| Model operations | ~50+ models, mixed UNC / `RSN://` | About 4–5× faster than manual; one job plan drives detach / Save As / move / relink passes |
-| Units / RSN | Live Revit Server models | About 4–5× faster than manual; one batch for Length accuracy across disk and `RSN://` |
-| Compact save | Tested on working models; RSN deep on a limited number of runs | About 4–5× faster than manual; long lists (e.g. ~125 models) in one run; size delta often small (61.03→61.01 MB on a 2-model deep run) |
-| Health Check | Read-only workshared audit | About 4–5× faster than manual; one Excel report plus CSV across the hub |
-| Levels & Grids | MVP scope (Apply on base files only) | About 4–5× faster than manual; BF-first cascade before discipline reports |
+| Weekly cascade | ~5–6 base files (BF↔AR), then up to ~80 discipline models (vs BF) | One audit report session per wave |
+| Model operations | ~50+ models, mixed UNC / `RSN://` | One job plan drives detach / Save As / move / relink passes |
+| Units / RSN | Live Revit Server models | One batch for Length accuracy across disk and `RSN://` |
+| Compact save | Tested on working models; RSN deep on a limited number of runs | Long lists (e.g. ~125 models) in one run; size delta often small (61.03→61.01 MB on a 2-model deep run) |
+| Health Check | Read-only workshared audit | One Excel report plus CSV across the hub |
+| Levels & Grids | MVP scope (Apply on base files only) | BF-first cascade before discipline reports |
 | FTP model alerts | Shared exchange folders | Scheduled poll → push without manual FTP watch |
 
 ---
