@@ -15,7 +15,7 @@ I write the **task scripts + Windows toolkits** (pick models → run → Excel r
 | | |
 |---|---|
 | **Author** | [assssdrew](https://github.com/assssdrew) |
-| **Stack** | Revit API · IronPython · PowerShell · WinForms · OpenXML · FTP / ntfy |
+| **Stack** | Revit API · IronPython · Dynamo (CPython3) · PowerShell · WinForms · OpenXML · Excel formulas · FTP / ntfy |
 | **Focus** | Workshared / Revit Server (`RSN://`) pipelines, safety-first writes |
 | **Language** | [Русский README](README.ru.md) |
 
@@ -25,7 +25,7 @@ I write the **task scripts + Windows toolkits** (pick models → run → Excel r
 
 ## Quick start (3 steps)
 
-For the Revit API cases (01, 02, 03, 05, 06). Case 04 is a standalone PowerShell watcher — see its README.
+For the Revit API cases (01, 02, 03, 05, 06). Case 04 is a standalone PowerShell watcher. Case 07 is a Dynamo Player graph plus an Excel template — see its README.
 
 1. **Prepare a PC** with Windows, PowerShell, the Revit year that matches your models, and [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor). Copy the case `src/` folder next to it and edit `servers.cfg` (placeholder Revit Server hosts in this repo).
 2. **Build the model list** with the case's picker (`choose_models_path.cmd`; case 05 is `Сжатие.vbs` (Compact launcher), case 06's new window is `Операции с моделями.vbs` (Model operations launcher)).
@@ -43,6 +43,7 @@ For the Revit API cases (01, 02, 03, 05, 06). Case 04 is a standalone PowerShell
 | 04 | [FTP model alerts](cases/04-ftp-model-alerts/) | Tested on real working models | Phone push when shared FTP folders change, without watching the client |
 | 05 | [Compact save](cases/05-compact-save/) | Tested on real working models; RSN deep mode on a limited number of runs | Long lists (e.g. ~125 models) in one unattended run; file-size change varies (often small, e.g. 61.03→61.01 MB; up to about −11.6% on one early fast-mode model) |
 | 06 | [Model operations](cases/06-model-ops/) (v3.0.0) | Tested on real working models | Staged Save As, move, and relink from one saved job plan |
+| 07 | [Typical floors](cases/07-typical-floors/) | Tested in Excel on one real building | 166 apartments, floors 2–17, collapsed into 10 groups (2 \| 3 \| 4 \| 5 \| 6 \| 7–12 \| 13–14 \| 15 \| 16 \| 17) |
 
 #### Case 05 — Compact save (screenshots)
 
@@ -63,6 +64,12 @@ Excel report — sheet «Сводка», 61.03 MB → 61.01 MB:
 Link check across a model hub — Excel report:
 
 ![Excel health check of Revit links. Model names and paths are blurred.](docs/img/health_check_links.jpg)
+
+#### Case 07 — Typical floors (sample data)
+
+Sheet «Типовые этажи» with made-up apartments, so the picture is not a project export. Floors that share a room signature share a colour. Empty apartment columns are omitted. The verified building result (166 apartments, 10 groups) is in the table above and in the [case README](cases/07-typical-floors/).
+
+![Typical floors sheet with sample apartments. Same room signature, same colour. Labeled sample data.](docs/img/typical_floors_sample.png)
 
 New cases are added as folders under `cases/` — see [docs/HOW_TO_ADD_CASE.md](docs/HOW_TO_ADD_CASE.md).
 Also in `docs/`: a [draft Navisworks clash-tolerance matrix](docs/navisworks-clash-tolerances.md) (a discussion document, not code and not a company standard).
@@ -103,6 +110,7 @@ Typical workflow context (anonymised examples). Figures describe usual batch siz
 | Health Check | Read-only workshared audit | One Excel report plus CSV across the hub |
 | Levels & Grids | MVP scope (Apply on base files only) | BF-first cascade before discipline reports |
 | FTP model alerts | Shared exchange folders | Scheduled poll → push without manual FTP watch |
+| Typical floors | One residential building, rooms read from the architectural link | 166 apartments on floors 2–17 collapsed into 10 groups |
 
 ---
 
@@ -125,7 +133,7 @@ Details: [docs/SAFETY.md](docs/SAFETY.md)
 
 - **Revit API** task scripts (IronPython) run through [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor); operator tooling in **PowerShell** and **WinForms**; **OpenXML** Excel reports (no Excel COM on UNC).
 - **Focus:** workshared and Revit Server (`RSN://`) models — read-only audits, controlled batch writes (units, levels/grids on base files, Compact, staged model operations).
-- **Platform:** Windows. Case 04 adds FTP polling and phone push (ntfy / Telegram).
+- **Platform:** Windows. Case 04 adds FTP polling and phone push (ntfy / Telegram). Case 07 is Dynamo (CPython3) plus an Excel workbook of formulas: it does not use Revit Batch Processor and does not write the model.
 - **Docs:** sample reports under `samples/`, screenshots under `docs/img/`, safety notes in [docs/SAFETY.md](docs/SAFETY.md).
 
 ---
@@ -153,9 +161,10 @@ bim-revit-automation/
     04-ftp-model-alerts/src/   ← FTP poller + phone alerts (no Revit API)
     05-compact-save/src/       ← operator UI + Compact task
     06-model-ops/src/          ← presets UI + Save As / relink pipeline
+    07-typical-floors/src/     ← Dynamo graph + Excel template (no RBP)
   samples/                     ← anonymised report snippets
   docs/
-    img/                       ← compact and health-check screenshots
+    img/                       ← compact, health-check, and typical-floors screenshots
 ```
 
 Copy a case `src/` onto a PC with the matching Revit year. Case 04 runs standalone on Windows (Task Scheduler). Case 05 starts from `Сжатие.vbs`. Case 06 starts from `Операции с моделями.vbs`; `run_cascade.cmd` is the older menu.
@@ -167,6 +176,7 @@ Copy a case `src/` onto a PC with the matching Revit year. Case 04 runs standalo
 - Autodesk Revit (year matching the models; units toolkit targets 2022+)
 - Windows + PowerShell
 - [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor) for the Revit API batch cases (01–03, 05–06)
+- Case 07: Revit 2024, Dynamo (CPython3), Microsoft Excel 2010 or newer (`Data.ExportExcel`). No Revit Batch Processor.
 
 ---
 

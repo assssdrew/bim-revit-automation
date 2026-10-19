@@ -13,6 +13,7 @@
 Thumbs.db
 *.xlsx
 !samples/**
+!cases/07-typical-floors/src/Типовые_этажи_ШАБЛОН.xlsx
 .env
 .vscode/
 .idea/
