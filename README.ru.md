@@ -15,7 +15,7 @@
 | | |
 |---|---|
 | **Автор** | [assssdrew](https://github.com/assssdrew) |
-| **Стек** | Revit API · IronPython · PowerShell · WinForms · OpenXML · FTP / ntfy |
+| **Стек** | Revit API · IronPython · Dynamo (CPython3) · PowerShell · WinForms · OpenXML · формулы Excel · FTP / ntfy |
 | **Фокус** | Workshared / Revit Server (`RSN://`), безопасные записи |
 | **EN** | [English README](README.md) |
 
@@ -25,7 +25,7 @@
 
 ## Быстрый старт (3 шага)
 
-Для кейсов с Revit API (01, 02, 03, 05, 06). Кейс 04 — отдельный PowerShell-наблюдатель, см. его README.
+Для кейсов с Revit API (01, 02, 03, 05, 06). Кейс 04 — отдельный PowerShell-наблюдатель. Кейс 07 — граф Проигрывателя Dynamo и шаблон Excel, см. его README.
 
 1. **Подготовьте ПК:** Windows, PowerShell, год Revit = году моделей, [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor). Скопируйте `src/` кейса рядом и поправьте `servers.cfg` (в репо — placeholder-хосты Revit Server).
 2. **Соберите список моделей** пикером кейса (`choose_models_path.cmd`; кейс 05 — `Сжатие.vbs`, новое окно кейса 06 — `Операции с моделями.vbs`).
@@ -43,6 +43,7 @@
 | 04 | [Оповещения FTP](cases/04-ftp-model-alerts/) | Проверено на рабочих моделях | Push на телефон при изменении папок на FTP без постоянного клиента |
 | 05 | [Сжатие моделей](cases/05-compact-save/) | Проверено на рабочих моделях; глубокий RSN — на ограниченном числе прогонов | Длинные списки (например ~125 моделей) в одном незанятом прогоне; изменение размера разное (часто маленькое, например 61,03→61,01 МБ; до примерно −11,6% на одной ранней модели в быстром режиме) |
 | 06 | [Операции с моделями](cases/06-model-ops/) (v3.0.0) | Проверено на рабочих моделях | Поэтапные Save As, перенос и relink из одного задания |
+| 07 | [Типовые этажи](cases/07-typical-floors/) | Проверено в Excel на одном реальном корпусе | 166 квартир, этажи 2–17, сведены в 10 групп (2 \| 3 \| 4 \| 5 \| 6 \| 7–12 \| 13–14 \| 15 \| 16 \| 17) |
 
 #### Кейс 05 — Сжатие моделей (скриншоты)
 
@@ -63,6 +64,12 @@
 Проверка связей по хабу моделей — отчёт в Excel:
 
 ![Excel, проверка связей Revit. Имена моделей и пути размыты.](docs/img/health_check_links.jpg)
+
+#### Кейс 07 — Типовые этажи (учебные данные)
+
+Лист «Типовые этажи» с выдуманными квартирами: это не выгрузка объекта. Одинаковый набор помещений — один цвет. Пустые столбцы квартир убраны. Проверенный результат по корпусу (166 квартир, 10 групп) — в таблице выше и в [README кейса](cases/07-typical-floors/).
+
+![Лист «Типовые этажи» с учебными квартирами. Одинаковый набор помещений — один цвет. Подписано как образец.](docs/img/typical_floors_sample.png)
 
 Новые кейсы — папки в `cases/`, инструкция: [docs/HOW_TO_ADD_CASE.md](docs/HOW_TO_ADD_CASE.md).
 Также в `docs/`: [черновик матрицы допусков коллизий Navisworks](docs/navisworks-clash-tolerances.ru.md) (документ для обсуждения, не код и не стандарт компании).
@@ -103,6 +110,7 @@
 | Health Check | Read-only аудит workshared | Один отчёт в Excel и CSV по хабу |
 | Levels & Grids | MVP (Apply только для БФ) | Каскад БФ, затем разделы |
 | Оповещения FTP | Папки обмена | Опрос по расписанию → push без ручного FTP |
+| Типовые этажи | Один жилой корпус, помещения из связи АР | 166 квартир на этажах 2–17 сведены в 10 групп |
 
 ---
 
@@ -125,7 +133,7 @@
 
 - **Revit API:** task-скрипты (IronPython) через [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor); операторские окна на **PowerShell** и **WinForms**; отчёты **OpenXML** в Excel (без Excel COM на UNC).
 - **Фокус:** workshared и Revit Server (`RSN://`) — read-only аудиты, контролируемые пакетные записи (единицы, уровни/оси на БФ, Compact, поэтапные операции с моделями).
-- **Платформа:** Windows. Кейс 04 — опрос FTP и push на телефон (ntfy / Telegram).
+- **Платформа:** Windows. Кейс 04 — опрос FTP и push на телефон (ntfy / Telegram). Кейс 07 — Dynamo (CPython3) и книга Excel на формулах: без Revit Batch Processor и без записи в модель.
 - **Документация:** примеры в `samples/`, скриншоты в `docs/img/`, безопасность в [docs/SAFETY.ru.md](docs/SAFETY.ru.md).
 
 ---
@@ -153,9 +161,10 @@ bim-revit-automation/
     04-ftp-model-alerts/src/   ← опрос FTP + push (без Revit API)
     05-compact-save/src/       ← окно оператора + задача Compact
     06-model-ops/src/          ← окно преднастроек + Save As / relink
+    07-typical-floors/src/     ← граф Dynamo + шаблон Excel (без RBP)
   samples/
   docs/
-    img/                       ← скриншоты сжатия и health check
+    img/                       ← скриншоты сжатия, health check и типовых этажей
 ```
 
 Папку `src/` кейса копируют на ПК с нужным годом Revit. Кейс 04 — отдельно на Windows (Планировщик заданий). Кейс 05 — `Сжатие.vbs`. Кейс 06 — `Операции с моделями.vbs`; `run_cascade.cmd` — старое меню.
@@ -167,6 +176,7 @@ bim-revit-automation/
 - Autodesk Revit (год = году моделей; units — 2022+)
 - Windows + PowerShell
 - [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor) для батч-кейсов с Revit API (01–03, 05–06)
+- Кейс 07: Revit 2024, Dynamo (CPython3), Microsoft Excel 2010 или новее (`Data.ExportExcel`). Revit Batch Processor не нужен.
 
 ---
 
