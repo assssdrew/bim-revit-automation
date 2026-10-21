@@ -1,0 +1,358 @@
+{
+  "Uuid": "87413a241295499193ba5b8a12d49e36",
+  "IsCustomNode": false,
+  "Description": "Выгрузка квартирографии из связи АР в Excel. Откройте модель ОВ и нажмите Запуск. Отчёт: папка «Квартирография» рядом с моделью ОВ (для совместной работы — рядом с файлом-хранилищем), файл Квартирография_K01.xlsx и т.д.",
+  "Name": "Выгрузка квартирографии",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "",
+      "Id": "62163d25581940af86af8d71dc2a6a5b",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "7aa27041320244cf88d108ea6b47633b",
+          "Name": "",
+          "Description": "",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Часть имени связи АР"
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "Code": "# -*- coding: utf-8 -*-\n# Dynamo (Revit 2024, CPython3). Выгрузка СЫРЫХ строк помещений из связи АР.\n# Ничего не считает: одна строка = одно помещение. Порядок столбцов = лист «Выгрузка».\n# «Выгрузка квартирографии».\n# IN[0] - часть имени связи АР (необязательно).\n# Шаблон берётся из SCRIPT_DIR; отчёты пишутся в папку REPORT_DIR_NAME рядом с моделью ОВ\n# (для модели совместной работы - рядом с ФАЙЛОМ-ХРАНИЛИЩЕМ).\n# OUT = [путь к файлу корпуса, строки для листа «Выгрузка»]\n\n# ======================= НАСТРОЙКИ =======================\n# Example parameter names from one office's shared parameters (KLWT_*).\n# Change this block when the architectural team uses different names.\n# Примеры имён — на другом объекте их меняют здесь.\nP_FLOOR = \"KLWT_Этаж\"\nP_TYPE  = \"KLWT_Тип квартиры\"\nP_NUM   = \"KLWT_Номер квартиры на этаже\"\nP_SOBSH = \"KLWT_Площадь квартиры общая\"\nP_SZH   = \"KLWT_Площадь квартиры жилая\"\n# Имена помещений для выгрузки (регистр, пробелы, ё/е не важны).\nROOM_NAMES = [\"Совмещенный санузел\", \"Санузел\", \"Ванная\", \"Уборная\", \"Туалет\", \"Гардеробная\"]\nEXPORT_ALL_APT_ROOMS = False   # True = выгрузить все помещения, у которых заполнен номер квартиры\nAREA_DECIMALS = 1\n# Папка скрипта (здесь лежит шаблон):\nSCRIPT_DIR = r\"\\\\server\\share\\BIM\\Dynamo\\Выгрузка квартирографии\"\nTEMPLATE_NAME = \"Квартирография_ШАБЛОН.xlsx\"\nREPORT_DIR_NAME = \"Квартирография\"     # папка отчётов рядом с моделью ОВ\nREPORT_PREFIX = \"Квартирография_\"\nHEADER = [\"Этаж\", \"Тип\", \"Номер\", \"Sобщ\", \"Sж\", \"Имя\", \"Число\"]\n# =========================================================\n\nimport clr\nclr.AddReference(\"RevitAPI\")\nclr.AddReference(\"RevitServices\")\nfrom Autodesk.Revit.DB import (ModelPathUtils, FilteredElementCollector, RevitLinkInstance, BuiltInCategory,\n                               BuiltInParameter, StorageType, UnitUtils, UnitTypeId, SpecTypeId)\nfrom RevitServices.Persistence import DocumentManager\n\ndoc = DocumentManager.Instance.CurrentDBDocument\n\ndef norm(s):\n    return \" \".join((s or \"\").replace(\"ё\", \"е\").replace(\"Ё\", \"Е\").split()).casefold()\n\nNAMES = set(norm(n) for n in ROOM_NAMES)\n\ndef pval(el, name):\n    p = el.LookupParameter(name)\n    if p is None:\n        return None\n    if not p.HasValue:\n        return \"\"\n    st = p.StorageType\n    if st == StorageType.String:\n        return (p.AsString() or \"\").strip()\n    if st == StorageType.Integer:\n        return str(p.AsInteger())\n    if st == StorageType.Double:\n        try:\n            if p.Definition.GetDataType() == SpecTypeId.Area:\n                v = UnitUtils.ConvertFromInternalUnits(p.AsDouble(), UnitTypeId.SquareMeters)\n                return round(v, AREA_DECIMALS)\n        except Exception:\n            pass\n        return (p.AsValueString() or \"\").strip()\n    return (p.AsValueString() or \"\").strip()\n\ndef nkey(s):\n    # кириллица-двойники -> латиница, без регистра, пробелов, _ - .\n    tr = str.maketrans(\"АВЕКМНОРСТХаеорсхук\", \"ABEKMHOPCTXaeopcxyk\")\n    s = (s or \"\").translate(tr).casefold()\n    return \"\".join(ch for ch in s if ch not in \" _-.\\t\")\n\nimport re\ndef toks(s):\n    tr = str.maketrans(\"АВЕКМНОРСТХаеорсхук\", \"ABEKMHOPCTXaeopcxyk\")\n    return [t for t in re.split(r\"[ _\\-.:\\t]+\", (s or \"\").translate(tr).casefold()) if t]\n\nkey = \"\" if IN[0] is None else str(IN[0]).strip()\nk = nkey(key)\nlinks = FilteredElementCollector(doc).OfClass(RevitLinkInstance).ToElements()\nfound, found_name, names, ar = None, \"\", [], {}\nfor li in links:\n    ld = li.GetLinkDocument()\n    names.append(li.Name + (\"\" if ld else \"  [НЕ ЗАГРУЖЕНА]\"))\n    if ld is None:\n        continue\n    if k:\n        if found is None and (k in nkey(li.Name) or k in nkey(ld.Title)):\n            found, found_name = ld, ld.Title\n    elif \"ar\" in toks(ld.Title) or \"ar\" in toks(li.Name):\n        ar[ld.Title] = ld          # несколько экземпляров одной связи = одна связь\n\nif not k:\n    if len(ar) == 1:\n        found_name, found = list(ar.items())[0]\n    elif len(ar) > 1:\n        OUT = [[\"ОШИБКА: загружено несколько связей АР. Впишите часть имени нужной связи в поле «Связь АР»:\"]] + [[n] for n in sorted(ar)]\nif found is None and not (not k and len(ar) > 1):\n    what = (\"с '%s' в имени\" % key) if k else \"АР (с '_AR_' в имени)\"\n    OUT = [[\"ОШИБКА: загруженная связь %s не найдена. Загрузите связь или впишите часть имени. Связи в модели:\" % what]] + [[n] for n in names]\nif found is None:\n    pass\nelse:\n    rows, skipped, missing = [HEADER], 0, set()\n    rooms = FilteredElementCollector(found).OfCategory(BuiltInCategory.OST_Rooms).WhereElementIsNotElementType()\n    for r in rooms:\n        if r.Area <= 0:          # не размещённые / неокружённые\n            continue\n        nm_p = r.get_Parameter(BuiltInParameter.ROOM_NAME)\n        nm = (nm_p.AsString() if nm_p else \"\") or \"\"\n        num = pval(r, P_NUM)\n        if EXPORT_ALL_APT_ROOMS:\n            if not num:\n                continue\n        elif norm(nm) not in NAMES:\n            continue\n        vals = [pval(r, P_FLOOR), pval(r, P_TYPE), num, pval(r, P_SOBSH), pval(r, P_SZH)]\n        for pn, v in zip([P_FLOOR, P_TYPE, P_NUM, P_SOBSH, P_SZH], vals):\n            if v is None:\n                missing.add(pn)\n        if not vals[0] or not vals[2]:\n            skipped += 1\n            continue\n        rows.append([(\"\" if v is None else v) for v in vals] + [nm.strip(), 1])\n    def sk(x):\n        def f(v):\n            try: return float(str(v).replace(\",\", \".\"))\n            except: return 9e9\n        return (f(x[0]), f(x[2]), x[5])\n    OUT = [rows[0]] + sorted(rows[1:], key=sk)\n    if missing:\n        OUT.append([\"ВНИМАНИЕ: нет параметров в связи: \" + \", \".join(sorted(missing))])\n    if skipped:\n        OUT.append([\"Пропущено помещений без этажа/номера: %d\" % skipped])\n    OUT.append([\"Связь АР:\", found_name])\n\n# ---------- файл корпуса ----------\nimport os, shutil, datetime\n\ndef building_code(title):\n    tr = str.maketrans(\"АВЕКМНОРСТХаеорсхук\", \"ABEKMHOPCTXaeopcxyk\")\n    t = (title or \"\").translate(tr).upper()\n    m = re.search(r\"(?:^|[ _\\-.])K(\\d{2})(?=$|[ _\\-.])\", t)\n    if m:\n        return \"K\" + m.group(1)\n    t = re.sub(r\"\\.rvt$\", \"\", (title or \"\").strip(), flags=re.I)\n    return re.sub(r\"[^\\w\\-]+\", \"_\", t).strip(\"_\") or \"БЕЗ_ИМЕНИ\"\n\ndef report_folder():\n    path = \"\"\n    try:\n        if doc.IsWorkshared:\n            mp = doc.GetWorksharingCentralModelPath()\n            if mp is not None:\n                if mp.CloudPath:\n                    raise Exception(\"Модель ОВ хранится в облаке (BIM 360/ACC). Папку отчётов рядом с ней создать нельзя.\")\n                path = ModelPathUtils.ConvertModelPathToUserVisiblePath(mp) or \"\"\n        else:\n            path = doc.PathName or \"\"\n    except Exception as e:\n        if \"облаке\" in str(e):\n            raise\n        path = doc.PathName or \"\"\n    low = path.strip().lower()\n    if not low:\n        raise Exception(\"Модель ОВ не сохранена. Сохраните модель и запустите снова.\")\n    if low.startswith((\"bim 360://\", \"autodesk docs://\", \"cloud://\", \"rsn://\", \"http://\", \"https://\")):\n        raise Exception(\"Модель ОВ хранится в облаке/на Revit Server (%s). Папку отчётов рядом с ней создать нельзя.\" % path)\n    folder = os.path.join(os.path.dirname(path), REPORT_DIR_NAME)\n    if not os.path.isdir(folder):\n        try:\n            os.makedirs(folder)\n        except OSError:\n            raise Exception(\"Не удалось создать папку отчётов %s (нет доступа?).\" % folder)\n    return folder\n\ndef prepare_file(code):\n    tpl = os.path.join(SCRIPT_DIR, TEMPLATE_NAME)\n    folder = report_folder()\n    path = os.path.join(folder, REPORT_PREFIX + code + \".xlsx\")\n    if not os.path.exists(path):\n        if not os.path.exists(tpl):\n            raise Exception(\"Нет шаблона %s в папке скрипта %s\" % (TEMPLATE_NAME, SCRIPT_DIR))\n        shutil.copyfile(tpl, path)\n    try:\n        with open(path, \"ab\"):\n            pass\n    except (PermissionError, IOError, OSError):\n        raise Exception(\"Закройте файл %s и запустите снова.\" % path)\n    return path\n\nis_error = found is None\ncode = \"ОШИБКА\" if is_error else building_code(found_name)\nOUT.append([\"Выгружено:\", datetime.datetime.now().strftime(\"%d.%m.%Y %H:%M\")])\nOUT = [prepare_file(code), OUT]\n",
+      "Engine": "CPython3",
+      "EngineName": "CPython3",
+      "VariableInputPorts": true,
+      "NodeType": "PythonScriptNode",
+      "Id": "440444069f584945ae978b29d5aa3045",
+      "Inputs": [
+        {
+          "Id": "9ab6ad10ea2541a1bae8340bdc160dd7",
+          "Name": "IN[0]",
+          "Description": "",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "1152b7bba04f441f82331776a9bab46d",
+          "Name": "OUT",
+          "Description": "",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Выгрузка помещений из связи АР"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "DSOffice.Data.ExportExcel@string,string,int,int,var[][],bool",
+      "Id": "cd9b01b92f544d468cff4a3a0f024e06",
+      "Inputs": [
+        {
+          "Id": "d4100bbc822d4574a5637198a5c12402",
+          "Name": "filePath",
+          "Description": "",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "23973c8c410546349ec1eaf592fa9dd6",
+          "Name": "sheetName",
+          "Description": "",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "a0e4c1241369438bba52378f9d0d377c",
+          "Name": "startRow",
+          "Description": "",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "99c468ff1cd146188d9a09cbb323841f",
+          "Name": "startCol",
+          "Description": "",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "076d2addcf7f46ab914505f1d17e2dd9",
+          "Name": "data",
+          "Description": "",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "5d13b09a6dd444b18a5cd23e61b30e8f",
+          "Name": "overWrite",
+          "Description": "",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "58b830ca793c4e4280cff4b4db5c511f",
+          "Name": "data",
+          "Description": "",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Auto",
+      "Description": "Data.ExportExcel"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "NodeType": "CodeBlockNode",
+      "Code": "\"Выгрузка\";\n0;\n0;\ntrue;",
+      "Id": "f790a5f138224954b57f6b3fd493ce39",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "0f687a92a87e438abd9c4dc9f9c356e5",
+          "Name": "",
+          "Description": "",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "7c2072c162824df48f320d1d4e9d56fc",
+          "Name": "",
+          "Description": "",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "3ac25043e1ea42cc8a5135e2e4f9f7d3",
+          "Name": "",
+          "Description": "",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "436bbb8be00848e19e4628ce3d0334c4",
+          "Name": "",
+          "Description": "",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Лист / строка / столбец / перезапись"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "NodeType": "CodeBlockNode",
+      "Code": "x[0];\nx[1];",
+      "Id": "e2587a31ff8e4098bac46680657a9f88",
+      "Inputs": [
+        {
+          "Id": "42ea578baf2c43498b56cf0273d024cc",
+          "Name": "x",
+          "Description": "",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "5983c5bc5c6f4c72954f91eae86fe624",
+          "Name": "",
+          "Description": "",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "5253ee478d264bc298fcd12726d9607a",
+          "Name": "",
+          "Description": "",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Путь / данные"
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "7aa27041320244cf88d108ea6b47633b",
+      "End": "9ab6ad10ea2541a1bae8340bdc160dd7",
+      "Id": "824c1cafb1724a7cb2a8dddb71c96d11",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "0f687a92a87e438abd9c4dc9f9c356e5",
+      "End": "23973c8c410546349ec1eaf592fa9dd6",
+      "Id": "939d74c1b5734feba51d208f0857f3a7",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "7c2072c162824df48f320d1d4e9d56fc",
+      "End": "a0e4c1241369438bba52378f9d0d377c",
+      "Id": "1a58dab85e574dc7a224930226dba357",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "3ac25043e1ea42cc8a5135e2e4f9f7d3",
+      "End": "99c468ff1cd146188d9a09cbb323841f",
+      "Id": "4659175123594aef97fb236a78899cff",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "436bbb8be00848e19e4628ce3d0334c4",
+      "End": "5d13b09a6dd444b18a5cd23e61b30e8f",
+      "Id": "fb3948d408ea4e1e89ed1cec353fd906",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "1152b7bba04f441f82331776a9bab46d",
+      "End": "42ea578baf2c43498b56cf0273d024cc",
+      "Id": "bd1c907bf23f42e2ad96f51d2cec1468",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "5983c5bc5c6f4c72954f91eae86fe624",
+      "End": "d4100bbc822d4574a5637198a5c12402",
+      "Id": "3024ba66c99b405a9d70f230dc5bdcd6",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "5253ee478d264bc298fcd12726d9607a",
+      "End": "076d2addcf7f46ab914505f1d17e2dd9",
+      "Id": "3ba4038f788e40b2999e078049c2a70d",
+      "IsHidden": "False"
+    }
+  ],
+  "Dependencies": [],
+  "NodeLibraryDependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": false,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.17.0.3472",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -17,
+      "EyeY": 24,
+      "EyeZ": 50,
+      "LookX": 12,
+      "LookY": -13,
+      "LookZ": -58,
+      "UpX": 0,
+      "UpY": 1,
+      "UpZ": 0
+    },
+    "NodeViews": [
+      {
+        "Id": "62163d25581940af86af8d71dc2a6a5b",
+        "Name": "Связь АР (необязательно)",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": 0,
+        "Y": 0
+      },
+      {
+        "Id": "440444069f584945ae978b29d5aa3045",
+        "Name": "Выгрузка АР",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": 350,
+        "Y": 0
+      },
+      {
+        "Id": "f790a5f138224954b57f6b3fd493ce39",
+        "Name": "Параметры экспорта",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": 350,
+        "Y": 200
+      },
+      {
+        "Id": "cd9b01b92f544d468cff4a3a0f024e06",
+        "Name": "Data.ExportExcel",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": 1000,
+        "Y": 100
+      },
+      {
+        "Id": "e2587a31ff8e4098bac46680657a9f88",
+        "Name": "Путь и данные",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": 700,
+        "Y": 0
+      }
+    ],
+    "Annotations": [],
+    "X": 0,
+    "Y": 0,
+    "Zoom": 1
+  }
+}
