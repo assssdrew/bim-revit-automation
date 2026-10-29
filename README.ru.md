@@ -27,7 +27,7 @@
 
 ## Быстрый старт (3 шага)
 
-Для кейсов с Revit API (01, 02, 03, 05, 06). Кейс 04 — отдельный PowerShell-наблюдатель. Кейс 07 — граф Проигрывателя Dynamo и шаблон Excel, см. его README.
+Для кейсов с Revit API (01, 02, 03, 05, 06). Кейс 04 — отдельный PowerShell-наблюдатель. Кейс 07 — граф Проигрывателя Dynamo: одна общая папка скрипта, а каждый запуск пишет `Квартирография` рядом с моделью ОВ (рядом с файлом-хранилищем, если модель совместная). См. его README.
 
 1. **Подготовьте ПК:** Windows, PowerShell, год Revit = году моделей, [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor). Скопируйте `src/` кейса рядом и поправьте `servers.cfg` (в репо — placeholder-хосты Revit Server).
 2. **Соберите список моделей** пикером кейса (`choose_models_path.cmd`; кейс 05 — `Сжатие.vbs`, новое окно кейса 06 — `Операции с моделями.vbs`).
@@ -44,7 +44,7 @@
 | [`ИНСТРУКЦИЯ.txt`](cases/05-compact-save/src/ИНСТРУКЦИЯ.txt) | Operator instructions (кейс 05) |
 | [`Сжатие.vbs`](cases/05-compact-save/src/Сжатие.vbs) | Compact launcher. Окно «Сжатие моделей Revit»; «Сжать» = Compact; «Быстрое сжатие» / «Глубокое сжатие» = Fast compact / Deep compact |
 | [`Операции с моделями.vbs`](<cases/06-model-ops/src/Операции с моделями.vbs>) | Model operations launcher (кейс 06). `show_ops.vbs` открывает то же окно. Заголовок «Операции с моделями Revit» |
-| [`Типовые_этажи.dyn`](cases/07-typical-floors/src/Типовые_этажи.dyn), [`Типовые_этажи_ШАБЛОН.xlsx`](cases/07-typical-floors/src/Типовые_этажи_ШАБЛОН.xlsx), [`Инструкция_Типовые_этажи.docx`](cases/07-typical-floors/src/Инструкция_Типовые_этажи.docx) | Typical floors (кейс 07): граф Dynamo, шаблон Excel, инструкция Word. Прогон пишет `Типовые_этажи_<code>.xlsx`. Лист «Типовые этажи» = Typical floors; входы Проигрывателя «Папка отчётов» = Reports folder, «Связь АР» = Architectural link |
+| [`Выгрузка_квартирографии.dyn`](cases/07-apartment-schedule-export/src/Выгрузка_квартирографии.dyn), [`Выгрузка_квартирографии.py`](cases/07-apartment-schedule-export/src/Выгрузка_квартирографии.py), [`Квартирография_ШАБЛОН.xlsx`](cases/07-apartment-schedule-export/src/Квартирография_ШАБЛОН.xlsx), [`Инструкция_Выгрузка_квартирографии.docx`](cases/07-apartment-schedule-export/src/Инструкция_Выгрузка_квартирографии.docx) | Apartment schedule export (кейс 07): граф «Выгрузка квартирографии», код узла, шаблон Excel, инструкция Word. Прогон пишет `Квартирография_<код>.xlsx` в папку `Квартирография` рядом с моделью ОВ. Лист «Типовые этажи» = Typical floors; единственный вход Проигрывателя «Связь АР» = Architectural link |
 
 Имена файлов оставлены как есть: лаунчеры и task-скрипты обращаются к ним по имени.
 
@@ -62,7 +62,7 @@
 | 04 | [Оповещения FTP](cases/04-ftp-model-alerts/) | Проверено на рабочих моделях | Push на телефон при изменении папок на FTP без постоянного клиента |
 | 05 | [Сжатие моделей](cases/05-compact-save/) | Проверено на рабочих моделях; глубокий RSN — на ограниченном числе прогонов | Длинные списки (например ~125 моделей) в одном незанятом прогоне; изменение размера разное (до примерно −11,6% на одной ранней модели в быстром режиме) |
 | 06 | [Операции с моделями](cases/06-model-ops/) (v3.0.0) | Проверено на рабочих моделях | ~50+ моделей, UNC / `RSN://`; одно сохранённое задание на поэтапные Save As, перенос и relink |
-| 07 | [Типовые этажи](cases/07-typical-floors/) | Проверено в Excel на одном реальном корпусе | 166 квартир, этажи 2–17, сведены в 10 групп (2 \| 3 \| 4 \| 5 \| 6 \| 7–12 \| 13–14 \| 15 \| 16 \| 17) |
+| 07 | [Выгрузка квартирографии](cases/07-apartment-schedule-export/) | Проверено в Excel на одном реальном корпусе | Одна общая папка скрипта; помещения из связи АР; отчёт пишется рядом с моделью ОВ (рядом с файлом-хранилищем, если модель совместная). 166 квартир, этажи 2–17, сведены в 10 групп (2 \| 3 \| 4 \| 5 \| 6 \| 7–12 \| 13–14 \| 15 \| 16 \| 17) |
 
 #### Кейс 05 — Сжатие моделей (скриншоты)
 
@@ -78,9 +78,9 @@
 
 ![Лист Excel «Сводка» из отчёта о сжатии.](docs/img/compact_report_summary.jpg)
 
-#### Кейс 07 — Типовые этажи (учебные данные)
+#### Кейс 07 — Выгрузка квартирографии (учебные данные)
 
-Лист «Типовые этажи» с выдуманными квартирами: это не выгрузка объекта. Одинаковый набор помещений — один цвет. Пустые столбцы квартир убраны. Проверенный результат по корпусу (166 квартир, 10 групп) — в таблице выше и в [README кейса](cases/07-typical-floors/).
+Лист «Типовые этажи» с выдуманными квартирами: это не выгрузка объекта. Одинаковый набор помещений — один цвет. Пустые столбцы квартир убраны. Проверенный результат по корпусу (166 квартир, 10 групп) — в таблице выше и в [README кейса](cases/07-apartment-schedule-export/).
 
 ![Лист «Типовые этажи» с учебными квартирами. Одинаковый набор помещений — один цвет. Подписано как образец.](docs/img/typical_floors_sample.png)
 
@@ -129,7 +129,7 @@
 
 - **Revit API:** task-скрипты (IronPython) через [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor); операторские окна на **PowerShell** и **WinForms**; отчёты **OpenXML** в Excel (без Excel COM на UNC).
 - **Фокус:** workshared и Revit Server (`RSN://`) — read-only аудиты, контролируемые пакетные записи (единицы, уровни/оси на БФ, Compact, поэтапные операции с моделями).
-- **Платформа:** Windows. Кейс 04 — опрос FTP и push на телефон (ntfy / Telegram). Кейс 07 — Dynamo (CPython3) и книга Excel на формулах: без Revit Batch Processor и без записи в модель.
+- **Платформа:** Windows. Кейс 04 — опрос FTP и push на телефон (ntfy / Telegram). Кейс 07 — Dynamo (CPython3) и книга Excel на формулах. Граф и шаблон лежат в одной общей папке; каждый запуск пишет отчёт рядом с моделью ОВ (рядом с файлом-хранилищем, если модель совместная). Без Revit Batch Processor и без записи в модель.
 - **Документация:** примеры в `samples/`, скриншоты в `docs/img/`, безопасность в [docs/SAFETY.ru.md](docs/SAFETY.ru.md).
 
 ---
@@ -157,7 +157,7 @@ bim-revit-automation/
     04-ftp-model-alerts/src/   ← опрос FTP + push (без Revit API)
     05-compact-save/src/       ← окно оператора + задача Compact
     06-model-ops/src/          ← окно преднастроек + Save As / relink
-    07-typical-floors/src/     ← граф Dynamo + шаблон Excel (без RBP)
+    07-apartment-schedule-export/src/  ← общий граф Dynamo; отчёты рядом с моделью ОВ (без RBP)
   samples/
   docs/
     img/                       ← скриншоты сжатия, health check и типовых этажей
@@ -172,7 +172,7 @@ bim-revit-automation/
 - Autodesk Revit (год = году моделей; units — 2022+)
 - Windows + PowerShell
 - [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor) для батч-кейсов с Revit API (01–03, 05–06)
-- Кейс 07: Revit 2024, Dynamo (CPython3), Microsoft Excel 2010 или новее (`Data.ExportExcel`). Revit Batch Processor не нужен.
+- Кейс 07: Revit 2024, Dynamo (CPython3), Microsoft Excel 2010 или новее (`Data.ExportExcel`). Модель ОВ должна быть сохранена на диске или UNC (у облака и Revit Server нет папки рядом). Revit Batch Processor не нужен.
 
 ---
 

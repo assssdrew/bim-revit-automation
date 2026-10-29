@@ -27,7 +27,7 @@ I write the **task scripts + Windows toolkits** (pick models → run → Excel r
 
 ## Quick start (3 steps)
 
-For the Revit API cases (01, 02, 03, 05, 06). Case 04 is a standalone PowerShell watcher. Case 07 is a Dynamo Player graph plus an Excel template — see its README.
+For the Revit API cases (01, 02, 03, 05, 06). Case 04 is a standalone PowerShell watcher. Case 07 is a Dynamo Player graph: one shared script folder, and each run writes `Квартирография` next to the HVAC model (next to the central file when the model is workshared) — see its README.
 
 1. **Prepare a PC** with Windows, PowerShell, the Revit year that matches your models, and [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor). Copy the case `src/` folder next to it and edit `servers.cfg` (placeholder Revit Server hosts in this repo).
 2. **Build the model list** with the case's picker (`choose_models_path.cmd`; case 05 is `Сжатие.vbs` (Compact launcher), case 06's new window is `Операции с моделями.vbs` (Model operations launcher)).
@@ -44,7 +44,7 @@ Some script names, operator notes, and on-screen labels are Russian. English equ
 | [`ИНСТРУКЦИЯ.txt`](cases/05-compact-save/src/ИНСТРУКЦИЯ.txt) | Operator instructions (case 05) |
 | [`Сжатие.vbs`](cases/05-compact-save/src/Сжатие.vbs) | Compact launcher. Window «Сжатие моделей Revit»; «Сжать» = Compact; «Быстрое сжатие» / «Глубокое сжатие» = Fast compact / Deep compact |
 | [`Операции с моделями.vbs`](<cases/06-model-ops/src/Операции с моделями.vbs>) | Model operations launcher (case 06). `show_ops.vbs` opens the same window. Window title «Операции с моделями Revit» |
-| [`Типовые_этажи.dyn`](cases/07-typical-floors/src/Типовые_этажи.dyn), [`Типовые_этажи_ШАБЛОН.xlsx`](cases/07-typical-floors/src/Типовые_этажи_ШАБЛОН.xlsx), [`Инструкция_Типовые_этажи.docx`](cases/07-typical-floors/src/Инструкция_Типовые_этажи.docx) | Typical floors (case 07): Dynamo graph, Excel template, Word instructions. A run writes `Типовые_этажи_<code>.xlsx`. Sheet «Типовые этажи» = Typical floors; Player inputs «Папка отчётов» = Reports folder, «Связь АР» = Architectural link |
+| [`Выгрузка_квартирографии.dyn`](cases/07-apartment-schedule-export/src/Выгрузка_квартирографии.dyn), [`Выгрузка_квартирографии.py`](cases/07-apartment-schedule-export/src/Выгрузка_квартирографии.py), [`Квартирография_ШАБЛОН.xlsx`](cases/07-apartment-schedule-export/src/Квартирография_ШАБЛОН.xlsx), [`Инструкция_Выгрузка_квартирографии.docx`](cases/07-apartment-schedule-export/src/Инструкция_Выгрузка_квартирографии.docx) | Apartment schedule export (case 07): Dynamo graph «Выгрузка квартирографии», node source, Excel template, Word instructions. A run writes `Квартирография_<code>.xlsx` in a `Квартирография` folder next to the HVAC model. Sheet «Типовые этажи» = Typical floors; the only Player input, «Связь АР» = Architectural link |
 
 These files keep their names: the launchers and task scripts refer to them by name.
 
@@ -62,7 +62,7 @@ One table for status and scale. Batch sizes are anonymised figures from a multi-
 | 04 | [FTP model alerts](cases/04-ftp-model-alerts/) | Tested on real working models | Phone push when shared FTP folders change, without watching the client |
 | 05 | [Compact save](cases/05-compact-save/) | Tested on real working models; RSN deep mode on a limited number of runs | Long lists (e.g. ~125 models) in one unattended run; file-size change varies (up to about −11.6% on one early fast-mode model) |
 | 06 | [Model operations](cases/06-model-ops/) (v3.0.0) | Tested on real working models | ~50+ models, mixed UNC / `RSN://`; one saved job plan for staged Save As, move, and relink |
-| 07 | [Typical floors](cases/07-typical-floors/) | Tested in Excel on one real building | 166 apartments, floors 2–17, collapsed into 10 groups (2 \| 3 \| 4 \| 5 \| 6 \| 7–12 \| 13–14 \| 15 \| 16 \| 17) |
+| 07 | [Apartment schedule export](cases/07-apartment-schedule-export/) | Tested in Excel on one real building | One shared script folder; rooms read from the architectural link; the report is written next to the HVAC model (next to the central file when the model is workshared). 166 apartments, floors 2–17, collapsed into 10 groups (2 \| 3 \| 4 \| 5 \| 6 \| 7–12 \| 13–14 \| 15 \| 16 \| 17) |
 
 #### Case 05 — Compact save (screenshots)
 
@@ -78,9 +78,9 @@ Excel report — sheet «Сводка» (Summary), layout of the run totals (thi
 
 ![Excel sheet Summary from a compact report.](docs/img/compact_report_summary.jpg)
 
-#### Case 07 — Typical floors (sample data)
+#### Case 07 — Apartment schedule export (sample data)
 
-Sheet «Типовые этажи» (Typical floors) with made-up apartments, so the picture is not a project export. Floors that share a room signature share a colour. Empty apartment columns are omitted. The verified building result (166 apartments, 10 groups) is in the table above and in the [case README](cases/07-typical-floors/).
+Sheet «Типовые этажи» (Typical floors) with made-up apartments, so the picture is not a project export. Floors that share a room signature share a colour. Empty apartment columns are omitted. The verified building result (166 apartments, 10 groups) is in the table above and in the [case README](cases/07-apartment-schedule-export/).
 
 ![Typical floors sheet with sample apartments. Same room signature, same colour. Labeled sample data.](docs/img/typical_floors_sample.png)
 
@@ -129,7 +129,7 @@ Details: [docs/SAFETY.md](docs/SAFETY.md)
 
 - **Revit API** task scripts (IronPython) run through [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor); operator tooling in **PowerShell** and **WinForms**; **OpenXML** Excel reports (no Excel COM on UNC).
 - **Focus:** workshared and Revit Server (`RSN://`) models — read-only audits, controlled batch writes (units, levels/grids on base files, Compact, staged model operations).
-- **Platform:** Windows. Case 04 adds FTP polling and phone push (ntfy / Telegram). Case 07 is Dynamo (CPython3) plus an Excel workbook of formulas: it does not use Revit Batch Processor and does not write the model.
+- **Platform:** Windows. Case 04 adds FTP polling and phone push (ntfy / Telegram). Case 07 is Dynamo (CPython3) plus an Excel workbook of formulas. The graph and template stay in one shared folder; each run writes the report beside the HVAC model (beside the central file when the model is workshared). It does not use Revit Batch Processor and does not write the model.
 - **Docs:** sample reports under `samples/`, screenshots under `docs/img/`, safety notes in [docs/SAFETY.md](docs/SAFETY.md).
 
 ---
@@ -157,7 +157,7 @@ bim-revit-automation/
     04-ftp-model-alerts/src/   ← FTP poller + phone alerts (no Revit API)
     05-compact-save/src/       ← operator UI + Compact task
     06-model-ops/src/          ← presets UI + Save As / relink pipeline
-    07-typical-floors/src/     ← Dynamo graph + Excel template (no RBP)
+    07-apartment-schedule-export/src/  ← shared Dynamo graph; reports next to the HVAC model (no RBP)
   samples/                     ← anonymised report snippets
   docs/
     img/                       ← compact, health-check, and typical-floors screenshots
@@ -172,7 +172,7 @@ Copy a case `src/` onto a PC with the matching Revit year. Case 04 runs standalo
 - Autodesk Revit (year matching the models; units toolkit targets 2022+)
 - Windows + PowerShell
 - [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor) for the Revit API batch cases (01–03, 05–06)
-- Case 07: Revit 2024, Dynamo (CPython3), Microsoft Excel 2010 or newer (`Data.ExportExcel`). No Revit Batch Processor.
+- Case 07: Revit 2024, Dynamo (CPython3), Microsoft Excel 2010 or newer (`Data.ExportExcel`). The HVAC model must be a saved disk or UNC file (a cloud or Revit Server model has no folder beside it). No Revit Batch Processor.
 
 ---
 

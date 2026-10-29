@@ -1,32 +1,37 @@
 # -*- coding: utf-8 -*-
 # Dynamo (Revit 2024, CPython3). Выгрузка СЫРЫХ строк помещений из связи АР.
 # Ничего не считает: одна строка = одно помещение. Порядок столбцов = лист «Выгрузка».
-# IN[0] - часть имени связи АР (необязательно), IN[1] - папка отчётов (там лежит шаблон).
+# «Выгрузка квартирографии».
+# IN[0] - часть имени связи АР (необязательно).
+# Шаблон берётся из SCRIPT_DIR; отчёты пишутся в папку REPORT_DIR_NAME рядом с моделью ОВ
+# (для модели совместной работы - рядом с ФАЙЛОМ-ХРАНИЛИЩЕМ).
 # OUT = [путь к файлу корпуса, строки для листа «Выгрузка»]
 
 # ======================= НАСТРОЙКИ =======================
 # Example parameter names from one office's shared parameters (KLWT_*).
-# They are not a fixed standard: change this block when the architectural
-# team uses different names. Примеры имён — на другом объекте их меняют здесь.
+# Change this block when the architectural team uses different names.
+# Примеры имён — на другом объекте их меняют здесь.
 P_FLOOR = "KLWT_Этаж"
 P_TYPE  = "KLWT_Тип квартиры"
 P_NUM   = "KLWT_Номер квартиры на этаже"
 P_SOBSH = "KLWT_Площадь квартиры общая"
 P_SZH   = "KLWT_Площадь квартиры жилая"
 # Имена помещений для выгрузки (регистр, пробелы, ё/е не важны).
-# Те же варианты должны быть на листе Excel «Настройки», иначе строка выгрузится, но не попадёт в столбец.
 ROOM_NAMES = ["Совмещенный санузел", "Санузел", "Ванная", "Уборная", "Туалет", "Гардеробная"]
 EXPORT_ALL_APT_ROOMS = False   # True = выгрузить все помещения, у которых заполнен номер квартиры
 AREA_DECIMALS = 1
-TEMPLATE_NAME = "Типовые_этажи_ШАБЛОН.xlsx"
-REPORT_PREFIX = "Типовые_этажи_"
+# Папка скрипта (здесь лежит шаблон):
+SCRIPT_DIR = r"\\server\share\BIM\Dynamo\Выгрузка квартирографии"
+TEMPLATE_NAME = "Квартирография_ШАБЛОН.xlsx"
+REPORT_DIR_NAME = "Квартирография"     # папка отчётов рядом с моделью ОВ
+REPORT_PREFIX = "Квартирография_"
 HEADER = ["Этаж", "Тип", "Номер", "Sобщ", "Sж", "Имя", "Число"]
 # =========================================================
 
 import clr
 clr.AddReference("RevitAPI")
 clr.AddReference("RevitServices")
-from Autodesk.Revit.DB import (FilteredElementCollector, RevitLinkInstance, BuiltInCategory,
+from Autodesk.Revit.DB import (ModelPathUtils, FilteredElementCollector, RevitLinkInstance, BuiltInCategory,
                                BuiltInParameter, StorageType, UnitUtils, UnitTypeId, SpecTypeId)
 from RevitServices.Persistence import DocumentManager
 
@@ -140,15 +145,41 @@ def building_code(title):
     t = re.sub(r"\.rvt$", "", (title or "").strip(), flags=re.I)
     return re.sub(r"[^\w\-]+", "_", t).strip("_") or "БЕЗ_ИМЕНИ"
 
-def prepare_file(folder, code):
-    folder = (folder or "").strip().strip('"')
-    if not folder or not os.path.isdir(folder):
-        raise Exception("Папка отчётов не найдена: '%s'. Укажите её в поле «Папка отчётов»." % folder)
-    tpl = os.path.join(folder, TEMPLATE_NAME)
+def report_folder():
+    path = ""
+    try:
+        if doc.IsWorkshared:
+            mp = doc.GetWorksharingCentralModelPath()
+            if mp is not None:
+                if mp.CloudPath:
+                    raise Exception("Модель ОВ хранится в облаке (BIM 360/ACC). Папку отчётов рядом с ней создать нельзя.")
+                path = ModelPathUtils.ConvertModelPathToUserVisiblePath(mp) or ""
+        else:
+            path = doc.PathName or ""
+    except Exception as e:
+        if "облаке" in str(e):
+            raise
+        path = doc.PathName or ""
+    low = path.strip().lower()
+    if not low:
+        raise Exception("Модель ОВ не сохранена. Сохраните модель и запустите снова.")
+    if low.startswith(("bim 360://", "autodesk docs://", "cloud://", "rsn://", "http://", "https://")):
+        raise Exception("Модель ОВ хранится в облаке/на Revit Server (%s). Папку отчётов рядом с ней создать нельзя." % path)
+    folder = os.path.join(os.path.dirname(path), REPORT_DIR_NAME)
+    if not os.path.isdir(folder):
+        try:
+            os.makedirs(folder)
+        except OSError:
+            raise Exception("Не удалось создать папку отчётов %s (нет доступа?)." % folder)
+    return folder
+
+def prepare_file(code):
+    tpl = os.path.join(SCRIPT_DIR, TEMPLATE_NAME)
+    folder = report_folder()
     path = os.path.join(folder, REPORT_PREFIX + code + ".xlsx")
     if not os.path.exists(path):
         if not os.path.exists(tpl):
-            raise Exception("Нет шаблона %s в папке %s" % (TEMPLATE_NAME, folder))
+            raise Exception("Нет шаблона %s в папке скрипта %s" % (TEMPLATE_NAME, SCRIPT_DIR))
         shutil.copyfile(tpl, path)
     try:
         with open(path, "ab"):
@@ -160,4 +191,4 @@ def prepare_file(folder, code):
 is_error = found is None
 code = "ОШИБКА" if is_error else building_code(found_name)
 OUT.append(["Выгружено:", datetime.datetime.now().strftime("%d.%m.%Y %H:%M")])
-OUT = [prepare_file(IN[1], code), OUT]
+OUT = [prepare_file(code), OUT]
