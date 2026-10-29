@@ -1,16 +1,3 @@
-# -*- coding: utf-8 -*-
-"""Build the typical-floors workbook (formulas only, no macros). Excel 2010+.
-
-Usage:
-    python build.py empty Типовые_этажи_ШАБЛОН.xlsx
-    python build.py rooms.txt out.xlsx [link-title-marker]
-
-rooms.txt is semicolon-separated and starts with the header
-Этаж;Тип;Номер;Sобщ;Sж;Имя;Число.
-
-An .xlsx argument is read from its first worksheet (local checks only).
-Do not commit a project export.
-"""
 import openpyxl,csv,sys
 from openpyxl.styles import Font,PatternFill,Alignment
 from openpyxl.formatting.rule import FormulaRule
@@ -21,8 +8,7 @@ if src=='empty':
 elif src.endswith('.txt'):
     rows=list(csv.reader(open(src,encoding='utf-8-sig'),delimiter=';'))
 else:
-    wb0=openpyxl.load_workbook(src, data_only=True)
-    ws0=wb0[wb0.sheetnames[0]]
+    ws0=openpyxl.load_workbook(src)['Спецификация СУ+УБ+ГР 2.1']
     rows=[[('' if v is None else str(v)) for v in r] for r in ws0.iter_rows(values_only=True)]
 N=3001; NA=1500; NF=80
 wb=openpyxl.Workbook(); B=Font(bold=True)
@@ -125,7 +111,7 @@ for i in range(3,18):t.column_dimensions[L(i)].width=13
 t.column_dimensions['S'].width=30;t.column_dimensions['V'].width=40
 t.freeze_panes='C3'
 
-# Таблица 1 — Этаж | Номер | Тип | Комнат | Sобщ | Sж | СУ | Уборная | Гардеробная
+# Таблица 1
 from openpyxl.styles import Border,Side
 T=wb.create_sheet('Таблица 1',1)
 T.merge_cells('A1:J1');T['A1']='="Корпус "&Настройки!B3';T['A1'].font=Font(bold=True,size=12)
@@ -139,16 +125,16 @@ for r in range(4,NA+4):
 T.freeze_panes='B4';T.column_dimensions['A'].width=18
 
 I=wb.create_sheet('Инструкция',0)
-steps=['Как получить типовые этажи','',
-'Один раз: положите «Типовые_этажи.dyn» и «Типовые_этажи_ШАБЛОН.xlsx» в общую папку. В Проигрывателе Dynamo (шестерёнка) укажите «Папка отчётов» = эта папка.','',
+steps=['Выгрузка квартирографии — как получить отчёт','',
+'Один раз: в Проигрывателе Dynamo выберите папку \\\\server\\share\\BIM\\Dynamo\\Выгрузка квартирографии.','',
 'Каждый раз:',
-'1. Закройте файлы Типовые_этажи_*.xlsx.',
-'2. Откройте модель ОВ нужного корпуса (связь АР загружена).',
-'3. Управление → Проигрыватель Dynamo → «Типовые_этажи» → Запуск. «Связь АР» оставьте пустым.',
-'4. Откройте в папке файл Типовые_этажи_K__.xlsx (K01, K04…) — он создаётся/обновляется сам. Результат: листы «Типовые этажи» и «Таблица 1» (F9 при необходимости).','',
+'1. Закройте файлы Квартирография_*.xlsx.',
+'2. Откройте модель ОВ нужного корпуса (связь АР загружена, модель сохранена).',
+'3. Управление → Проигрыватель Dynamo → «Выгрузка_квартирографии» → Запуск. «Связь АР» оставьте пустым.',
+'4. Откройте папку «Квартирография» рядом с моделью ОВ (для совместной работы — рядом с файлом-хранилищем) и файл Квартирография_K__.xlsx. Результат: листы «Типовые этажи» и «Таблица 1» (F9 при необходимости).','',
 'Если ошибка:',
-'• Появился файл Типовые_этажи_ОШИБКА.xlsx — в нём на листе «Выгрузка» причина и список связей. Загрузите связь АР или впишите часть её имени в поле «Связь АР» (если связей АР несколько).',
-'• Узел жёлтый с текстом «Закройте файл…» — закройте Excel и запустите снова. «Нет шаблона…» — верните ШАБЛОН в папку.',
+'• Появился файл Квартирография_ОШИБКА.xlsx — в нём на листе «Выгрузка» причина и список связей. Загрузите связь АР или впишите часть её имени в поле «Связь АР» (если связей АР несколько).',
+'• Узел жёлтый с текстом «Закройте файл…» — закройте Excel и запустите снова. «Нет шаблона…» — верните Квартирография_ШАБЛОН.xlsx в папку скрипта. «Модель ОВ не сохранена / в облаке» — сохраните модель на сервере.',
 '• «ВНИМАНИЕ: нет параметров…» — поправьте имена параметров в блоке НАСТРОЙКИ узла «Выгрузка АР». Имена помещений — на листе «Настройки».']
 for i,x in enumerate(steps,1): I.cell(i,1,x)
 I['A1'].font=Font(bold=True,size=14);I['A5'].font=B;I['A11'].font=B;I.column_dimensions['A'].width=120
