@@ -1,5 +1,7 @@
 # BIM Revit Automation Portfolio
 
+**Revit Automation & BIM Manager (MEP) | Revit API, Dynamo, Navisworks**
+
 [![License: MIT](https://img.shields.io/github/license/assssdrew/bim-revit-automation)](LICENSE)
 [![Language](https://img.shields.io/badge/Language-Python%20%7C%20IronPython%20%7C%20PowerShell-3776AB?logo=python&logoColor=white)](cases/)
 [![Tested on real working models](https://img.shields.io/badge/Tested%20on-real%20working%20models-2ea44f)](cases/)
@@ -33,16 +35,33 @@ For the Revit API cases (01, 02, 03, 05, 06). Case 04 is a standalone PowerShell
 
 ---
 
+## File names and UI language
+
+Some script names, operator notes, and on-screen labels are Russian. English equivalents:
+
+| In the repo | English |
+|---|---|
+| [`ИНСТРУКЦИЯ.txt`](cases/05-compact-save/src/ИНСТРУКЦИЯ.txt) | Operator instructions (case 05) |
+| [`Сжатие.vbs`](cases/05-compact-save/src/Сжатие.vbs) | Compact launcher. Window «Сжатие моделей Revit»; «Сжать» = Compact; «Быстрое сжатие» / «Глубокое сжатие» = Fast compact / Deep compact |
+| [`Операции с моделями.vbs`](<cases/06-model-ops/src/Операции с моделями.vbs>) | Model operations launcher (case 06). `show_ops.vbs` opens the same window. Window title «Операции с моделями Revit» |
+| [`Типовые_этажи.dyn`](cases/07-typical-floors/src/Типовые_этажи.dyn), [`Типовые_этажи_ШАБЛОН.xlsx`](cases/07-typical-floors/src/Типовые_этажи_ШАБЛОН.xlsx), [`Инструкция_Типовые_этажи.docx`](cases/07-typical-floors/src/Инструкция_Типовые_этажи.docx) | Typical floors (case 07): Dynamo graph, Excel template, Word instructions. A run writes `Типовые_этажи_<code>.xlsx`. Sheet «Типовые этажи» = Typical floors; Player inputs «Папка отчётов» = Reports folder, «Связь АР» = Architectural link |
+
+These files keep their names: the launchers and task scripts refer to them by name.
+
+---
+
 ## Cases
 
-| # | Case | Status | Impact |
-|---|------|--------|--------|
-| 01 | [Project Units + RSN](cases/01-project-units/) | Tested on real working models | Batch Length accuracy across disk / UNC / `RSN://` |
-| 02 | [Health Check](cases/02-health-check/) (v1.4.0) | Tested on real working models; read-only (no model changes) | Health metrics and RVT links in one Excel report and CSV batch |
-| 03 | [Levels & Grids](cases/03-levels-grids/) | Tested on real working models; MVP scope (Apply on base files only) | Cascade BF↔AR and disciplines↔BF audit in report sessions |
+One table for status and scale. Batch sizes are anonymised figures from a multi-discipline project. Case 07 is the verified result on one building. The health-check Excel report is the screenshot at the top of this page.
+
+| # | Case | Status | Scale |
+|---|------|--------|-------|
+| 01 | [Project Units + RSN](cases/01-project-units/) | Tested on real working models | Length accuracy in one batch across disk, UNC, and live `RSN://` |
+| 02 | [Health Check](cases/02-health-check/) (v1.4.0) | Tested on real working models; read-only (no model changes) | Health metrics and RVT links in one Excel report and a CSV batch |
+| 03 | [Levels & Grids](cases/03-levels-grids/) | Tested on real working models; MVP scope (Apply on base files only) | Weekly cascade: ~5–6 base files (BF↔AR), then up to ~80 discipline models (vs BF); one audit report session per wave |
 | 04 | [FTP model alerts](cases/04-ftp-model-alerts/) | Tested on real working models | Phone push when shared FTP folders change, without watching the client |
-| 05 | [Compact save](cases/05-compact-save/) | Tested on real working models; RSN deep mode on a limited number of runs | Long lists (e.g. ~125 models) in one unattended run; file-size change varies (often small, e.g. 61.03→61.01 MB; up to about −11.6% on one early fast-mode model) |
-| 06 | [Model operations](cases/06-model-ops/) (v3.0.0) | Tested on real working models | Staged Save As, move, and relink from one saved job plan |
+| 05 | [Compact save](cases/05-compact-save/) | Tested on real working models; RSN deep mode on a limited number of runs | Long lists (e.g. ~125 models) in one unattended run; file-size change varies (up to about −11.6% on one early fast-mode model) |
+| 06 | [Model operations](cases/06-model-ops/) (v3.0.0) | Tested on real working models | ~50+ models, mixed UNC / `RSN://`; one saved job plan for staged Save As, move, and relink |
 | 07 | [Typical floors](cases/07-typical-floors/) | Tested in Excel on one real building | 166 apartments, floors 2–17, collapsed into 10 groups (2 \| 3 \| 4 \| 5 \| 6 \| 7–12 \| 13–14 \| 15 \| 16 \| 17) |
 
 #### Case 05 — Compact save (screenshots)
@@ -51,23 +70,17 @@ Operator window (deep mode, mixed network and Revit Server list):
 
 ![Compact models window with a list of models. Names are blurred.](docs/img/compact_window.jpg)
 
-Excel report — sheet «Модели», deep mode, two models, both OK:
+Excel report — sheet «Модели» (Models), deep mode, two models, both OK:
 
 ![Excel sheet Models from a deep compact run. Two models, both OK. Names and paths are blurred.](docs/img/compact_report_models.jpg)
 
-Excel report — sheet «Сводка», 61.03 MB → 61.01 MB:
+Excel report — sheet «Сводка» (Summary), layout of the run totals (this picture is a two-model sample):
 
-![Excel sheet Summary from a compact report. Size went from 61.03 MB to 61.01 MB.](docs/img/compact_report_summary.jpg)
-
-#### Case 02 — Health Check (screenshot)
-
-Link check across a model hub — Excel report:
-
-![Excel health check of Revit links. Model names and paths are blurred.](docs/img/health_check_links.jpg)
+![Excel sheet Summary from a compact report.](docs/img/compact_report_summary.jpg)
 
 #### Case 07 — Typical floors (sample data)
 
-Sheet «Типовые этажи» with made-up apartments, so the picture is not a project export. Floors that share a room signature share a colour. Empty apartment columns are omitted. The verified building result (166 apartments, 10 groups) is in the table above and in the [case README](cases/07-typical-floors/).
+Sheet «Типовые этажи» (Typical floors) with made-up apartments, so the picture is not a project export. Floors that share a room signature share a colour. Empty apartment columns are omitted. The verified building result (166 apartments, 10 groups) is in the table above and in the [case README](cases/07-typical-floors/).
 
 ![Typical floors sheet with sample apartments. Same room signature, same colour. Labeled sample data.](docs/img/typical_floors_sample.png)
 
@@ -78,7 +91,7 @@ Also in `docs/`: a [draft Navisworks clash-tolerance matrix](docs/navisworks-cla
 
 ## Featured
 
-**Compact save** ([case 05](cases/05-compact-save/)) — operator UI (`Сжатие.vbs`, Compact launcher): **fast** (Create New Local, Sync Compact) and **deep** (central + Audit, Save As same central with Compact). See the [case 05 screenshots](#case-05--compact-save-screenshots) above.
+**Compact save** ([case 05](cases/05-compact-save/)) — operator UI (`Сжатие.vbs`, Compact launcher): **fast** (Create New Local, Sync Compact) and **deep** (central + Audit, Save As same central with Compact). Long lists (e.g. ~125 models) run unattended. See the [case 05 screenshots](#case-05--compact-save-screenshots) above.
 
 **Model operations** ([case 06](cases/06-model-ops/)) — rename, folder / Revit year, and RVT relink in staged passes via `Операции с моделями.vbs` (Model operations launcher) → `presets.ps1` (with `start_ops.ps1` and `job_lib.ps1`).
 
@@ -94,23 +107,6 @@ Manual open-check-fix does not scale. These toolkits:
 2. Run the Revit API job (batch host or a dedicated window)
 3. Emit Excel reports with status highlighting (**GREEN / YELLOW / RED**) — or size before/after for Compact
 4. Apply writes only where the risk is understood (units; BF levels/grids; Compact with an explicit mode; model-ops after Save job) — never blind coordinate fixes
-
----
-
-## Project scale / context
-
-Typical workflow context (anonymised examples). Figures describe usual batch size on a multi-discipline project.
-
-| Item | Context | Impact |
-|------|---------|--------|
-| Weekly cascade | ~5–6 base files (BF↔AR), then up to ~80 discipline models (vs BF) | One audit report session per wave |
-| Model operations | ~50+ models, mixed UNC / `RSN://` | One job plan drives detach / Save As / move / relink passes |
-| Units / RSN | Live Revit Server models | One batch for Length accuracy across disk and `RSN://` |
-| Compact save | Tested on working models; RSN deep on a limited number of runs | Long lists (e.g. ~125 models) in one run; size delta often small (61.03→61.01 MB on a 2-model deep run) |
-| Health Check | Read-only workshared audit | One Excel report plus CSV across the hub |
-| Levels & Grids | MVP scope (Apply on base files only) | BF-first cascade before discipline reports |
-| FTP model alerts | Shared exchange folders | Scheduled poll → push without manual FTP watch |
-| Typical floors | One residential building, rooms read from the architectural link | 166 apartments on floors 2–17 collapsed into 10 groups |
 
 ---
 
