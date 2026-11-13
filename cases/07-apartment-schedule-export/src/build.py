@@ -36,6 +36,11 @@ s['A15']='Имена помещений (по одному в ячейке, ре
 for j,(h,vals) in enumerate([('СУ',['Совмещенный санузел','Санузел','Ванная','Совмещённый санузел']),('Уборная',['Уборная','Туалет']),('Гардеробная',['Гардеробная'])]):
     c=2+j;s.cell(16,c,h).font=B
     for k,v in enumerate(vals):s.cell(17+k,c,v)
+s['F16']='МОП';s['F16'].font=B
+for k,v in enumerate(['Лестничная клетка','Тамбур-шлюз','Тамбур-шлюз (ПБЗ)','Коридор','Лифтовой холл']):s.cell(17+k,6,v)
+s.column_dimensions['F'].width=24
+s['A28']='МОП (столбец F) — имена помещений МОП для листа «МОП», до 10. Должны совпадать со списком MOP_NAMES в скрипте.'
+wm=wb.create_sheet('Выгрузка МОП'); wm.append(['Этаж','Имя','Площадь'])
 s['A17']='варианты →';s['A27']='Строки 17–26 — до 10 вариантов на каждый вид. Тип «1(1XL)» разбирается: Комнат=1, Тип=1XL.'
 s.column_dimensions['A'].width=58;
 for c in 'BCD':s.column_dimensions[c].width=24
@@ -100,12 +105,15 @@ for r in range(3,last+1):
     t[f'U{r}']=f'=IF({k}>MAX(B$3:B${last}),"",{k})'
     t[f'V{r}']=f'=IF(U{r}="","",LOOKUP(2,1/(B$3:B${last}=U{r}),S$3:S${last}))'
     t[f'W{r}']=f'=IF(U{r}="","",COUNTIF(B$3:B${last},U{r}))'
-cols=['FFC7CE','C6EFCE','FFEB9C','BDD7EE','E4DFEC','FCE4D6','D9D9D9','DDEBF7','E2EFDA','FFF2CC','F8CBAD','C9C9FF']
+cols=['FFC7CE','C6EFCE','FFEB9C','BDD7EE','E4DFEC','FCE4D6','D9D9D9','A9D08E','9BC2E6','FFD966','F4B084','C9C9FF',
+ 'B4E5A2','FF99CC','99CCFF','CCFFCC','FFCC99','CC99FF','99FFCC','FFFF99','D5A6BD','A2C4C9','B6D7A8','F9CB9C',
+ 'EA9999','B4A7D6','9FC5E8','FFE599','D9EAD3','C27BA0','76A5AF','93C47D','E06666','8E7CC3','6FA8DC','F6B26B',
+ 'CCCC66','66CCCC','CC9966','999966']
 for i,cl in enumerate(cols):
     f=PatternFill(start_color=cl,end_color=cl,fill_type='solid')
-    t.conditional_formatting.add(f'A3:Q{last}',FormulaRule(formula=[f'AND($B3<>"",MOD($B3-1,12)={i})'],fill=f))
-    t.conditional_formatting.add(f'U3:W{last}',FormulaRule(formula=[f'AND($U3<>"",MOD($U3-1,12)={i})'],fill=f))
-t.column_dimensions['R'].hidden=True
+    t.conditional_formatting.add(f'A3:Q{last}',FormulaRule(formula=[f'AND($B3<>"",MOD($B3-1,40)={i})'],fill=f))
+    t.conditional_formatting.add(f'U3:W{last}',FormulaRule(formula=[f'AND($U3<>"",MOD($U3-1,40)={i})'],fill=f))
+t.column_dimensions['R'].hidden=True;t.column_dimensions['S'].hidden=True;t['S2']='служ.'
 t['N1']='=IF(Настройки!E5="","","Выгружено: "&Настройки!E5)';t['N1'].font=Font(italic=True)
 for i in range(3,18):t.column_dimensions[L(i)].width=13
 t.column_dimensions['S'].width=30;t.column_dimensions['V'].width=40
@@ -122,25 +130,59 @@ mp='ABCDGEFHIJ'
 for r in range(4,NA+4):
     for c,src in enumerate(mp,1):
         T.cell(r,c,f'=IF(Квартиры!{src}{r-2}="","",Квартиры!{src}{r-2})')
+        if c in (6,7): T.cell(r,c).number_format='0.00'
+T['K3']='служ.'
+for r in range(4,NA+4):
+    T[f'K{r}']=(f'=IF(B{r}="","",1)' if r==4 else f'=IF(B{r}="","",IF(B{r}=B{r-1},K{r-1},N(K{r-1})+1))')
+T.column_dimensions['K'].hidden=True
+thin=Side(style='thin',color='000000')
+from openpyxl.styles.differential import DifferentialStyle
+T.conditional_formatting.add(f'A4:J{NA+3}',FormulaRule(formula=['AND($B4<>"",$B4<>$B3)'],border=Border(top=thin)))
+T.conditional_formatting.add(f'A4:J{NA+3}',FormulaRule(formula=['AND($K4<>"",MOD($K4,2)=0)'],fill=PatternFill(start_color='EDEDED',end_color='EDEDED',fill_type='solid')))
 T.freeze_panes='B4';T.column_dimensions['A'].width=18
 
+M=wb.create_sheet('МОП')
+NM=10; MR="'Выгрузка МОП'!"
+M['A1']='="Корпус "&Настройки!B3&" — площади МОП, м²"';M['A1'].font=Font(bold=True,size=12)
+M['A2']='Этаж'
+for j in range(NM):
+    c=L(2+j); M[f'{c}2']=f'=IF(Настройки!$F${17+j}="","",Настройки!$F${17+j})'
+TC=L(2+NM); M[f'{TC}2']='Итого этаж'
+for c in range(1,3+NM): M.cell(2,c).font=B; M.cell(3,c).font=B
+M['A3']='Итого корпус'
+FA=f'{MR}$A$2:$A$4000'; FC=f'{MR}$C$2:$C$4000'; FB=f'{MR}$B$2:$B$4000'
+for j in range(NM):
+    c=L(2+j); M[f'{c}3']=f'=IF({c}$2="","",SUM({c}4:{c}{NF+3}))'
+M[f'{TC}3']=f'=SUM({TC}4:{TC}{NF+3})'
+for r in range(4,NF+4):
+    M[f'A{r}']=(f'=IFERROR(MIN({FA})/(COUNT({FA})>0),"")' if r==4 else
+               f'=IFERROR(IF(A{r-1}="","",SMALL({FA},COUNTIF({FA},"<="&A{r-1})+1)),"")')
+    for j in range(NM):
+        c=L(2+j); M[f'{c}{r}']=f'=IF(OR($A{r}="",{c}$2=""),"",SUMIFS({FC},{FA},$A{r},{FB},{c}$2))'
+    M[f'{TC}{r}']=f'=IF($A{r}="","",SUM(B{r}:{L(1+NM)}{r}))'
+for r in range(3,NF+4):
+    for c in range(2,3+NM): M.cell(r,c).number_format='0.00'
+M.column_dimensions['A'].width=14
+for j in range(NM+1): M.column_dimensions[L(2+j)].width=16
+M.freeze_panes='B4'
 I=wb.create_sheet('Инструкция',0)
-steps=['Выгрузка квартирографии — как получить отчёт','',
-'Один раз: в Проигрывателе Dynamo выберите папку \\\\server\\share\\BIM\\Dynamo\\Выгрузка квартирографии.','',
+steps=['Выгрузка квартирографии v7 — как получить отчёт','',
+'Один раз: в Проигрывателе Dynamo выберите папку скрипта «Выгрузка квартирографии» (общая сетевая папка).','',
 'Каждый раз:',
-'1. Закройте файлы Квартирография_*.xlsx.',
-'2. Откройте модель ОВ нужного корпуса (связь АР загружена, модель сохранена).',
-'3. Управление → Проигрыватель Dynamo → «Выгрузка_квартирографии» → Запуск. «Связь АР» оставьте пустым.',
-'4. Откройте папку «Квартирография» рядом с моделью ОВ (для совместной работы — рядом с файлом-хранилищем) и файл Квартирография_K__.xlsx. Результат: листы «Типовые этажи» и «Таблица 1» (F9 при необходимости).','',
+'1. Закройте файл Квартирография_K__.xlsx этого корпуса.',
+'2. Откройте модель ОВ (связь АР корпуса загружена, модель сохранена).',
+'3. Управление → Проигрыватель Dynamo → «Выгрузка_квартирографии» → Запуск. «Связь АР» пусто (или часть имени, например K04, если связей АР несколько).',
+'4. В Проигрывателе появится текст «ГОТОВО: … Файл: …». Откройте файл: листы «Типовые этажи», «Таблица 1», «МОП». Формулы пересчитаются при открытии.','',
 'Если ошибка:',
-'• Появился файл Квартирография_ОШИБКА.xlsx — в нём на листе «Выгрузка» причина и список связей. Загрузите связь АР или впишите часть её имени в поле «Связь АР» (если связей АР несколько).',
-'• Узел жёлтый с текстом «Закройте файл…» — закройте Excel и запустите снова. «Нет шаблона…» — верните Квартирография_ШАБЛОН.xlsx в папку скрипта. «Модель ОВ не сохранена / в облаке» — сохраните модель на сервере.',
+'• Текст «ОШИБКА: …» в Проигрывателе — там причина и что делать (несколько связей АР, файл занят, нет шаблона, модель не сохранена).',
+'• «Файл занят: …» — закройте файл (у себя или попросите коллегу) и запустите снова.',
 '• «ВНИМАНИЕ: нет параметров…» — поправьте имена параметров в блоке НАСТРОЙКИ узла «Выгрузка АР». Имена помещений — на листе «Настройки».']
 for i,x in enumerate(steps,1): I.cell(i,1,x)
 I['A1'].font=Font(bold=True,size=14);I['A5'].font=B;I['A11'].font=B;I.column_dimensions['A'].width=120
 wb.move_sheet('Типовые этажи',1-wb.sheetnames.index('Типовые этажи'))
-order=['Инструкция','Типовые этажи','Таблица 1','Выгрузка','Настройки','Расчет','Квартиры']
+order=['Инструкция','Типовые этажи','Таблица 1','МОП','Выгрузка','Выгрузка МОП','Настройки','Расчет','Квартиры']
 wb._sheets=[wb[n] for n in order]
 wb['Расчет'].sheet_state='hidden';wb['Квартиры'].sheet_state='hidden'
+wb.calculation.fullCalcOnLoad=True
 wb.active=0
 wb.save(out)
