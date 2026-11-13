@@ -7,11 +7,16 @@ This repository is not one versioned package. Each case keeps its own script ver
 
 ## [Unreleased]
 
+### Added
+
+- **Case 08.** Batch verification schedules (`Проверочные спецификации`). Operator window, OpenXML workbook (no Excel), optional Google Sheets push, and autotests. Sample project key `PROJ`. Classifier path, Revit Server hosts, sheet URL, and push secret in the published tree are placeholders. Client filter dumps and the client template catalog are not included.
+
 ### Changed
 
-- **Case 03.** The case READMEs and `src/README.md` now say **v1.0.2**, the `SCRIPT_VERSION` already written by `levels_grids_audit.py` and `levels_grids_apply.py`. The shared helper `lg_lib.py` header matches that. The previous `src/README.md` said `1.0.x`.
-- **Case 05.** The RSN deep-compact patch header now says **4.0**, matching the marker `RSN_PATCH_PS_v4` and the case READMEs. The header had said `2.0`, which is the case 01 patch. The launcher `установить_поддержку_RSN_в_RBP.cmd` uses the same header. The marker string in the script is unchanged.
-- **Case 06.** Toolkit headers that said `1.0` now say **3.0.0**, the `SCRIPT_VERSION` already written by `saveas_central.py`, `detach_to_buffer.py`, and `update_rvt_links.py`, and the version already named in the hub README. Both case READMEs name v3.0.0. The saved-job field `version = "1.0.0"` inside `presets.ps1` is unchanged.
+- **Case 02.** Health check **v1.4.0 → v1.5.4** (`SCRIPT_VERSION` in `health_check.py`; last commit of that file on the working repo is 2026-08-31). The Excel report adds a Metrics sheet. Link rows include status, IFC, and nested RVT links.
+- **Case 03.** Audit **v1.0.2 → v1.21.0** (file last updated 2026-11-06). Apply **v1.0.2 → v1.23.0**. Fix-plan window for base files and for sections. Project Base Point X/Y/Z moves only when the operator checks those axes. Survey Point and True North stay untouched. Apply does not create or delete levels or grids.
+- **Case 05.** `compact_save.py` from the working repo's default branch (last commit of that file 2026-10-26, about 86 KB; the script has no `SCRIPT_VERSION`). Report sheets are Models, Summary, and Projects. The Dynamics sheet is not written. Optional parallel run, one BatchRvt per year. `служебное/naming.ps1` and `служебное/CLI.txt` name the exports. Revit Server 2025 is the placeholder `revit-server-2025.example.local`. The RSN deep-compact patch header stays **4.0** (`RSN_PATCH_PS_v4`).
+- **Case 06.** Framework **v3.0.0 → v3.1.0**. `saveas_central.py` reports 3.1.0. Code moved under `служебное/`. Workset read/write passes and autotests are included. The single launcher is `Операции с моделями.vbs`.
 
 ### Added
 

@@ -27,7 +27,7 @@ I write the **task scripts + Windows toolkits** (pick models → run → Excel r
 
 ## Quick start (3 steps)
 
-For the Revit API cases (01, 02, 03, 05, 06). Case 04 is a standalone PowerShell watcher. Case 07 (v7) is a Dynamo Player graph: one shared script folder, one building per run, and Python writes `Квартирография_Kxx.xlsx` next to the HVAC model (next to the central file when the model is workshared) without starting Excel — see its README.
+For the Revit API cases (01, 02, 03, 05, 06, 08). Case 04 is a standalone PowerShell watcher. Case 07 (v7) is a Dynamo Player graph: one shared script folder, one building per run, and Python writes `Квартирография_Kxx.xlsx` next to the HVAC model (next to the central file when the model is workshared) without starting Excel — see its README. Case 08 starts from `Проверочные спецификации.vbs` (Verification schedules).
 
 1. **Prepare a PC** with Windows, PowerShell, the Revit year that matches your models, and [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor). Copy the case `src/` folder next to it and edit `servers.cfg` (placeholder Revit Server hosts in this repo).
 2. **Build the model list** with the case's picker (`choose_models_path.cmd`; case 05 is `Сжатие.vbs` (Compact launcher), case 06's new window is `Операции с моделями.vbs` (Model operations launcher)).
@@ -43,7 +43,8 @@ Some script names, operator notes, and on-screen labels are Russian. English equ
 |---|---|
 | [`ИНСТРУКЦИЯ.txt`](cases/05-compact-save/src/ИНСТРУКЦИЯ.txt) | Operator instructions (case 05) |
 | [`Сжатие.vbs`](cases/05-compact-save/src/Сжатие.vbs) | Compact launcher. Window «Сжатие моделей Revit»; «Сжать» = Compact; «Быстрое сжатие» / «Глубокое сжатие» = Fast compact / Deep compact |
-| [`Операции с моделями.vbs`](<cases/06-model-ops/src/Операции с моделями.vbs>) | Model operations launcher (case 06). `show_ops.vbs` opens the same window. Window title «Операции с моделями Revit» |
+| [`Операции с моделями.vbs`](<cases/06-model-ops/src/Операции с моделями.vbs>) | Model operations launcher (case 06). Window title «Операции с моделями Revit». v3.1.0 has this one launcher; it finds `presets.ps1` in the `служебное` subfolder |
+| [`Проверочные спецификации.vbs`](<cases/08-batch-verification-schedules/src/Проверочные спецификации.vbs>) | Verification schedules launcher (case 08). Window finds `ui_schedules.ps1` under the service folder |
 | [`Выгрузка_квартирографии.dyn`](cases/07-apartment-schedule-export/src/Выгрузка_квартирографии.dyn), [`Выгрузка_квартирографии.py`](cases/07-apartment-schedule-export/src/Выгрузка_квартирографии.py), [`Квартирография_ШАБЛОН.xlsx`](cases/07-apartment-schedule-export/src/Квартирография_ШАБЛОН.xlsx), [`Инструкция_Выгрузка_квартирографии.docx`](cases/07-apartment-schedule-export/src/Инструкция_Выгрузка_квартирографии.docx) | Apartment schedule export (case 07, v7): Dynamo graph «Выгрузка квартирографии», node source, Excel template, Word instructions. One building per run writes `Квартирография_<code>.xlsx` in a `Квартирография` folder next to the HVAC model. «Типовые этажи» = Typical floors; «МОП» = common areas; «Связь АР» = Architectural link; «Результат» = Player result text |
 
 These files keep their names: the launchers and task scripts refer to them by name.
@@ -57,12 +58,13 @@ One table for status and scale. Batch sizes are anonymised figures from a multi-
 | # | Case | Status | Scale |
 |---|------|--------|-------|
 | 01 | [Project Units + RSN](cases/01-project-units/) | Tested on real working models | Length accuracy in one batch across disk, UNC, and live `RSN://` |
-| 02 | [Health Check](cases/02-health-check/) (v1.4.0) | Tested on real working models; read-only (no model changes) | Health metrics and RVT links in one Excel report and a CSV batch |
-| 03 | [Levels & Grids](cases/03-levels-grids/) (v1.0.2) | Tested on real working models; MVP scope (Apply on base files only) | Weekly cascade: ~5–6 base files (BF↔AR), then up to ~80 discipline models (vs BF); one audit report session per wave |
+| 02 | [Health Check](cases/02-health-check/) (v1.5.4) | Tested on real working models; read-only (no model changes) | Health metrics and RVT links in one Excel report (Summary, Links, Metrics) and a CSV batch |
+| 03 | [Levels & Grids](cases/03-levels-grids/) (audit v1.21.0, apply v1.23.0) | Tested on real working models | Weekly cascade: ~5–6 base files (BF↔AR), then up to ~80 discipline models (vs BF); Apply writes only the rows checked in the fix plan |
 | 04 | [FTP model alerts](cases/04-ftp-model-alerts/) | Tested on real working models | Phone push when shared FTP folders change, without watching the client |
 | 05 | [Compact save](cases/05-compact-save/) | Tested on real working models; RSN deep mode on a limited number of runs | Long lists (e.g. ~125 models) in one unattended run; file-size change varies (up to about −11.6% on one early fast-mode model) |
-| 06 | [Model operations](cases/06-model-ops/) (v3.0.0) | Tested on real working models | ~50+ models, mixed UNC / `RSN://`; one saved job plan for staged Save As, move, and relink |
+| 06 | [Model operations](cases/06-model-ops/) (v3.1.0) | Tested on real working models | ~50+ models, mixed UNC / `RSN://`; one saved job plan for staged Save As, move, relink, and worksets |
 | 07 | [Apartment schedule export](cases/07-apartment-schedule-export/) (v7) | Tested in Excel on one real building | One building per run from a shared script folder; areas to hundredths; common areas on «МОП»; the report is written next to the HVAC model (next to the central file when the model is workshared). 166 apartments, floors 2–17, collapsed into 10 groups (2 \| 3 \| 4 \| 5 \| 6 \| 7–12 \| 13–14 \| 15 \| 16 \| 17) |
+| 08 | [Batch verification schedules](cases/08-batch-verification-schedules/) | Tested on real working models | Operator window; workbook via OpenXML (no Excel); optional Google Sheets push; insert is a separate write |
 
 #### Case 05 — Compact save (screenshots)
 
@@ -93,7 +95,7 @@ Also in `docs/`: a [draft Navisworks clash-tolerance matrix](docs/navisworks-cla
 
 **Compact save** ([case 05](cases/05-compact-save/)) — operator UI (`Сжатие.vbs`, Compact launcher): **fast** (Create New Local, Sync Compact) and **deep** (central + Audit, Save As same central with Compact). Long lists (e.g. ~125 models) run unattended. See the [case 05 screenshots](#case-05--compact-save-screenshots) above.
 
-**Model operations** ([case 06](cases/06-model-ops/)) — rename, folder / Revit year, and RVT relink in staged passes via `Операции с моделями.vbs` (Model operations launcher) → `presets.ps1` (with `start_ops.ps1` and `job_lib.ps1`).
+**Model operations** ([case 06](cases/06-model-ops/)) — rename, folder / Revit year, RVT relink, and worksets in staged passes via `Операции с моделями.vbs` (Model operations launcher) → `служебное/presets.ps1` (with `start_ops.ps1` and `job_lib.ps1`).
 
 ---
 
@@ -106,7 +108,7 @@ Manual open-check-fix does not scale. These toolkits:
 1. Build a model list (folder / files / Revit Server)
 2. Run the Revit API job (batch host or a dedicated window)
 3. Emit Excel reports with status highlighting (**GREEN / YELLOW / RED**) — or size before/after for Compact
-4. Apply writes only where the risk is understood (units; BF levels/grids; Compact with an explicit mode; model-ops after Save job) — never blind coordinate fixes
+4. Apply writes only where the risk is understood (units; levels/grids on the checked fix-plan rows; Compact with an explicit mode; model-ops after Save job) — never a blind coordinate fix
 
 ---
 
@@ -115,10 +117,10 @@ Manual open-check-fix does not scale. These toolkits:
 Automation that can destroy a federated model is worse than no automation.
 
 - **Audit** scripts never Save / Sync / Relinquish
-- **Apply** is a separate script / explicit list (e.g. BF only)
+- **Apply** is a separate script. Levels and grids run only on the rows checked in the fix plan (base files or sections)
 - **Compact** is a write: fast uses Create New Local; deep opens the central with Audit and saves the same central with Compact (no Detach). RSN deep mode needs RBP patch v4 (`RSN_PATCH_PS_v4`); tested on a limited number of runs.
 - **Model operations** writes only after Save job; Detach is the local upgrade buffer, not the live central
-- Coordinates, PBP, Survey Point, True North, Shared Coordinates are **out of scope** here — report only (Health Check), never auto-fix
+- Survey Point, True North, and Shared Coordinates stay report-only. Case 03 can shift Project Base Point X/Y/Z only when those axes are checked in the fix plan. Health Check never writes coordinates
 - Tolerances are mandatory to avoid false RED on floating-point noise
 
 Details: [docs/SAFETY.md](docs/SAFETY.md)
@@ -129,7 +131,7 @@ Details: [docs/SAFETY.md](docs/SAFETY.md)
 
 - **Revit API** task scripts (IronPython) run through [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor); operator tooling in **PowerShell** and **WinForms**; **OpenXML** Excel reports (no Excel COM on UNC).
 - **Focus:** workshared and Revit Server (`RSN://`) models — read-only audits, controlled batch writes (units, levels/grids on base files, Compact, staged model operations).
-- **Platform:** Windows. Case 04 adds FTP polling and phone push (ntfy / Telegram). Case 07 (v7) is Dynamo (CPython3) plus an Excel workbook of formulas. Python writes the `.xlsx` with the standard library (no `Data.ExportExcel`, no Excel process). The graph and template stay in one shared folder; one building per run writes the report beside the HVAC model (beside the central file when the model is workshared). It does not use Revit Batch Processor and does not write the model.
+- **Platform:** Windows. Case 04 adds FTP polling and phone push (ntfy / Telegram). Case 07 (v7) is Dynamo (CPython3) plus an Excel workbook of formulas. Python writes the `.xlsx` with the standard library (no `Data.ExportExcel`, no Excel process). The graph and template stay in one shared folder; one building per run writes the report beside the HVAC model (beside the central file when the model is workshared). It does not use Revit Batch Processor and does not write the model. Case 08 writes its workbook with OpenXML (no Excel) and can optionally push the same tables to Google Sheets.
 - **Docs:** sample reports under `samples/`, screenshots under `docs/img/`, safety notes in [docs/SAFETY.md](docs/SAFETY.md).
 
 ---
@@ -137,7 +139,7 @@ Details: [docs/SAFETY.md](docs/SAFETY.md)
 ## Third-party
 
 - **[Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor)** (Dan Rumery, BVN) is the batch host for the RBP-based cases. It is **not** included in this repository; install it separately. RBP is licensed under **GPL-3.0**.
-- `cases/06-model-ops/src/rbp_open_fail_patch/` contains **two modified copies of RBP scripts** (`revit_dialog_util.py`, `revit_failure_handling.py`) with the original “Copyright (c) 2020 Dan Rumery, BVN” notice. They are **derivative works of RBP and are covered by GPL-3.0**, not by this repository's MIT licence.
+- `cases/06-model-ops/src/служебное/rbp_open_fail_patch/` contains **two modified copies of RBP scripts** (`revit_dialog_util.py`, `revit_failure_handling.py`) with the original “Copyright (c) 2020 Dan Rumery, BVN” notice. They are **derivative works of RBP and are covered by GPL-3.0**, not by this repository's MIT licence.
 - `cases/01-project-units/src/rbp_rsn_patch/` (and its copy in case 05) is a PowerShell script that edits **your installed** RBP `Scripts` folder to accept `RSN://` paths (it creates `*.bak_before_rsn` backups); it does not ship RBP code.
 
 See [NOTICE](NOTICE) for details.
@@ -157,14 +159,15 @@ bim-revit-automation/
     03-levels-grids/src/
     04-ftp-model-alerts/src/   ← FTP poller + phone alerts (no Revit API)
     05-compact-save/src/       ← operator UI + Compact task
-    06-model-ops/src/          ← presets UI + Save As / relink pipeline
+    06-model-ops/src/          ← launcher + служебное/ (Save As / relink / worksets)
     07-apartment-schedule-export/src/  ← v7 Dynamo graph; Python writes the xlsx next to the HVAC model (no RBP)
+    08-batch-verification-schedules/src/  ← window; xlsx without Excel; optional Google Sheets
   samples/                     ← anonymised report snippets
   docs/
     img/                       ← compact, health-check, and typical-floors screenshots
 ```
 
-Copy a case `src/` onto a PC with the matching Revit year. Case 04 runs standalone on Windows (Task Scheduler). Case 05 starts from `Сжатие.vbs`. Case 06 starts from `Операции с моделями.vbs`; `run_cascade.cmd` is the older menu.
+Copy a case `src/` onto a PC with the matching Revit year. Case 04 runs standalone on Windows (Task Scheduler). Case 05 starts from `Сжатие.vbs`. Case 06 starts from `Операции с моделями.vbs`; `служебное/run_cascade.cmd` is the older menu. Case 08 starts from `Проверочные спецификации.vbs`.
 
 ---
 
@@ -172,8 +175,9 @@ Copy a case `src/` onto a PC with the matching Revit year. Case 04 runs standalo
 
 - Autodesk Revit (year matching the models; units toolkit targets 2022+)
 - Windows + PowerShell
-- [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor) for the Revit API batch cases (01–03, 05–06)
+- [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor) for the Revit API batch cases (01–03, 05–06, 08)
 - Case 07 (v7): Revit 2024, Dynamo (CPython3). Excel 2010 or newer is only needed to open the report (`fullCalcOnLoad`); the export does not start Excel. The HVAC model must be a saved disk or UNC file (a cloud or Revit Server model has no folder beside it). No Revit Batch Processor.
+- Case 08: Windows, Revit, Revit Batch Processor. The workbook is OpenXML, so Excel is not required. Google Sheets is optional and needs a web-app URL that is not stored in this repo.
 
 ---
 

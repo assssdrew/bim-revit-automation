@@ -1,0 +1,5 @@
+*
+!.gitignore
+!README.txt
+!LICENSE-MIT.txt
+!DocumentFormat.OpenXml.dll

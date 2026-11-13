@@ -5,6 +5,11 @@
 # Outputs: rvt_list.txt, last_selection.cfg.
 # How to run: choose_models_path.cmd or powershell -File choose_models.ps1.
 # Notes: Same UX as other cases; UTF-8 BOM on this copy.
+# Unified model picker for Revit Batch Processor.
+# Sources: local folder / local files / Revit Server (RSN://).
+# Writes rvt_list.txt - can replace or append.
+# Encoding: ASCII-friendly messages for Windows PowerShell 5.1.
+
 Add-Type -AssemblyName System.Windows.Forms
 
 $ToolDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -808,6 +813,53 @@ function Ensure-RbpRsnPatch {
     return $false
 }
 
+function Ensure-RbpOpenFailPatch {
+    # Stock RBP cancels Open on Cyrillic Revit warnings. Apply on every list write.
+    $toolsRoot = Split-Path -Parent $ToolDir
+    $candidates = @(
+        (Join-Path $toolsRoot "rbp_patches\apply_open_fail.ps1"),
+        (Join-Path $ToolDir "patch_rbp_open_failures.ps1"),
+        (Join-Path $toolsRoot "batch_model_ops\patch_rbp_open_failures.ps1")
+    )
+    $patchPs = $null
+    foreach ($c in $candidates) {
+        if (Test-Path -LiteralPath $c -PathType Leaf) { $patchPs = $c; break }
+    }
+    if (-not $patchPs) {
+        Write-Host "WARN: RBP open-fail patch script missing (tools\rbp_patches)."
+        return $false
+    }
+    Write-Host ""
+    Write-Host "Ensuring RBP does not cancel Open on Cyrillic warnings..."
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $patchPs
+    $code = $LASTEXITCODE
+    if ($code -eq 0) {
+        Write-Host "RBP open-fail patch: OK"
+        return $true
+    }
+    if ($code -eq 2) {
+        Write-Host "WARN: RBP Scripts not found on this PC."
+        Write-Host "      Keep Revit Batch Processor open, then pick models again."
+        return $false
+    }
+    Write-Host ("WARN: open-fail patch finished with code {0}." -f $code)
+    Write-Host "      See tools\rbp_patches\README.md"
+    return $false
+}
+
+function Ensure-RbpProgressMonitor {
+    $toolsRoot = Split-Path -Parent $ToolDir
+    $ensurePs = Join-Path $toolsRoot "rbp_progress_monitor\ensure_running.ps1"
+    if (-not (Test-Path -LiteralPath $ensurePs -PathType Leaf)) {
+        Write-Host "WARN: rbp_progress_monitor missing (optional)."
+        return $false
+    }
+    Write-Host ""
+    Write-Host "RBP progress monitor: tray (window opens when BatchRvt starts)..."
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ensurePs
+    return ($LASTEXITCODE -eq 0)
+}
+
 function Select-FromRevitServer {
     # Local/UNC (menu 1-2) unchanged. Server needs RBP patch for File exists check.
     [void](Ensure-RbpRsnPatch)
@@ -835,7 +887,7 @@ function Show-FolderPathDialog {
     # Same Explorer-style dialog as file Open (address bar, tree, UNC).
     # Trick: ValidateNames/CheckFileExists off + dummy FileName = pick folder.
     $dlg = New-Object System.Windows.Forms.OpenFileDialog
-    $dlg.Title = "Select folder with Revit models (paste path in address bar)"
+    $dlg.Title = "Parent folder (e.g. 4_Razrabotka): paste path, then Open"
     $dlg.Filter = "Folders|*.nevermatch|All files (*.*)|*.*"
     $dlg.FilterIndex = 1
     $dlg.CheckFileExists = $false
@@ -845,6 +897,20 @@ function Show-FolderPathDialog {
     $dlg.DereferenceLinks = $true
     $dlg.FileName = "Select this folder"
 
+    if (Test-Path -LiteralPath $PathCfg) {
+        $prev = (
+            Get-Content -LiteralPath $PathCfg -ErrorAction SilentlyContinue |
+                Where-Object { $_ -and -not $_.StartsWith("#") -and -not $_.StartsWith("FILES:") } |
+                Select-Object -First 1
+        )
+        if ($prev) {
+            $prev = Get-NativePath $prev.Trim()
+            if ($prev -and (Test-Path -LiteralPath $prev -PathType Container)) {
+                $dlg.InitialDirectory = $prev
+            }
+        }
+    }
+
     if ($dlg.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) {
         return $null
     }
@@ -852,7 +918,6 @@ function Show-FolderPathDialog {
     $picked = $dlg.FileName
     if ([string]::IsNullOrWhiteSpace($picked)) { return $null }
 
-    # If user picked a real file, use its directory; if dummy name in folder - that folder
     if (Test-Path -LiteralPath $picked -PathType Leaf) {
         return (Split-Path -Parent $picked)
     }
@@ -867,31 +932,198 @@ function Show-FolderPathDialog {
     return $null
 }
 
+function Get-U {
+    param([int[]]$Codes)
+    return (-join ($Codes | ForEach-Object { [char]([int]$_) }))
+}
+
+function Test-ExcludedModelPath([string]$Path) {
+    if ([string]::IsNullOrWhiteSpace($Path)) { return $true }
+    $p = $Path.Replace("/", "\")
+    if ($p -match '(?i)\\Backup\\') { return $true }
+    if ($p -match '(?i)\\Revit_temp\\') { return $true }
+    if ($p -match '(?i)_backup(\\|$)') { return $true }
+    $rezerv = Get-U @(0x0420, 0x0435, 0x0437, 0x0435, 0x0440, 0x0432) # Резерв
+    $sem = Get-U @(0x0421, 0x0435, 0x043C, 0x0435, 0x0439, 0x0441, 0x0442, 0x0432, 0x0430) # Семейства
+    if ($p -match ("(?i)\\" + [regex]::Escape($rezerv) + "\\")) { return $true }
+    if ($p -match ("(?i)\\" + [regex]::Escape($sem) + "\\")) { return $true }
+    return $false
+}
+
+function Test-IsTargetRvtName([string]$Name) {
+    # Main models: *_R22.rvt / *_R24.rvt (any _R##.rvt). Skip .0001.rvt backups.
+    if ([string]::IsNullOrWhiteSpace($Name)) { return $false }
+    if ($Name -match '\.\d{4}\.rvt$') { return $false }
+    return ($Name -match '(?i)_R\d{2}\.rvt$')
+}
+
+function Get-TargetRvtsFromDisciplineFolders {
+    param([string[]]$Folders)
+
+    $found = New-Object System.Collections.Generic.List[string]
+    foreach ($folder in @($Folders)) {
+        if ([string]::IsNullOrWhiteSpace($folder)) { continue }
+        if (-not (Test-Path -LiteralPath $folder -PathType Container)) { continue }
+        if (Test-ExcludedModelPath $folder) { continue }
+
+        $rvtDirs = @(
+            Get-ChildItem -LiteralPath $folder -Recurse -Directory -Force -ErrorAction SilentlyContinue |
+                Where-Object {
+                    ($_.Name -ieq "RVT") -and
+                    (-not (Test-ExcludedModelPath $_.FullName))
+                }
+        )
+        foreach ($rvtDir in $rvtDirs) {
+            $files = @(
+                Get-ChildItem -LiteralPath $rvtDir.FullName -File -Force -ErrorAction SilentlyContinue |
+                    Where-Object {
+                        ($_.Extension -ieq ".rvt") -and
+                        (Test-IsTargetRvtName $_.Name)
+                    }
+            )
+            foreach ($f in $files) {
+                $native = Get-NativePath $f.FullName
+                if ($native -and -not (Test-ExcludedModelPath $native)) {
+                    [void]$found.Add($native)
+                }
+            }
+        }
+    }
+    return @($found | Sort-Object -Unique)
+}
+
+function Show-DisciplineFolderChecklist {
+    param([string]$ParentFolder)
+
+    $children = @(
+        Get-ChildItem -LiteralPath $ParentFolder -Directory -Force -ErrorAction SilentlyContinue |
+            Sort-Object Name
+    )
+    if ($children.Count -eq 0) {
+        Write-Host ("No subfolders in: {0}" -f $ParentFolder)
+        return @()
+    }
+
+    $form = New-Object System.Windows.Forms.Form
+    $form.Text = "Select discipline folders (Ctrl+click / Space)"
+    $form.Size = New-Object System.Drawing.Size(760, 560)
+    $form.StartPosition = "CenterScreen"
+    $form.MinimizeBox = $false
+    $form.MaximizeBox = $true
+    $form.MinimumSize = New-Object System.Drawing.Size(560, 400)
+
+    $lbl = New-Object System.Windows.Forms.Label
+    $lbl.Location = New-Object System.Drawing.Point(12, 10)
+    $lbl.Size = New-Object System.Drawing.Size(720, 40)
+    $lbl.Anchor = "Top,Left,Right"
+    $lbl.Text = ("Parent: {0}{1}Check folders with models (e.g. 5_1_..., 9_PT). Script finds RVT\*_R##.rvt only." -f $ParentFolder, [Environment]::NewLine)
+
+    $list = New-Object System.Windows.Forms.CheckedListBox
+    $list.Location = New-Object System.Drawing.Point(12, 58)
+    $list.Size = New-Object System.Drawing.Size(720, 390)
+    $list.Anchor = "Top,Bottom,Left,Right"
+    $list.CheckOnClick = $true
+    $list.IntegralHeight = $false
+
+    foreach ($d in $children) {
+        [void]$list.Items.Add($d.Name, $false)
+    }
+
+    $lblStatus = New-Object System.Windows.Forms.Label
+    $lblStatus.Location = New-Object System.Drawing.Point(12, 456)
+    $lblStatus.Size = New-Object System.Drawing.Size(420, 22)
+    $lblStatus.Anchor = "Bottom,Left"
+    $lblStatus.Text = ("Folders: {0}" -f $children.Count)
+
+    $btnAll = New-Object System.Windows.Forms.Button
+    $btnAll.Text = "Check all"
+    $btnAll.Location = New-Object System.Drawing.Point(12, 484)
+    $btnAll.Size = New-Object System.Drawing.Size(100, 30)
+    $btnAll.Anchor = "Bottom,Left"
+    $btnAll.Add_Click({
+        for ($i = 0; $i -lt $list.Items.Count; $i++) { $list.SetItemChecked($i, $true) }
+    })
+
+    $btnNone = New-Object System.Windows.Forms.Button
+    $btnNone.Text = "Uncheck all"
+    $btnNone.Location = New-Object System.Drawing.Point(120, 484)
+    $btnNone.Size = New-Object System.Drawing.Size(100, 30)
+    $btnNone.Anchor = "Bottom,Left"
+    $btnNone.Add_Click({
+        for ($i = 0; $i -lt $list.Items.Count; $i++) { $list.SetItemChecked($i, $false) }
+    })
+
+    $btnOk = New-Object System.Windows.Forms.Button
+    $btnOk.Text = "OK"
+    $btnOk.Location = New-Object System.Drawing.Point(532, 484)
+    $btnOk.Size = New-Object System.Drawing.Size(90, 30)
+    $btnOk.Anchor = "Bottom,Right"
+    $btnOk.Add_Click({
+        $form.DialogResult = [System.Windows.Forms.DialogResult]::OK
+        $form.Close()
+    })
+
+    $btnCancel = New-Object System.Windows.Forms.Button
+    $btnCancel.Text = "Cancel"
+    $btnCancel.Location = New-Object System.Drawing.Point(630, 484)
+    $btnCancel.Size = New-Object System.Drawing.Size(90, 30)
+    $btnCancel.Anchor = "Bottom,Right"
+    $btnCancel.Add_Click({
+        $form.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
+        $form.Close()
+    })
+
+    $form.AcceptButton = $btnOk
+    $form.CancelButton = $btnCancel
+    $form.Controls.AddRange(@($lbl, $list, $lblStatus, $btnAll, $btnNone, $btnOk, $btnCancel))
+    $null = $form.ShowDialog()
+    if ($form.DialogResult -ne [System.Windows.Forms.DialogResult]::OK) {
+        return @()
+    }
+
+    $selected = @()
+    for ($i = 0; $i -lt $list.Items.Count; $i++) {
+        if ($list.GetItemChecked($i)) {
+            $selected += (Join-Path $ParentFolder ([string]$list.Items[$i]))
+        }
+    }
+    return @($selected)
+}
+
 function Select-LocalFolder {
+    Write-Host ""
+    Write-Host "Step 1/2: open PARENT folder (e.g. ...\4_Razrabotka proekta)"
     $typed = Show-FolderPathDialog
     if ([string]::IsNullOrWhiteSpace($typed)) {
         return @()
     }
 
     $root = Get-NativePath $typed
-    if (-not (Test-Path -LiteralPath $root)) {
+    if (-not (Test-Path -LiteralPath $root -PathType Container)) {
         Write-Host ("Folder not found: {0}" -f $root)
         return @()
     }
 
     Set-Content -LiteralPath $PathCfg -Value $root -Encoding UTF8
-    Write-Host ("Folder: {0}" -f $root)
+    Write-Host ("Parent: {0}" -f $root)
 
-    $tempOut = Join-Path $env:TEMP ("rvt_pick_{0}.txt" -f [guid]::NewGuid().ToString("N"))
-    & $MakeList -Root $root -Out $tempOut -SkipBackups
-    if (-not (Test-Path -LiteralPath $tempOut)) { return @() }
+    Write-Host "Step 2/2: check discipline folders (Ctrl / Space), then OK"
+    $disciplineFolders = @(Show-DisciplineFolderChecklist -ParentFolder $root)
+    if ($disciplineFolders.Count -eq 0) {
+        Write-Host "No discipline folders selected."
+        return @()
+    }
 
-    $files = @(
-        Get-Content -LiteralPath $tempOut |
-            ForEach-Object { $_.Trim() } |
-            Where-Object { $_ }
-    )
-    Remove-Item -LiteralPath $tempOut -Force -ErrorAction SilentlyContinue
+    Write-Host ("Scanning {0} folder(s) for RVT\*_R##.rvt ..." -f $disciplineFolders.Count)
+    foreach ($d in $disciplineFolders) {
+        Write-Host ("  - {0}" -f (Split-Path -Leaf $d))
+    }
+
+    $files = @(Get-TargetRvtsFromDisciplineFolders -Folders $disciplineFolders)
+    Write-Host ("Found {0} target model(s)." -f $files.Count)
+    if ($files.Count -gt 0) {
+        Write-Host ("Example: {0}" -f $files[0])
+    }
     return $files
 }
 
@@ -912,6 +1144,208 @@ function Select-LocalFiles {
     return $files
 }
 
+function Test-LikelyUnwantedModel([string]$Path) {
+    if ([string]::IsNullOrWhiteSpace($Path)) { return $true }
+    $name = ""
+    try { $name = [System.IO.Path]::GetFileName($Path) } catch { $name = $Path }
+    $full = $Path.Replace("/", "\")
+    if ($name -match '\.\d{4}\.rvt$') { return $true }
+    if ($full -match '(?i)\\Backup\\') { return $true }
+    $rezerv = Get-U @(0x0440, 0x0435, 0x0437, 0x0435, 0x0440, 0x0432)
+    $kopiya = Get-U @(0x043A, 0x043E, 0x043F, 0x0438, 0x044F)
+    $low = $name.ToLowerInvariant()
+    if ($low -match 'backup|_bak|\.old|_copy') { return $true }
+    if ($low.Contains($rezerv.ToLowerInvariant())) { return $true }
+    if ($low.Contains($kopiya.ToLowerInvariant())) { return $true }
+    return $false
+}
+
+function Get-ModelPickLabel([string]$Path) {
+    if ([string]::IsNullOrWhiteSpace($Path)) { return "" }
+    if ($Path -match '^(?i)RSN://') {
+        $rest = $Path -replace '^(?i)RSN://', ''
+        $parts = @($rest.Split(@('/'), [System.StringSplitOptions]::RemoveEmptyEntries))
+        $file = if ($parts.Count -gt 0) { $parts[$parts.Count - 1] } else { $Path }
+        $folder = if ($parts.Count -gt 1) { $parts[$parts.Count - 2] } else { "" }
+        if ($folder) { return ("{0}    [{1}]" -f $file, $folder) }
+        return $file
+    }
+    $file = [System.IO.Path]::GetFileName($Path)
+    $folder = [System.IO.Path]::GetFileName([System.IO.Path]::GetDirectoryName($Path))
+    if ($folder) { return ("{0}    [{1}]" -f $file, $folder) }
+    return $file
+}
+
+function Show-ModelChecklist {
+    param([string[]]$Paths)
+
+    $src = @($Paths | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique)
+    if ($src.Count -le 1) { return @($src) }
+
+    # Plain Object[] — PS 5.1 @() / foreach on List[object] throws "Argument types do not match"
+    $items = @(
+        foreach ($p in $src) {
+            $unwanted = Test-LikelyUnwantedModel $p
+            [pscustomobject]@{
+                Path     = $p
+                Label    = Get-ModelPickLabel $p
+                Checked  = (-not $unwanted)
+                Unwanted = $unwanted
+            }
+        }
+    )
+
+    $form = New-Object System.Windows.Forms.Form
+    $form.Text = Get-U @(0x0412, 0x044B, 0x0431, 0x043E, 0x0440, 0x0020, 0x043C, 0x043E, 0x0434, 0x0435, 0x043B, 0x0435, 0x0439, 0x0020, 0x0434, 0x043B, 0x044F, 0x0020, 0x0052, 0x0042, 0x0050)
+    $form.Size = New-Object System.Drawing.Size(920, 640)
+    $form.StartPosition = "CenterScreen"
+    $form.MinimizeBox = $false
+    $form.MaximizeBox = $true
+    $form.MinimumSize = New-Object System.Drawing.Size(720, 480)
+
+    $lblHint = New-Object System.Windows.Forms.Label
+    $lblHint.Location = New-Object System.Drawing.Point(12, 10)
+    $lblHint.Size = New-Object System.Drawing.Size(880, 36)
+    $lblHint.Text = (
+        (Get-U @(0x041E, 0x0442, 0x043C, 0x0435, 0x0442, 0x044C, 0x0442, 0x0435, 0x0020, 0x043B, 0x0438, 0x0448, 0x043D, 0x0435, 0x0435, 0x0020, 0x043D, 0x0435, 0x043D, 0x0443, 0x0436, 0x043D, 0x044B, 0x0435, 0x0020, 0x0028, 0x0440, 0x0435, 0x0437, 0x0435, 0x0440, 0x0432, 0x002C, 0x0020, 0x0062, 0x0061, 0x0063, 0x006B, 0x0075, 0x0070, 0x002C, 0x0020, 0x043A, 0x043E, 0x043F, 0x0438, 0x0438, 0x0029, 0x002E, 0x0020)) +
+        (Get-U @(0x0424, 0x0438, 0x043B, 0x044C, 0x0442, 0x0440, 0x0020, 0x043F, 0x043E, 0x0020, 0x0438, 0x043C, 0x0435, 0x043D, 0x0438, 0x0020, 0x0438, 0x043B, 0x0438, 0x0020, 0x043F, 0x0430, 0x043F, 0x043A, 0x0435, 0x002E))
+    )
+
+    $txtFilter = New-Object System.Windows.Forms.TextBox
+    $txtFilter.Location = New-Object System.Drawing.Point(12, 50)
+    $txtFilter.Size = New-Object System.Drawing.Size(880, 24)
+
+    $list = New-Object System.Windows.Forms.CheckedListBox
+    $list.Location = New-Object System.Drawing.Point(12, 82)
+    $list.Size = New-Object System.Drawing.Size(880, 430)
+    $list.CheckOnClick = $true
+    $list.IntegralHeight = $false
+    $list.Anchor = "Top,Bottom,Left,Right"
+    $txtFilter.Anchor = "Top,Left,Right"
+    $lblHint.Anchor = "Top,Left,Right"
+
+    $lblStatus = New-Object System.Windows.Forms.Label
+    $lblStatus.Location = New-Object System.Drawing.Point(12, 518)
+    $lblStatus.Size = New-Object System.Drawing.Size(500, 22)
+    $lblStatus.Anchor = "Bottom,Left"
+
+    $script:ModelPickState = @{
+        Items     = $items
+        List      = $list
+        Status    = $lblStatus
+        Filter    = $txtFilter
+        Visible   = @()
+        Refreshing = $false
+    }
+
+    $script:ModelPickRefresh = {
+        $st = $script:ModelPickState
+        $filter = ([string]$st.Filter.Text).Trim().ToLowerInvariant()
+        $st.Refreshing = $true
+        $st.List.BeginUpdate()
+        try {
+            $st.List.Items.Clear()
+            $vis = New-Object System.Collections.ArrayList
+            foreach ($it in $st.Items) {
+                $hay = (($it.Label + " " + $it.Path).ToLowerInvariant())
+                if ($filter -and $hay.IndexOf($filter) -lt 0) { continue }
+                $idx = $st.List.Items.Add($it.Label)
+                $st.List.SetItemChecked($idx, [bool]$it.Checked)
+                [void]$vis.Add($it)
+            }
+            $st.Visible = @($vis.ToArray())
+        }
+        finally {
+            $st.List.EndUpdate()
+            $st.Refreshing = $false
+        }
+        $checkedN = @($st.Items | Where-Object { $_.Checked }).Count
+        $skipN = @($st.Items | Where-Object { $_.Unwanted }).Count
+        $st.Status.Text = ("Selected {0} / {1}   (auto-unchecked extras: {2})" -f $checkedN, $st.Items.Count, $skipN)
+    }
+
+    $list.Add_ItemCheck({
+        param($sender, $e)
+        $st = $script:ModelPickState
+        if ($st.Refreshing) { return }
+        $vis = @($st.Visible)
+        if ($e.Index -ge 0 -and $e.Index -lt $vis.Count) {
+            $vis[$e.Index].Checked = ($e.NewValue -eq [System.Windows.Forms.CheckState]::Checked)
+            $checkedN = @($st.Items | Where-Object { $_.Checked }).Count
+            $skipN = @($st.Items | Where-Object { $_.Unwanted }).Count
+            $st.Status.Text = ("Selected {0} / {1}   (auto-unchecked extras: {2})" -f $checkedN, $st.Items.Count, $skipN)
+        }
+    })
+    $txtFilter.Add_TextChanged({ & $script:ModelPickRefresh })
+
+    $btnAll = New-Object System.Windows.Forms.Button
+    $btnAll.Text = "Check visible"
+    $btnAll.Location = New-Object System.Drawing.Point(12, 548)
+    $btnAll.Size = New-Object System.Drawing.Size(120, 32)
+    $btnAll.Anchor = "Bottom,Left"
+    $btnAll.Add_Click({
+        foreach ($it in @($script:ModelPickState.Visible)) { $it.Checked = $true }
+        & $script:ModelPickRefresh
+    })
+
+    $btnNone = New-Object System.Windows.Forms.Button
+    $btnNone.Text = "Uncheck visible"
+    $btnNone.Location = New-Object System.Drawing.Point(140, 548)
+    $btnNone.Size = New-Object System.Drawing.Size(130, 32)
+    $btnNone.Anchor = "Bottom,Left"
+    $btnNone.Add_Click({
+        foreach ($it in @($script:ModelPickState.Visible)) { $it.Checked = $false }
+        & $script:ModelPickRefresh
+    })
+
+    $btnJunk = New-Object System.Windows.Forms.Button
+    $btnJunk.Text = "Uncheck extras"
+    $btnJunk.Location = New-Object System.Drawing.Point(278, 548)
+    $btnJunk.Size = New-Object System.Drawing.Size(120, 32)
+    $btnJunk.Anchor = "Bottom,Left"
+    $btnJunk.Add_Click({
+        foreach ($it in $script:ModelPickState.Items) {
+            if ($it.Unwanted) { $it.Checked = $false }
+        }
+        & $script:ModelPickRefresh
+    })
+
+    $btnOk = New-Object System.Windows.Forms.Button
+    $btnOk.Text = "OK"
+    $btnOk.Location = New-Object System.Drawing.Point(692, 548)
+    $btnOk.Size = New-Object System.Drawing.Size(90, 32)
+    $btnOk.Anchor = "Bottom,Right"
+    $btnOk.Add_Click({
+        $form.DialogResult = [System.Windows.Forms.DialogResult]::OK
+        $form.Close()
+    })
+
+    $btnCancel = New-Object System.Windows.Forms.Button
+    $btnCancel.Text = "Cancel"
+    $btnCancel.Location = New-Object System.Drawing.Point(790, 548)
+    $btnCancel.Size = New-Object System.Drawing.Size(90, 32)
+    $btnCancel.Anchor = "Bottom,Right"
+    $btnCancel.Add_Click({
+        $form.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
+        $form.Close()
+    })
+
+    $form.AcceptButton = $btnOk
+    $form.CancelButton = $btnCancel
+    $form.Controls.AddRange(@(
+        $lblHint, $txtFilter, $list, $lblStatus, $btnAll, $btnNone, $btnJunk, $btnOk, $btnCancel
+    ))
+    $txtFilter.Anchor = "Top,Left,Right"
+    $list.Anchor = "Top,Bottom,Left,Right"
+
+    $form.Add_Shown({ & $script:ModelPickRefresh })
+    $null = $form.ShowDialog()
+    if ($form.DialogResult -ne [System.Windows.Forms.DialogResult]::OK) {
+        return @()
+    }
+    return @($script:ModelPickState.Items | Where-Object { $_.Checked } | ForEach-Object { $_.Path })
+}
+
 # ---------------- UI ----------------
 Write-Host ""
 Write-Host "============================================"
@@ -927,9 +1361,9 @@ if ($existing.Count -gt 0) {
 }
 
 Write-Host "Source:"
-Write-Host "  1 - Folder on this PC / network share (all .rvt)"
+Write-Host "  1 - Parent folder -> pick discipline folders (Ctrl) -> RVT\*_R##.rvt"
 Write-Host "  2 - Individual files on this PC / share"
-Write-Host "  3 - Revit Server (RSN://)"
+Write-Host "  3 - Revit Server (RSN://, then checkbox if many)"
 Write-Host "  4 - Show current rvt_list.txt"
 Write-Host "  5 - Clear rvt_list.txt"
 Write-Host "  0 - Exit"
@@ -960,8 +1394,10 @@ if ($choice -eq "5") {
 }
 
 $picked = @()
+$skipChecklist = $false
 if ($choice -eq "1") {
     $picked = @(Select-LocalFolder)
+    $skipChecklist = $true
 }
 elseif ($choice -eq "2") {
     $picked = @(Select-LocalFiles)
@@ -977,6 +1413,15 @@ else {
 if ($picked.Count -eq 0) {
     Write-Host "Nothing selected."
     exit 0
+}
+
+if ((-not $skipChecklist) -and ($picked.Count -gt 1)) {
+    Write-Host ("Found {0} model(s). Opening checkbox to exclude extras..." -f $picked.Count)
+    $picked = @(Show-ModelChecklist -Paths $picked)
+    if ($picked.Count -eq 0) {
+        Write-Host "Nothing selected."
+        exit 0
+    }
 }
 
 $doAppend = $false
@@ -1005,6 +1450,8 @@ else {
 
 $finalList = @(Read-ExistingList)
 $hasRsn = @($finalList | Where-Object { $_ -match '^(?i)RSN://' }).Count -gt 0
+[void](Ensure-RbpOpenFailPatch)
+[void](Ensure-RbpProgressMonitor)
 if ($hasRsn) {
     [void](Ensure-RbpRsnPatch)
 }

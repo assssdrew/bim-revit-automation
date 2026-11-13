@@ -1,11 +1,27 @@
 # -*- coding: utf-8 -*-
 # Name: compact_save.py
-# Version: 1.0
+# Version: 1.0 (no SCRIPT_VERSION in source; revit main 2026-10-26)
 # What it does: RBP compact save: Sync/SaveAs with Compact for disk, UNC, and RSN:// workshared models.
 # Inputs: rvt_list.txt, mode from UI/env, servers.cfg.
 # Outputs: Compacted models; Excel/size report per case README.
 # How to run: start_compact.ps1 / ui_compact.ps1 launches RBP with this script.
 # Notes: Create New Local, Detach off; Relinquish after compact.
+# Notes: Report sheets are Models, Summary, and Projects. The Dynamics sheet is not written.
+
+"""
+Revit Batch Processor — пересохранение со сжатием (Compact).
+
+Галочка «Сжать файл» из «Параметры сохранения файла»:
+  - обычный .rvt           → Save / SaveAs, Compact = True
+  - workshared / RSN://    → SynchronizeWithCentral, Compact = True
+    (сжимается хранилище, не только локаль)
+
+Преднастроек нет: Compact всегда включён.
+
+Важно для worksharing / RSN:
+  - в RBP: Create New Local, Detach = OFF
+  - после сжатия: Relinquish
+"""
 
 import clr
 import System
@@ -22,6 +38,22 @@ from Autodesk.Revit.DB import *
 
 import revit_script_util
 from revit_script_util import Output
+
+
+def log_ascii(text):
+    """RBP Output() is ASCII-only. Non-ASCII in the log aborts the task."""
+    raw = u""
+    try:
+        raw = text if isinstance(text, _unicode) else _unicode(text)
+    except Exception:
+        try:
+            raw = _unicode(str(text))
+        except Exception:
+            raw = u""
+    safe = []
+    for ch in raw:
+        safe.append(ch if ord(ch) < 128 else u"?")
+    Output(u"".join(safe).encode("ascii"))
 
 TOOL_DIR_FALLBACK = r""  # optional deployed copy
 TOOL_DIR_FALLBACK_OLD = r""
@@ -177,7 +209,7 @@ def get_script_dir():
     home = os.environ.get("USERPROFILE") or os.environ.get("HOME") or ""
     if home:
         candidates.append(
-            os.path.join(home, r"Documents\doc\script\rbp\batch_compact_save")
+            os.path.join(home, r"Documents\doc\script\rbp\ORG_CompactModels")
         )
 
     for folder in candidates:
@@ -309,15 +341,60 @@ def report_mode_of(rows):
     return get_compact_mode()
 
 
+def file_token(text, fallback):
+    raw = as_text(text).strip()
+    if not raw:
+        return fallback
+    bad = u"\\/:*?\"<>|"
+    out = []
+    for ch in raw:
+        if ord(ch) < 32 or ch in bad or ch == u" ":
+            out.append(u"_")
+        else:
+            out.append(ch)
+    token = u"".join(out).strip(u"._")
+    if len(token) > 40:
+        token = token[:40].rstrip(u"._")
+    if not token:
+        return fallback
+    return token
+
+
+def project_of(path):
+    text = as_text(path).strip()
+    parsed = parse_rsn_path(text)
+    if parsed:
+        _host, folders, _model = parsed
+        if folders:
+            return folders[0]
+        return _host
+    norm = text.replace(u"/", u"\\")
+    parts = [p for p in norm.split(u"\\") if p and p != u"."]
+    for i, part in enumerate(parts):
+        if part.lower() == u"rvt":
+            if i >= 2:
+                return parts[i - 2]
+            if i >= 1:
+                return parts[i - 1]
+    if len(parts) >= 2:
+        return parts[-2]
+    return u""
+
+
 def new_report_filename():
-    stamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    tag = report_user_tag()
-    mode = compact_mode_label()
-    parts = [stamp]
-    if tag:
-        parts.append(tag)
-    parts.append(mode)
-    return u"_".join(parts) + u".csv"
+    # yyyy-MM-dd_HHmm_Ryy_Project_report_deep.csv  (see служебное/naming.ps1)
+    stamp = datetime.datetime.now().strftime("%Y-%m-%d_%H%M")
+    revit = file_token(os.environ.get("BATCH_COMPACT_REVIT") or u"", u"")
+    if not revit:
+        m = re.search(u"(?i)_R(2[0-6])\\b", as_text(revitFilePath))
+        revit = (u"R" + m.group(1)) if m else u"Rauto"
+    project = file_token(os.environ.get("BATCH_COMPACT_PROJECT") or u"", u"")
+    if not project:
+        project = file_token(project_of(revitFilePath), u"na")
+    mode = get_compact_mode()
+    if mode not in (u"quick", u"deep"):
+        mode = u"deep"
+    return u"{0}_{1}_{2}_report_{3}.csv".format(stamp, revit, project, mode)
 
 
 def allocate_report_file(folder, session_id):
@@ -448,6 +525,8 @@ RSN_HOST_YEARS = {
     "revit-server-2022.example.local": "2022",
     "revit-server-2023.example.local": "2023",
     "revit-server-2024.example.local": "2024",
+    "revit-server-2025.example.local": "2025",
+    "SET-REVIT-SERVER-2025-HOST": "2025",
 }
 
 
@@ -791,6 +870,8 @@ def csv_escape(value):
 CSV_SEP = u";"
 CSV_COLUMNS = [
     u"имя_модели",
+    u"проект",
+    u"новая",
     u"режим",
     u"путь",
     u"открыта",
@@ -807,13 +888,16 @@ CSV_HEADER = CSV_SEP.join(CSV_COLUMNS)
 
 XLSX_HEADERS = [u"№"] + CSV_COLUMNS
 XLSX_COL_WIDTHS = [
-    5, 42, 12, 58, 20, 20, 20, 8, 12, 13, 12, 10, 42,
+    5, 36, 28, 12, 14, 58, 20, 20, 20, 8, 12, 13, 12, 10, 42,
 ]
 
 SHEET_MODELS = u_from_codes([0x041C, 0x043E, 0x0434, 0x0435, 0x043B, 0x0438])
 SHEET_SUMMARY = u_from_codes([0x0421, 0x0432, 0x043E, 0x0434, 0x043A, 0x0430])
 SHEET_DYNAMICS = u_from_codes(
     [0x0414, 0x0438, 0x043D, 0x0430, 0x043C, 0x0438, 0x043A, 0x0430]
+)
+SHEET_PROJECTS = u_from_codes(
+    [0x041F, 0x0440, 0x043E, 0x0435, 0x043A, 0x0442, 0x044B]
 )
 MODE_LABEL_QUICK = u_from_codes(
     [0x0431, 0x044B, 0x0441, 0x0442, 0x0440, 0x043E, 0x0435]
@@ -1138,6 +1222,9 @@ def build_models_sheet(rows, styles):
                 st = styles["err"] if status == u"ERROR" else styles["ok"]
                 parts.append(cell_inline(ref, val, st))
                 continue
+            if key == u"новая" and as_text(val) == u"да":
+                parts.append(cell_inline(ref, val, styles["ok"]))
+                continue
             if key == u"№" or key in int_keys:
                 try:
                     num = int(as_text(val) or 0) if key != u"№" else int(val)
@@ -1214,6 +1301,7 @@ def build_summary_sheet(rows, styles):
     n_down = 0
     n_up = 0
     n_flat = 0
+    n_new = 0
     max_sec = -1
     max_sec_name = u""
     min_delta = None
@@ -1226,6 +1314,8 @@ def build_summary_sheet(rows, styles):
             n_err += 1
         else:
             n_ok += 1
+        if as_text(rec.get(u"новая")).strip() == u"да":
+            n_new += 1
         before = parse_mb_cell(rec.get(u"вес_до_МБ"))
         after = parse_mb_cell(rec.get(u"вес_после_МБ"))
         if before is not None:
@@ -1262,6 +1352,7 @@ def build_summary_sheet(rows, styles):
         (u"Моделей", n, u"", "int"),
         (u"OK", n_ok, u"", "int"),
         (u"ERROR", n_err, u"фильтр по столбцу статус", "alert" if n_err else "int"),
+        (u"Новые", n_new, u"не было в прошлом отчёте того же режима", "int"),
         (u"Вес до, МБ", before_sum if n_before else None, u"", "num"),
         (u"Вес после, МБ", after_sum if n_before else None, u"", "num"),
         (u"Дельта, МБ", delta_sum, u"сумма по прогону", "num"),
@@ -1312,6 +1403,217 @@ def build_summary_sheet(rows, styles):
     last = 1 + len(items)
     parts.append(u"</sheetData>")
     parts.append(u'<autoFilter ref="A1:C{}"/>'.format(last))
+    parts.append(u"</worksheet>")
+    return u"".join(parts)
+
+
+def path_key(path):
+    text = as_text(path).strip().replace(u"\\", u"/")
+    while text.endswith(u"/"):
+        text = text[:-1]
+    return text.lower()
+
+
+def revit_token_in_name(name):
+    m = re.search(u"_(R2[0-9]|Rlocal|Rmix|Rauto)_", as_text(name))
+    if m:
+        return m.group(1)
+    return u""
+
+
+_PREV_KEYS = {"mode": None, "path": None, "keys": None}
+
+
+def load_previous_path_keys(mode):
+    """Paths from the previous report of this mode. None = no baseline."""
+    global _PREV_KEYS
+    if not REPORT_PATH:
+        return None
+    if _PREV_KEYS["mode"] == mode and _PREV_KEYS["path"] == REPORT_PATH:
+        return _PREV_KEYS["keys"]
+    keys = None
+    folder = os.path.dirname(REPORT_PATH)
+    own = os.path.basename(REPORT_PATH)
+    own_token = revit_token_in_name(own)
+    best = None
+    best_m = -1.0
+    try:
+        names = os.listdir(folder)
+    except Exception:
+        names = []
+    for fn in names:
+        if not fn.lower().endswith(u".csv"):
+            continue
+        if fn.startswith(u"_") or fn == own:
+            continue
+        token = revit_token_in_name(fn)
+        if own_token and token and token != own_token:
+            continue
+        fp = os.path.join(folder, fn)
+        try:
+            rows = read_report_rows(fp)
+        except Exception:
+            continue
+        if not rows:
+            continue
+        if report_mode_of(rows) != mode:
+            continue
+        try:
+            mt = os.path.getmtime(fp)
+        except Exception:
+            continue
+        if mt > best_m:
+            best_m = mt
+            best = rows
+    if best is not None:
+        keys = set()
+        for rec in best:
+            k = path_key(rec.get(u"путь"))
+            if k:
+                keys.add(k)
+    _PREV_KEYS = {"mode": mode, "path": REPORT_PATH, "keys": keys}
+    return keys
+
+
+def new_mark(path, prev_keys):
+    if prev_keys is None:
+        return u""
+    if path_key(path) in prev_keys:
+        return u""
+    return u"да"
+
+
+def prepare_report_rows(rows):
+    mode = report_mode_of(rows)
+    prev = load_previous_path_keys(mode)
+    out = []
+    for rec in rows:
+        item = {}
+        for k in rec:
+            item[k] = rec[k]
+        if not as_text(item.get(u"проект")).strip():
+            item[u"проект"] = project_of(item.get(u"путь"))
+        item[u"новая"] = new_mark(item.get(u"путь"), prev)
+        out.append(item)
+    out.sort(
+        key=lambda r: (
+            as_text(r.get(u"проект")).lower(),
+            as_text(r.get(u"имя_модели")).lower(),
+        )
+    )
+    return out
+
+
+def build_projects_sheet(rows, styles):
+    groups = {}
+    order = []
+    for rec in rows:
+        name = as_text(rec.get(u"проект")).strip() or u"(без проекта)"
+        bucket = groups.get(name)
+        if bucket is None:
+            bucket = {
+                u"n": 0,
+                u"new": 0,
+                u"ok": 0,
+                u"err": 0,
+                u"before": 0.0,
+                u"after": 0.0,
+                u"n_size": 0,
+            }
+            groups[name] = bucket
+            order.append(name)
+        bucket[u"n"] += 1
+        if as_text(rec.get(u"новая")).strip() == u"да":
+            bucket[u"new"] += 1
+        if as_text(rec.get(u"статус")).upper() == u"ERROR":
+            bucket[u"err"] += 1
+        else:
+            bucket[u"ok"] += 1
+        before = parse_mb_cell(rec.get(u"вес_до_МБ"))
+        after = parse_mb_cell(rec.get(u"вес_после_МБ"))
+        if before is not None and after is not None:
+            bucket[u"before"] += before
+            bucket[u"after"] += after
+            bucket[u"n_size"] += 1
+    headers = [
+        u"проект",
+        u"моделей",
+        u"новых",
+        u"OK",
+        u"ERROR",
+        u"вес до, МБ",
+        u"вес после, МБ",
+        u"дельта, МБ",
+    ]
+    parts = [
+        u'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+        u'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">',
+        u"<cols>",
+        u'<col min="1" max="1" width="32" customWidth="1"/>',
+        u'<col min="2" max="5" width="12" customWidth="1"/>',
+        u'<col min="6" max="8" width="16" customWidth="1"/>',
+        u"</cols><sheetData>",
+        u'<row r="1" ht="24" customHeight="1">',
+    ]
+    for i, title in enumerate(headers):
+        parts.append(cell_inline(col_letter(i + 1) + "1", title, styles["header"]))
+    parts.append(u"</row>")
+    order.sort(key=lambda s: s.lower())
+    totals = [0, 0, 0, 0, 0.0, 0.0]
+    for ridx, name in enumerate(order):
+        bucket = groups[name]
+        rnum = ridx + 2
+        delta = bucket[u"after"] - bucket[u"before"] if bucket[u"n_size"] else None
+        vals = [
+            name,
+            bucket[u"n"],
+            bucket[u"new"],
+            bucket[u"ok"],
+            bucket[u"err"],
+            bucket[u"before"] if bucket[u"n_size"] else None,
+            bucket[u"after"] if bucket[u"n_size"] else None,
+            delta,
+        ]
+        totals[0] += bucket[u"n"]
+        totals[1] += bucket[u"new"]
+        totals[2] += bucket[u"ok"]
+        totals[3] += bucket[u"err"]
+        totals[4] += bucket[u"before"] if bucket[u"n_size"] else 0.0
+        totals[5] += bucket[u"after"] if bucket[u"n_size"] else 0.0
+        parts.append(u'<row r="{}">'.format(rnum))
+        for cidx, val in enumerate(vals):
+            ref = col_letter(cidx + 1) + str(rnum)
+            if cidx == 0:
+                parts.append(cell_inline(ref, val, styles["base"]))
+            elif val is None:
+                parts.append(cell_inline(ref, u"", styles["base"]))
+            elif cidx >= 5:
+                parts.append(cell_num(ref, "{:.6f}".format(float(val)), styles["num"]))
+            else:
+                parts.append(cell_num(ref, int(val), styles["int"]))
+        parts.append(u"</row>")
+    total_row = len(order) + 2
+    parts.append(u'<row r="{}">'.format(total_row))
+    total_vals = [
+        u"Итого",
+        totals[0],
+        totals[1],
+        totals[2],
+        totals[3],
+        totals[4],
+        totals[5],
+        totals[5] - totals[4],
+    ]
+    for cidx, val in enumerate(total_vals):
+        ref = col_letter(cidx + 1) + str(total_row)
+        if cidx == 0:
+            parts.append(cell_inline(ref, val, styles["sum_k"]))
+        elif cidx >= 5:
+            parts.append(cell_num(ref, "{:.6f}".format(float(val)), styles["sum_n"]))
+        else:
+            parts.append(cell_num(ref, int(val), styles["int"]))
+    parts.append(u"</row></sheetData>")
+    parts.append(u'<autoFilter ref="A1:H{}"/>'.format(max(1, total_row - 1)))
     parts.append(u"</worksheet>")
     return u"".join(parts)
 
@@ -1554,20 +1856,19 @@ def write_xlsx(path, parts_map):
                 os.remove(tmp)
             except Exception:
                 pass
-            raise Exception("Close the report in Excel, then run again: {}".format(path))
+            raise Exception("Close the report in Excel, then run again")
     os.rename(tmp, path)
 
 
 def rebuild_xlsx(csv_path):
+    # Dynamics sheet is intentionally omitted (2026-09 feedback). History of
+    # "new since previous run" is the column новая plus the Проекты sheet.
     xlsx_path = xlsx_path_for(csv_path)
-    rows = read_report_rows(csv_path)
-    mode = report_mode_of(rows)
-    dates, dyn_rows = merge_dynamics_from_report(rows, mode)
+    rows = prepare_report_rows(read_report_rows(csv_path))
     styles_xml, styles = build_styles()
     models_xml = build_models_sheet(rows, styles)
     summary_xml = build_summary_sheet(rows, styles)
-    dyn_xml, total_row, totals = build_dynamics_sheet(dates, dyn_rows, styles, mode)
-    has_chart = len(dates) > 0
+    projects_xml = build_projects_sheet(rows, styles)
     ct = (
         u'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         u'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
@@ -1578,13 +1879,8 @@ def rebuild_xlsx(csv_path):
         u'<Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
         u'<Override PartName="/xl/worksheets/sheet3.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
         u'<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+        u"</Types>"
     )
-    if has_chart:
-        ct += (
-            u'<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>'
-            u'<Override PartName="/xl/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>'
-        )
-    ct += u"</Types>"
     rels_root = (
         u'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         u'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
@@ -1607,13 +1903,13 @@ def rebuild_xlsx(csv_path):
         u"<sheets>"
         u'<sheet name="{m}" sheetId="1" r:id="rId1"/>'
         u'<sheet name="{s}" sheetId="2" r:id="rId2"/>'
-        u'<sheet name="{d}" sheetId="3" r:id="rId3"/>'
+        u'<sheet name="{p}" sheetId="3" r:id="rId3"/>'
         u"</sheets>"
         u"<definedNames>"
         u'<definedName name="_xlnm.Print_Titles">\'{m}\'!$1:$1</definedName>'
         u"</definedNames>"
         u"</workbook>"
-    ).format(m=xml_esc(SHEET_MODELS), s=xml_esc(SHEET_SUMMARY), d=xml_esc(SHEET_DYNAMICS))
+    ).format(m=xml_esc(SHEET_MODELS), s=xml_esc(SHEET_SUMMARY), p=xml_esc(SHEET_PROJECTS))
     parts_map = {
         "[Content_Types].xml": ct,
         "_rels/.rels": rels_root,
@@ -1622,23 +1918,8 @@ def rebuild_xlsx(csv_path):
         "xl/styles.xml": styles_xml,
         "xl/worksheets/sheet1.xml": models_xml,
         "xl/worksheets/sheet2.xml": summary_xml,
-        "xl/worksheets/sheet3.xml": dyn_xml,
+        "xl/worksheets/sheet3.xml": projects_xml,
     }
-    if has_chart:
-        parts_map["xl/worksheets/_rels/sheet3.xml.rels"] = (
-            u'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            u'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-            u'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/>'
-            u"</Relationships>"
-        )
-        parts_map["xl/drawings/drawing1.xml"] = build_dynamics_drawing_xml()
-        parts_map["xl/drawings/_rels/drawing1.xml.rels"] = (
-            u'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            u'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-            u'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart1.xml"/>'
-            u"</Relationships>"
-        )
-        parts_map["xl/charts/chart1.xml"] = build_dynamics_chart_xml(dates, totals, total_row, mode)
     write_xlsx(xlsx_path, parts_map)
     return xlsx_path
 
@@ -1661,21 +1942,17 @@ def init_report():
             REPORTS_DIR = root
             REPORT_PATH = path
             if is_local:
-                Output(
-                    "NOTE: share reports not writable; using local: {}".format(root)
+                log_ascii(
+                    "NOTE: share reports not writable; using local folder"
                 )
             return
         except Exception as ex:
             last_err = ex
             REPORTS_DIR = None
             REPORT_PATH = None
-            Output("WARN report init at {}: {}".format(root, ex))
+            log_ascii("WARN report init failed")
 
-    raise Exception(
-        "Cannot write reports. Tried share ({0}) and local ({1}). Last error: {2}".format(
-            share, local or u"(no LOCALAPPDATA)", last_err
-        )
-    )
+    raise Exception("Cannot write reports. Share and local folders were not writable.")
 
 
 def append_report_row(
@@ -1691,15 +1968,19 @@ def append_report_row(
     try:
         init_report()
     except Exception as ex:
-        Output("ERROR report folder: {}".format(ex))
+        log_ascii("ERROR report folder")
         return
 
     name = model_name_of(path)
     delta = u""
     if size_before is not None and size_after is not None:
         delta = fmt_mb_cell(size_after - size_before)
+    mode = get_compact_mode()
+    prev = load_previous_path_keys(mode)
     rec = {
         u"имя_модели": name,
+        u"проект": project_of(path),
+        u"новая": new_mark(path, prev),
         u"режим": compact_mode_label(),
         u"путь": as_text(path),
         u"открыта": as_text(opened_at),
@@ -1723,16 +2004,16 @@ def append_report_row(
             f.write(line.encode("utf-8"))
         finally:
             f.close()
-        Output("Report csv: {}".format(REPORT_PATH))
+        log_ascii("Report csv written")
     except Exception as ex:
-        Output("WARN report csv: {}".format(ex))
+        log_ascii("WARN report csv")
         return
 
     try:
         xlsx_path = rebuild_xlsx(REPORT_PATH)
-        Output("Report xlsx: {}".format(xlsx_path))
+        log_ascii("Report xlsx written")
     except Exception as ex:
-        Output("WARN report xlsx: {}".format(ex))
+        log_ascii("WARN report xlsx")
 
 
 def clear_readonly_attribute(path):
@@ -1826,19 +2107,18 @@ def sync_compact(document, path):
 
     if is_backup_copy_path(path):
         raise Exception(
-            "Opened a backup/copy, not a live model: {}. "
-            "Rebuild rvt_list with picker option 1 "
-            "(RVT\\*.rvt only, not Резерв / dated folders).".format(path)
+            "Opened a backup/copy, not a live model. "
+            "Rebuild the list: RVT folder only, not backup or dated folders."
         )
 
     central = central_user_path(document)
     if central:
-        Output("Sync+Compact to central: {}".format(central))
+        log_ascii("Sync+Compact to central")
         if (not is_rsn_path(central)) and (not os.path.isfile(central)):
             raise Exception(
-                "The central model is missing: {}. "
+                "The central model is missing. "
                 "Opened file is not the live central. "
-                "Pick models from RVT\\ (not Резерв).".format(central)
+                "Pick models from the RVT folder, not a backup copy."
             )
     else:
         Output("Sync+Compact to central...")
@@ -1882,7 +2162,7 @@ def save_compact_in_place(document, path, force_save_as=False):
             save_opts = SaveOptions()
             save_opts.Compact = True
             document.Save(save_opts)
-            Output("Saved Compact=True: {}".format(path or document.PathName))
+            log_ascii("Saved Compact=True")
             return path
         except Exception as ex:
             Output("WARN Document.Save Compact: {}".format(ex))
@@ -1901,7 +2181,7 @@ def save_compact_in_place(document, path, force_save_as=False):
         # UI: «Открыть рабочий набор по умолчанию: Задать...»
         try:
             wopts.OpenWorksetsDefault = SimpleWorksetConfiguration.AskUserToSpecify
-            Output("OpenWorksetsDefault = AskUserToSpecify (Задать)")
+            Output("OpenWorksetsDefault = AskUserToSpecify")
         except Exception as ex:
             Output("WARN OpenWorksetsDefault AskUserToSpecify: {}".format(ex))
         opts.SetWorksharingOptions(wopts)
@@ -1909,13 +2189,9 @@ def save_compact_in_place(document, path, force_save_as=False):
     target = path or document.PathName
     model_path = to_model_path(target)
     if force_save_as:
-        Output(
-            "SaveAs (deep): SaveAsCentral + Compact + AskUserToSpecify -> {}".format(
-                target
-            )
-        )
+        log_ascii("SaveAs (deep): SaveAsCentral + Compact + AskUserToSpecify")
     document.SaveAs(model_path, opts)
-    Output("SavedAs Compact=True SaveAsCentral=True (ModelPath): {}".format(target))
+    log_ascii("SavedAs Compact=True SaveAsCentral=True")
 
     relinquish_everything(document)
     try:
@@ -1975,13 +2251,13 @@ def verify_worksharing_preserved(document, saved_path):
 
         if warnings:
             msg = u" ".join(warnings)
-            Output("ERROR CHECK verify_worksharing: {}".format(msg))
+            log_ascii("ERROR CHECK verify_worksharing")
             _last_verify_warning[u"text"] = msg
             return msg
 
-        Output(
-            "verify_worksharing OK: workshared={}, central={}".format(
-                document.IsWorkshared, central or saved_path
+        log_ascii(
+            "verify_worksharing OK workshared={}".format(
+                "yes" if document.IsWorkshared else "no"
             )
         )
         _last_verify_warning[u"text"] = u""
@@ -1995,7 +2271,7 @@ def deep_save_as_and_sync(document, path):
     """Ручной эталон: Save As ФХ (Compact+Задать) → Sync со сжатием."""
     Output(
         "deep clean: SaveAs as central + Compact + "
-        "OpenWorksetsDefault=Задать (AskUserToSpecify)."
+        "OpenWorksetsDefault=AskUserToSpecify."
     )
     saved = save_compact_in_place(document, path, force_save_as=True)
     try:
@@ -2026,9 +2302,8 @@ def compact_document(document, path):
 
     if is_backup_copy_path(path):
         raise Exception(
-            "Opened a backup/copy, not a live model: {}. "
-            "Rebuild rvt_list with picker option 1 "
-            "(RVT\\*.rvt only, not Резерв / dated folders).".format(path)
+            "Opened a backup/copy, not a live model. "
+            "Rebuild the list: RVT folder only, not backup or dated folders."
         )
 
     is_detached = False
@@ -2038,7 +2313,7 @@ def compact_document(document, path):
         is_detached = False
 
     mode = get_compact_mode()
-    Output("Compact mode: {}".format(compact_mode_label(mode)))
+    Output("Compact mode: {}".format(get_compact_mode()))
 
     if mode == u"deep":
         if is_rsn_path(path):
@@ -2101,8 +2376,8 @@ size_before = None
 try:
     saved_at = u""
     Output()
-    Output("Script dir: {}".format(SCRIPT_DIR))
-    Output("File: {}".format(revitFilePath))
+    log_ascii("Script dir ready")
+    log_ascii("File opened")
     write_live_status(revitFilePath, u"start")
     Output(
         "Workshared={}, Detached={}".format(
@@ -2144,7 +2419,7 @@ try:
             "WARN",
             verify_warn,
         )
-        Output("WARN verify_worksharing: {}".format(verify_warn))
+        log_ascii("WARN verify_worksharing")
         write_live_status(saved or revitFilePath, u"warn", verify_warn)
     else:
         append_report_row(
@@ -2159,10 +2434,10 @@ try:
         )
         write_live_status(saved or revitFilePath, u"ok")
 
-    Output("Done: {}".format(saved))
+    log_ascii("Done")
     Output("OK" if not verify_warn else "OK (with verify warning)")
 except Exception as ex:
-    Output("ERROR: {}".format(ex))
+    log_ascii("ERROR")
     try:
         write_live_status(revitFilePath, u"error", translate_error(ex))
     except Exception:

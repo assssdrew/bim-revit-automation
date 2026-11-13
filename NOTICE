@@ -12,20 +12,27 @@ Authors : Dan Rumery, BVN (Copyright (c) 2020 Dan Rumery, BVN, per the
 License : GNU General Public License v3.0 (see LICENSE.txt in the RBP repo)
 
 RBP is NOT included in this repository. Install it separately. Cases 01, 02,
-03, 05 and 06 use it as the batch host for their IronPython task scripts.
+03, 05, 06 and 08 use it as the batch host for their IronPython task scripts.
 
 GPL-3.0 files
 -------------
-cases/06-model-ops/src/rbp_open_fail_patch/revit_dialog_util.py
-cases/06-model-ops/src/rbp_open_fail_patch/revit_failure_handling.py
+cases/06-model-ops/src/служебное/rbp_open_fail_patch/revit_dialog_util.py
+cases/06-model-ops/src/служебное/rbp_open_fail_patch/revit_failure_handling.py
 
 These two files are modified copies of the RBP scripts of the same name
 (marker "OPEN_FAIL_PATCH_v2" shows the local modifications). They are
 derivative works of RBP and remain under GPL-3.0, with the original copyright
 notice of Dan Rumery, BVN. The full licence text is in
-cases/06-model-ops/src/rbp_open_fail_patch/LICENSE-GPL-3.0.txt.
+cases/06-model-ops/src/служебное/rbp_open_fail_patch/LICENSE-GPL-3.0.txt.
 They are installed over the user's own RBP Scripts folder by
-cases/06-model-ops/src/patch_rbp_open_failures.ps1 (with backups).
+cases/06-model-ops/src/служебное/patch_rbp_open_failures.ps1 (with backups).
+
+MIT third-party library
+-----------------------
+cases/08-batch-verification-schedules/src/служебное/lib/DocumentFormat.OpenXml.dll
+is the Open XML SDK (Copyright (c) .NET Foundation and Contributors), MIT.
+The licence text is in LICENSE-MIT.txt next to the DLL. The portfolio's own
+MIT licence does not replace that notice.
 
 Not third-party code
 --------------------

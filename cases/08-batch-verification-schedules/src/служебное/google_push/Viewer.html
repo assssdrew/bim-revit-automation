@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Проверочные спецификации — отчёт</title>
+<style>
+  :root { --line:#c9ced6; --head:#eef1f5; --accent:#1a5fb4; --text:#1b1f24; --muted:#6a727c; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { display: flex; flex-direction: column; font: 13px/1.35 system-ui, "Segoe UI", Roboto, Arial, sans-serif; color: var(--text); background: #fff; }
+  #bar { flex: none; background: #f7f8fa; border-bottom: 1px solid var(--line); padding: 6px 10px 6px; }
+  #top { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 4px 12px; margin-bottom: 6px; }
+  #tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tab { border: 1px solid var(--line); background: #fff; border-radius: 6px 6px 0 0; padding: 4px 12px; cursor: pointer; font: inherit; color: var(--text); }
+  .tab:hover { background: #eaf1fb; }
+  .tab.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .tab.sum { margin-left: 12px; border-style: dashed; }
+  #tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+  #tools button { font: inherit; border: 1px solid var(--line); background: #fff; border-radius: 5px; padding: 3px 10px; cursor: pointer; color: var(--text); }
+  #tools button:hover { background: #eaf1fb; }
+  #tools button.on { background: #ffff00; border-color: #b8b800; font-weight: 700; }
+  #tools .sep { width: 1px; height: 20px; background: var(--line); margin: 0 2px; }
+  #q { font: inherit; border: 1px solid var(--line); border-radius: 5px; padding: 3px 8px; width: 220px; max-width: 100%; }
+  #stat { color: var(--muted); margin-left: auto; }
+  #linkbox { display: none; width: 100%; font: inherit; padding: 3px 6px; border: 1px solid var(--line); border-radius: 5px; }
+  #ver { margin-left: auto; align-self: center; color: var(--muted); white-space: nowrap; }
+  #fresh { flex: none; display: block; width: 100%; border: 0; border-bottom: 2px solid #c25e00; background: #ffb020; color: #1b1f24; font-family: inherit; font-size: 14px; font-weight: 600; line-height: 1.3; padding: 8px 12px; cursor: pointer; text-align: center; }
+  #fresh:hover { background: #ffc24d; }
+  #fresh[hidden] { display: none; }
+  #note { color: var(--muted); padding: 4px 10px 0; flex: none; }
+  #wrap { flex: 1 1 auto; overflow: auto; position: relative; }
+  #msg { padding: 24px 12px; color: var(--muted); font-size: 14px; }
+  #msg.err { color: #b00020; }
+  table { border-collapse: separate; border-spacing: 0; }
+  th, td { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 2px 6px; vertical-align: top; background: #fff; white-space: normal; overflow-wrap: break-word; }
+  th { position: sticky; top: 0; z-index: 3; background: var(--head); text-align: left; border-top: 1px solid var(--line); }
+  th:first-child, td:first-child { border-left: 1px solid var(--line); }
+  td.b, th.b { font-weight: 700; }
+  td.d { color: #999; }
+  tr.l0 td { font-weight: 600; }
+  .tg { display: inline-block; width: 16px; height: 16px; line-height: 14px; margin-right: 5px; border: 1px solid #7d8794; border-radius: 3px; text-align: center; font: 700 13px/14px monospace; color: #3b4450; background: #fff; cursor: pointer; user-select: none; vertical-align: -2px; }
+  tr.l1 td.nm { padding-left: 14px; }
+  tr.l0 td.nm, tr.l1 td.nm { cursor: pointer; }
+  /* Сводка: закреплены шапка и первая колонка, названия спецификаций — вертикально */
+  table.sum th:first-child, table.sum td:first-child { position: sticky; left: 0; z-index: 2; }
+  table.sum th:first-child { z-index: 4; }
+  table.sum td, table.sum th { padding: 2px 4px; white-space: nowrap; text-align: center; }
+  table.sum td:first-child, table.sum th:first-child { text-align: left; white-space: normal; min-width: 220px; max-width: 360px; }
+  table.sum .rot { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; text-align: left; margin: 0 auto; max-height: 330px; overflow: hidden; }
+  @media (max-width: 700px) { #q { width: 100%; } #stat { margin-left: 0; width: 100%; } }
+</style>
+</head>
+<body>
+<div id="bar">
+  <div id="top"><div id="tabs"></div><span id="ver" title="Время последней выгрузки задания (Asia/Saigon)"></span></div>
+  <div id="tools">
+    <span id="lvls">
+      <button type="button" data-lv="1" title="Только модели">1</button>
+      <button type="button" data-lv="2" title="Модели и спецификации">2</button>
+      <button type="button" data-lv="3" title="Модели, спецификации и элементы">3</button>
+      <span class="sep"></span>
+      <button type="button" id="expand">Развернуть всё</button>
+      <button type="button" id="collapse">Свернуть всё</button>
+    </span>
+    <input id="q" type="search" placeholder="Поиск по имени модели" autocomplete="off">
+    <button type="button" id="reload" title="Загрузить данные заново">Обновить</button>
+    <button type="button" id="link" title="Ссылка на этот раздел" style="display:none">Ссылка</button>
+    <span id="stat"></span>
+    <input id="linkbox" type="text" readonly>
+  </div>
+</div>
+<button type="button" id="fresh" hidden>Данные обновились — нажмите, чтобы обновить</button>
+<div id="note"></div>
+<div id="wrap"><div id="msg">Загрузка…</div><table id="grid" hidden></table></div>
+<script>
+(function () {
+  'use strict';
+  var INIT = <?!= init ?>;
+  var SUMMARY = 'Сводка';
+  var LS_PREFIX = 'bvs_view_v1_';
+  var cache = {};          // имя вкладки -> данные с сервера
+  var cur = null;          // текущая вкладка
+  var loadId = 0;
+  var model = null;        // построенное дерево текущего раздела
+  var st = { level: 2, ov: {} };
+  var memory = {};         // если localStorage недоступен
+  var shownVer = null;     // время выгрузки (мс), от которого показанные данные; null — ещё ничего не показано
+  var checking = false;    // проверка версии уже идёт
+  var pendingScroll = null; // положение прокрутки, которое вернуть после обновления данных
+  var bootNote = '';       // «раздел из ссылки не найден» — показывается после первой загрузки
+  var $ = function (id) { return document.getElementById(id); };
+  var ver = $('ver'), fresh = $('fresh');
+  var grid = $('grid'), msg = $('msg'), stat = $('stat'), note = $('note'), q = $('q');
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  // состояние раскрытия — только в браузере этого пользователя; на таблицу не влияет
+  function lsGet(k) {
+    try { var v = window.localStorage.getItem(LS_PREFIX + k); return v ? JSON.parse(v) : null; } catch (e) { return memory[k] || null; }
+  }
+  function lsSet(k, v) {
+    memory[k] = v;
+    try { window.localStorage.setItem(LS_PREFIX + k, JSON.stringify(v)); } catch (e) { /* без localStorage — в памяти страницы */ }
+  }
+  function color(c) { return /^#[0-9a-fA-F]{6}$/.test(c) ? c : ''; }
+
+  function setMsg(text, isErr) {
+    msg.textContent = text || '';
+    msg.className = isErr ? 'err' : '';
+    msg.style.display = text ? '' : 'none';
+  }
+
+  // ---------- дата данных и проверка новой выгрузки ----------
+  function two(n) { return (n < 10 ? '0' : '') + n; }
+  // «ДД.ММ.ГГГГ ЧЧ:ММ» по Asia/Saigon (UTC+7, без перехода на летнее время)
+  function fmtVer(ms) {
+    var d = new Date(ms + 7 * 3600 * 1000);
+    return two(d.getUTCDate()) + '.' + two(d.getUTCMonth() + 1) + '.' + d.getUTCFullYear() + ' ' + two(d.getUTCHours()) + ':' + two(d.getUTCMinutes());
+  }
+  function setVer(ms) {
+    ver.textContent = ms ? 'Данные от ' + fmtVer(ms) : 'Время выгрузки неизвестно';
+  }
+  // Раз в 5 минут (и сразу при возврате на вкладку) спрашиваем у сервера только время выгрузки. Ошибки молча игнорируем.
+  function checkVersion() {
+    if (document.hidden || checking || shownVer === null) { return; }
+    try {
+      if (typeof google === 'undefined' || !google.script || !google.script.run) { return; }
+      checking = true;
+      google.script.run
+        .withSuccessHandler(function (v) {
+          checking = false;
+          v = Number(v) || 0;
+          if (shownVer !== null && v > shownVer) { fresh.hidden = false; }
+        })
+        .withFailureHandler(function () { checking = false; })
+        .viewerGetVersion();
+    } catch (e) { checking = false; }
+  }
+  // «Данные обновились»: перечитать текущую вкладку без перезагрузки страницы; раздел, раскрытие (localStorage), поиск и прокрутка сохраняются
+  function refreshData() {
+    fresh.hidden = true;
+    pendingScroll = [$('wrap').scrollTop, $('wrap').scrollLeft];
+    cache = {};
+    open(cur, true, true);
+  }
+
+  // ---------- вкладки ----------
+  function buildTabs() {
+    var h = '';
+    for (var i = 0; i < INIT.sections.length; i++) {
+      h += '<button type="button" class="tab" data-tab="' + esc(INIT.sections[i]) + '">' + esc(INIT.sections[i]) + '</button>';
+    }
+    h += '<button type="button" class="tab sum" data-tab="' + SUMMARY + '">' + SUMMARY + '</button>';
+    $('tabs').innerHTML = h;
+  }
+  function markTab() {
+    var tabs = $('tabs').children;
+    for (var i = 0; i < tabs.length; i++) {
+      tabs[i].className = 'tab' + (tabs[i].getAttribute('data-tab') === SUMMARY ? ' sum' : '') + (tabs[i].getAttribute('data-tab') === cur ? ' on' : '');
+    }
+  }
+  function pickInitial() {
+    var want = INIT.section || '';
+    if (want === SUMMARY) { return SUMMARY; }
+    if (want && INIT.sections.indexOf(want) >= 0) { return want; }
+    return INIT.sections.length ? INIT.sections[0] : SUMMARY;
+  }
+
+  // ---------- загрузка ----------
+  function fetchTab(name, done, fail) {
+    if (typeof google === 'undefined' || !google.script || !google.script.run) {
+      fail('Страница открыта вне Google Apps Script: нет google.script.run.');
+      return;
+    }
+    var run = google.script.run.withSuccessHandler(done).withFailureHandler(function (e) { fail(e && e.message ? e.message : String(e)); });
+    if (name === SUMMARY) { run.viewerGetSummary(); } else { run.viewerGetSection(name); }
+  }
+  function open(name, force, keep) {
+    cur = name;
+    markTab();
+    var id = ++loadId;
+    $('lvls').style.display = name === SUMMARY ? 'none' : '';
+    if (cache[name] && !force) { show(cache[name]); return; }
+    if (!keep) {   // при обновлении по плашке прежняя таблица остаётся на экране, пока не придут новые данные
+      grid.hidden = true;
+      note.textContent = '';
+      stat.textContent = '';
+      setMsg('Загрузка раздела «' + name + '»…');
+    }
+    fetchTab(name, function (d) {
+      if (id !== loadId) { return; }
+      cache[name] = d;
+      show(d);
+    }, function (e) {
+      if (id !== loadId) { return; }
+      if (keep) {
+        pendingScroll = null;
+        fresh.hidden = false;
+        note.textContent = 'Не удалось обновить данные, попробуйте ещё раз: ' + e;
+        return;
+      }
+      setMsg('Не удалось загрузить данные: ' + e, true);
+    });
+  }
+
+  // ---------- сводка ----------
+  function cellHtml(d, row, c, tag, extraClass, inner) {
+    var bg = row.b ? d.palette[row.b[c]] : '';
+    var fl = row.f ? row.f[c] : 0;
+    var cls = (fl & 1 ? 'b ' : '') + (fl & 2 ? 'd ' : '') + (extraClass || '');
+    return '<' + tag + (cls ? ' class="' + cls.replace(/ $/, '') + '"' : '') + (color(bg) ? ' style="background:' + color(bg) + '"' : '') + '>' +
+      (inner != null ? inner : esc(row.v[c])) + '</' + tag + '>';
+  }
+  function colgroup(d) {
+    var h = '<colgroup>';
+    for (var c = 0; c < d.cols; c++) {
+      var w = d.widths && d.widths[c] ? d.widths[c] : 0;
+      h += w ? '<col style="width:' + w + 'px;min-width:' + Math.min(w, 120) + 'px">' : '<col>';
+    }
+    return h + '</colgroup>';
+  }
+
+  var sumRows = [];
+  function buildSummary(d) {
+    var h = colgroup(d) + '<thead><tr>';
+    for (var c = 0; c < d.cols; c++) {
+      var rot = d.rot ? d.rot[c] : (c > 0 && String(d.header.v[c]).length > 14);
+      h += cellHtml(d, d.header, c, 'th', '', rot ? '<div class="rot">' + esc(d.header.v[c]) + '</div>' : null);
+    }
+    h += '</tr></thead><tbody>';
+    sumRows = [];
+    for (var i = 0; i < d.rows.length; i++) {
+      var r = d.rows[i];
+      h += '<tr data-i="' + i + '">';
+      for (var c2 = 0; c2 < d.cols; c2++) { h += cellHtml(d, r, c2, 'td'); }
+      h += '</tr>';
+    }
+    grid.className = 'sum';
+    grid.innerHTML = h + '</tbody>';
+    sumRows = grid.tBodies[0].rows;
+  }
+  function refreshSummary(d) {
+    var term = q.value.trim().toLowerCase();
+    var shown = 0;
+    for (var i = 0; i < sumRows.length; i++) {
+      var name = String(d.rows[i].v[0] || '');
+      var vis = !term || !name || name.toLowerCase().indexOf(term) >= 0;
+      sumRows[i].hidden = !vis;
+      if (vis && name) { shown++; }
+    }
+    stat.textContent = 'Моделей: ' + shown;
+  }
+
+  // ---------- раздел ----------
+  function buildSection(d) {
+    var rows = d.rows, n = rows.length;
+    var m = { d: d, models: [], specs: [], mi: new Array(n), si: new Array(n), trs: null, tgModel: [], tgSpec: [] };
+    var curM = -1, curS = -1;
+    var h = colgroup(d) + '<thead><tr>';
+    for (var c = 0; c < d.cols; c++) { h += cellHtml(d, d.header, c, 'th'); }
+    h += '</tr></thead><tbody>';
+    for (var i = 0; i < n; i++) {
+      var r = rows[i], lv = r.lv;
+      var nameCol = -1;
+      if (lv === 0) {
+        m.models.push({ name: String(r.v[0]), row: i });
+        curM = m.models.length - 1; curS = -1; nameCol = 0;
+      } else if (lv === 1) {
+        var mn = curM >= 0 ? m.models[curM].name : '';
+        m.specs.push({ m: curM, name: String(r.v[d.specCol]), key: mn + '\u0001' + String(r.v[d.specCol]), row: i });
+        curS = m.specs.length - 1; nameCol = d.specCol;
+      }
+      m.mi[i] = curM; m.si[i] = curS;
+      h += '<tr class="l' + lv + '" data-i="' + i + '">';
+      for (var c2 = 0; c2 < d.cols; c2++) {
+        if (c2 === nameCol) {
+          var kind = lv === 0 ? 'm' : 's';
+          var idx = lv === 0 ? curM : curS;
+          h += cellHtml(d, r, c2, 'td', 'nm', '<span class="tg" data-k="' + kind + '" data-n="' + idx + '"></span>' + esc(r.v[c2]));
+        } else {
+          h += cellHtml(d, r, c2, 'td');
+        }
+      }
+      h += '</tr>';
+    }
+    grid.className = '';
+    grid.innerHTML = h + '</tbody>';
+    m.trs = grid.tBodies[0].rows;
+    var tgs = grid.querySelectorAll('.tg');
+    for (var t = 0; t < tgs.length; t++) {
+      var k = tgs[t].getAttribute('data-k'), nn = +tgs[t].getAttribute('data-n');
+      if (k === 'm') { m.tgModel[nn] = tgs[t]; } else { m.tgSpec[nn] = tgs[t]; }
+    }
+    return m;
+  }
+  function modelOpen(k) { var o = st.ov['m:' + model.models[k].name]; return o === undefined ? st.level >= 2 : !!o; }
+  function specOpen(k) { var o = st.ov['s:' + model.specs[k].key]; return o === undefined ? st.level >= 3 : !!o; }
+
+  function refreshSection() {
+    var term = q.value.trim().toLowerCase();
+    var mOpen = [], mShow = [], sOpen = [], k, shownModels = 0, shownRows = 0;
+    for (k = 0; k < model.models.length; k++) {
+      mShow[k] = !term || model.models[k].name.toLowerCase().indexOf(term) >= 0;
+      mOpen[k] = modelOpen(k);
+      if (mShow[k]) { shownModels++; }
+      model.tgModel[k].textContent = mOpen[k] ? '−' : '+';
+    }
+    for (k = 0; k < model.specs.length; k++) {
+      sOpen[k] = specOpen(k);
+      model.tgSpec[k].textContent = sOpen[k] ? '−' : '+';
+    }
+    var rows = model.d.rows, trs = model.trs;
+    for (var i = 0; i < rows.length; i++) {
+      var mk = model.mi[i], lv = rows[i].lv, vis = true;
+      if (mk >= 0 && !mShow[mk]) { vis = false; }
+      else if (lv === 1) { vis = mk < 0 || mOpen[mk]; }
+      else if (lv === 2) { vis = (mk < 0 || mOpen[mk]) && (model.si[i] < 0 || sOpen[model.si[i]]); }
+      trs[i].hidden = !vis;
+      if (vis) { shownRows++; }
+    }
+    var lb = document.querySelectorAll('#lvls [data-lv]');
+    var anyOv = false;
+    for (var o in st.ov) { if (Object.prototype.hasOwnProperty.call(st.ov, o)) { anyOv = true; break; } }
+    for (var b = 0; b < lb.length; b++) { lb[b].className = (!anyOv && +lb[b].getAttribute('data-lv') === st.level) ? 'on' : ''; }
+    stat.textContent = 'Моделей: ' + shownModels + (term ? ' из ' + model.models.length : '') + ' · строк на экране: ' + shownRows;
+  }
+  function saveState() { lsSet(cur, { level: st.level, ov: st.ov }); }
+  function setLevel(lv) { st = { level: lv, ov: {} }; saveState(); if (model) { refreshSection(); } }
+
+  function show(d) {
+    note.textContent = bootNote;
+    bootNote = '';
+    var ps = pendingScroll;
+    pendingScroll = null;
+    shownVer = Number(d.version) || 0;
+    setVer(shownVer);
+    for (var ck in cache) {   // вкладки, прочитанные до новой выгрузки, устарели: при переходе загрузятся заново
+      if (ck !== cur && (Number(cache[ck].version) || 0) < shownVer) { delete cache[ck]; }
+    }
+    if (d.empty || (!d.rows.length && !d.cols)) {
+      grid.hidden = true;
+      setMsg(d.note || 'В этом разделе нет данных.');
+      stat.textContent = '';
+      return;
+    }
+    setMsg('');
+    grid.hidden = false;
+    $('link').style.display = INIT.baseUrl ? '' : 'none';
+    if (d.kind === 'summary') {
+      note.textContent = d.note || note.textContent;
+      model = null;
+      buildSummary(d);
+      refreshSummary(d);
+      if (ps) { $('wrap').scrollTop = ps[0]; $('wrap').scrollLeft = ps[1]; }
+      return;
+    }
+    if (d.note && !d.rows.length) {
+      grid.hidden = true;
+      setMsg(d.note);
+      return;
+    }
+    var saved = lsGet(cur);
+    st = saved && saved.level ? { level: saved.level, ov: saved.ov || {} } : { level: 2, ov: {} };
+    model = buildSection(d);
+    refreshSection();
+    if (ps) { $('wrap').scrollTop = ps[0]; $('wrap').scrollLeft = ps[1]; } else { $('wrap').scrollTop = 0; }
+  }
+
+  // ---------- события ----------
+  $('tabs').addEventListener('click', function (e) {
+    var t = e.target.closest ? e.target.closest('[data-tab]') : null;
+    if (t) { open(t.getAttribute('data-tab'), false); }
+  });
+  $('lvls').addEventListener('click', function (e) {
+    var t = e.target;
+    if (t.getAttribute && t.getAttribute('data-lv')) { setLevel(+t.getAttribute('data-lv')); }
+  });
+  $('expand').addEventListener('click', function () { setLevel(3); });
+  $('collapse').addEventListener('click', function () { setLevel(1); });
+  $('reload').addEventListener('click', refreshData);
+  fresh.addEventListener('click', refreshData);
+  $('link').addEventListener('click', function () {
+    var box = $('linkbox');
+    box.value = INIT.baseUrl + (INIT.baseUrl.indexOf('?') >= 0 ? '&' : '?') + 'section=' + encodeURIComponent(cur);
+    box.style.display = box.style.display === 'block' ? 'none' : 'block';
+    box.focus(); box.select();
+  });
+  var timer = null;
+  q.addEventListener('input', function () {
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      var d = cache[cur];
+      if (!d) { return; }
+      if (d.kind === 'summary') { refreshSummary(d); } else if (model) { refreshSection(); }
+    }, 120);
+  });
+  grid.addEventListener('click', function (e) {
+    if (!model) { return; }
+    var tg = e.target.closest ? e.target.closest('.tg') : null;
+    var cell = tg || (e.target.closest ? e.target.closest('td.nm') : null);
+    if (!cell) { return; }
+    var node = tg || cell.querySelector('.tg');
+    if (!node) { return; }
+    var kind = node.getAttribute('data-k'), n = +node.getAttribute('data-n');
+    if (kind === 'm') { st.ov['m:' + model.models[n].name] = !modelOpen(n); }
+    else { st.ov['s:' + model.specs[n].key] = !specOpen(n); }
+    saveState();
+    refreshSection();
+  });
+
+  buildTabs();
+  var first = pickInitial();
+  if (INIT.section && first !== INIT.section) {
+    bootNote = 'Раздел «' + INIT.section + '» не найден, открыт «' + first + '».';
+  }
+  open(first, false);
+  setInterval(checkVersion, window.BVS_POLL_MS || 5 * 60 * 1000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) { checkVersion(); } });
+})();
+</script>
+</body>
+</html>

@@ -1,27 +1,22 @@
-# Case 06 — Model operations (rename, upgrade, relink) (v3.0.0)
+# Case 06 — Model operations (rename, upgrade, relink, worksets)
 
 [← Portfolio hub](../../README.md) · [RU](README.ru.md)
 
 ## Problem
 
-A discipline park (~50+ workshared models) has to move together: new names, sometimes a new folder or Revit year, then every **RVT link** must point at the new files. Doing Save As / Detach / Load From by hand breaks the chain as soon as one host is saved before its links exist.
+A discipline park (~50+ workshared models) has to move together: new names, sometimes a new folder or Revit year, then every **RVT link** must point at the new files. Doing Save As / Detach / Load From by hand breaks the chain as soon as one host is saved before its links exist. New models also have to land on the right worksets.
 
 ## Solution
 
-A single operator window (`Операции с моделями.vbs`, or `show_ops.vbs` with an ASCII file name) opens `presets.ps1`. That script **depends on `start_ops.ps1` and `job_lib.ps1`**: it dot-sources both, and they must sit in the same folder. `start_ops.ps1` finds Revit Batch Processor and starts each pass. [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor) is only the batch host.
+Framework **v3.1.0**. One operator window (`Операции с моделями.vbs`) opens `служебное/presets.ps1`. That script dot-sources `start_ops.ps1` and `job_lib.ps1` from the same `служебное` folder. `start_ops.ps1` finds Revit Batch Processor and starts each pass. [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor) is only the batch host.
 
-The window lists models (Model / State / Source / Path). A “will become” column appears only when renaming, and old/new path columns only when moving files. **Details** edits the name rules. **Run** saves the job and starts the passes (buffer / Save As / file move / links / delete old). Before an overwrite it asks whether everyone has left the models.
+The launcher sits in `src/`. All code sits in `src/служебное/`. Job files (`rvt_list.txt`, `job_paths.csv`, `mapping.csv`, …) are written next to the launcher when you run the window, and are gitignored.
 
-The older menu `run_cascade.cmd` is still in the folder.
+Tabs cover rename / move, link retarget, year upgrade, **add links**, and **worksets**. A trial run prints the plan and does not open Revit. Pass 1 is `saveas_central.py` (**v3.1.0**, Create New Local, Detach OFF). An old Revit Server year is detached to a local buffer first (`detach_to_buffer.py`, Detach ON, this PC only). Pass 2 is `update_rvt_links.py`. Workset read/write is a separate pair: `read_worksets.py` then `apply_workset_links.py`.
 
-1. Pick models (share / files / `RSN://`)
-2. Name ops from a sample (`delete` / `replace` / `insert`) + destination / year
-3. **Save job** writes `mapping.csv`, `job_paths.csv`, lists — **before** Revit opens anything
-4. Pipeline:
-   - **Pass 1** `saveas_central.py` — new centrals (Create New Local, Detach **OFF**)
-   - If the source is an old Revit Server year: `detach_to_buffer.py` first (**Detach ON**, buffer on this PC only — not a live central)
-   - **Pass 2** `update_rvt_links.py` — remap links from `job_paths.csv`
-5. After a green Pass 2: delete old UNC / list old RSN for Admin
+`saveas_central.py` reports `SCRIPT_VERSION` 3.1.0. `detach_to_buffer.py` and `update_rvt_links.py` still report 3.0.0. `read_worksets.py` is 1.0.1 and `apply_workset_links.py` is 1.1.3.
+
+The older menu `служебное/run_cascade.cmd` is still there.
 
 UNC→UNC with a year upgrade does not need the buffer: a newer Revit can open the old file on the share and Save As.
 
@@ -30,10 +25,10 @@ UNC→UNC with a year upgrade does not need the buffer: a newer Revit can open t
 | Item | Result |
 |------|--------|
 | Status | Tested on real working models |
-| Impact | On average about 4–5× faster than manual work; staged Save As, move, and relink from one saved job plan |
+| Impact | On average about 4–5× faster than manual work; staged Save As, move, relink, and worksets from one saved job |
 | Scale | Discipline park, mixed UNC / `RSN://` |
-| Operator UX | Single window: list, optional rename/move columns, Details, Run. Older menu: `run_cascade.cmd` |
-| Writes model? | **Yes** — Save As central, then link remap |
+| Operator UX | Single window. Older menu: `служебное/run_cascade.cmd` |
+| Writes model? | **Yes** — Save As central, link remap, workset edits |
 
 ## Safety
 
@@ -41,23 +36,30 @@ UNC→UNC with a year upgrade does not need the buffer: a newer Revit can open t
 - Detach **ON** only for the **local buffer** when leaving an old Revit Server (not the live central)
 - Nested links are not rewritten from the host — each model that owns a link is opened
 - Delete old files only after Pass 2 is green
-- Name ops run only if the token is present (exceptions for one specific token are a separate replace)
+- Inserting a link uses shared coordinates. A link whose coordinates do not match is skipped
+- Name ops run only if the token is present
 
 Details: [docs/SAFETY.md](../../docs/SAFETY.md)
 
 ## How to run
 
-1. Copy `src/` to a PC with the matching Revit years + RBP
+1. Copy `src/` to a PC with the matching Revit years + RBP. Keep the `служебное` subfolder next to the launcher.
 2. Edit `servers.cfg` (placeholders in this repo)
-3. Double-click `Операции с моделями.vbs` (Russian for “Model operations”). `show_ops.vbs` opens the same window. `presets.ps1` will not start without `start_ops.ps1` and `job_lib.ps1` beside it.
-4. Pick models, set the name rules, press Run.
-5. Older menu, still in the folder: `run_cascade.cmd` → **2** pick models → **1** presets → Save job. *Save job* (`job_lib.ps1`) writes `rbp_checklist.txt` next to `mapping.csv` (not stored in the repo): Revit year, Detach / Create New Local, task script and list file, one RBP run per year. `run_cascade.cmd` prints it. Optional: Windows Move UNC (**3**), then delete old (**4**).
+3. Double-click `Операции с моделями.vbs` (Russian for “Model operations”). It finds `presets.ps1` in the subfolder. The window will not start without `start_ops.ps1` and `job_lib.ps1` beside `presets.ps1`.
+4. Pick models, set the rules, use the trial run, then start the tab.
+5. Older menu, still in `служебное`: `run_cascade.cmd`.
+
+## Tests
+
+PowerShell and Python checks live in [`src/служебное/tests/`](src/служебное/tests/). They cover name ops, paths, the move tab, relink, worksets, and the window logic. They do not need Revit. On Windows, run the `.ps1` tests with Windows PowerShell 5.1.
 
 ## Third-party
 
 - Needs [Revit Batch Processor](https://github.com/bvn-architecture/RevitBatchProcessor) (GPL-3.0, not included).
-- `src/rbp_open_fail_patch/` holds two **modified copies of RBP scripts** (© 2020 Dan Rumery, BVN) that make RBP continue past failure / dialog prompts on Open. They are GPL-3.0 derivative works, not MIT; see [NOTICE](../../NOTICE) and `LICENSE-GPL-3.0.txt` next to them. `patch_rbp_open_failures.ps1` copies them into *your* RBP `Scripts` folder.
+- `src/служебное/rbp_open_fail_patch/` holds two **modified copies of RBP scripts** (© 2020 Dan Rumery, BVN) that make RBP continue past failure / dialog prompts on Open. They are GPL-3.0 derivative works, not MIT; see [NOTICE](../../NOTICE) and `LICENSE-GPL-3.0.txt` next to them. `служебное/patch_rbp_open_failures.ps1` copies them into *your* RBP `Scripts` folder.
 
 Example mapping (anonymised): [`src/mapping.example.csv`](src/mapping.example.csv)
+
+Tool notes: [`src/README.md`](src/README.md) · operator notes: [`src/ИНСТРУКЦИЯ.txt`](src/ИНСТРУКЦИЯ.txt)
 
 Code: [`src/`](src/)

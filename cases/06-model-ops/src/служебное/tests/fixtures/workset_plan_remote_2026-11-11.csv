@@ -1,0 +1,5 @@
+﻿action;host;key;arg1;arg2;arg3;code;create_workset
+create;RSN://revit-server-2022.example.local/proj SampleSite/Стадия П/04_ЭОМ/SITE_ORG_EOM_K1_R22.rvt;;01_Связь_RVT_HC_K1;;;;1
+create;RSN://revit-server-2022.example.local/proj SampleSite/Стадия П/04_ЭОМ/SITE_ORG_EOM_K1_R22.rvt;;01_Связь_RVT_AVT_K1;;;;1
+insert;RSN://revit-server-2022.example.local/proj SampleSite/Стадия П/04_ЭОМ/SITE_ORG_EOM_K1_R22.rvt;rsn://revit-server-2022.example.local/proj samplesite/стадия п/04_эом/site_org_eom_k1_r22.rvt|rsn://revit-server-2022.example.local/proj samplesite/стадия п/13_хц/site_org_hc_k1_r22.rvt|insert;RSN://revit-server-2022.example.local/proj SampleSite/Стадия П/13_ХЦ/SITE_ORG_HC_K1_R22.rvt;01_Связь_RVT_HC_K1;HC;;0
+insert;RSN://revit-server-2022.example.local/proj SampleSite/Стадия П/04_ЭОМ/SITE_ORG_EOM_K1_R22.rvt;rsn://revit-server-2022.example.local/proj samplesite/стадия п/04_эом/site_org_eom_k1_r22.rvt|rsn://revit-server-2022.example.local/proj samplesite/стадия п/14_авт/site_org_avt_k1_r22.rvt|insert;RSN://revit-server-2022.example.local/proj SampleSite/Стадия П/14_АВТ/SITE_ORG_AVT_K1_R22.rvt;01_Связь_RVT_AVT_K1;AVT;;0

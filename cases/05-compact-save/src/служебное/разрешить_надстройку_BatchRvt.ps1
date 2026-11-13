@@ -6,6 +6,10 @@
 # How to run: разрешить_надстройку_BatchRvt.cmd or powershell -File разрешить_надстройку_BatchRvt.ps1
 # Notes: Trusts unsigned BatchRvt for the current Windows user.
 
+# Trust unsigned BatchRvt add-in for this Windows user (HKCU CodeSigning).
+# Default: every Revit year that already has a BatchRvt .addin after RBP install.
+# Optional: -Year 2023
+
 param(
     [string]$Year = ""
 )

@@ -5,6 +5,9 @@
 # Outputs: Updated rvt_list; starts RBP via start_compact.ps1.
 # How to run: Сжатие.vbs or служебное launchers.
 # Notes: UTF-8 with BOM required for PowerShell 5.1.
+# Main window for compact save. UTF-8 WITH BOM required (PowerShell 5.1).
+# Double-click Сжатие.vbs — no console menu.
+
 $ErrorActionPreference = "Continue"
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
@@ -39,6 +42,7 @@ catch {
     throw
 }
 
+$script:PinnedSelection = @()
 $script:SelectedModels = New-Object System.Collections.Generic.List[string]
 $script:ModelStatus = @{}
 $script:ModelComments = @{}
@@ -48,6 +52,8 @@ $script:RunState = @{
     OpenReport = $false
     Total      = 0
     YearQueue  = @()
+    Processes  = @()
+    Parallel   = $false
     YearIndex  = 1
     YearTotal  = 1
     YearLabel  = ""
@@ -72,17 +78,24 @@ function Get-UiSettingsPath {
 function Read-UiSettings {
     $p = Get-UiSettingsPath
     $openReport = $false
+    $parallel = $false
     if (Test-Path -LiteralPath $p) {
         foreach ($line in @(Get-Content -LiteralPath $p -ErrorAction SilentlyContinue)) {
             if ($line -match '^(?i)open_report=(1|true|yes)$') { $openReport = $true }
+            if ($line -match '^(?i)parallel=(1|true|yes)$') { $parallel = $true }
         }
     }
-    return @{ OpenReport = $openReport }
+    return @{ OpenReport = $openReport; Parallel = $parallel }
 }
 
 function Save-UiSettings {
     $on = if ($script:Ui.ChkOpenReport -and $script:Ui.ChkOpenReport.Checked) { "1" } else { "0" }
-    Set-Content -LiteralPath (Get-UiSettingsPath) -Value ("open_report={0}" -f $on) -Encoding UTF8
+    $par = if ($script:Ui.ChkParallel -and $script:Ui.ChkParallel.Checked) { "1" } else { "0" }
+    $lines = @(
+        ("open_report={0}" -f $on),
+        ("parallel={0}" -f $par)
+    )
+    Set-Content -LiteralPath (Get-UiSettingsPath) -Value $lines -Encoding UTF8
 }
 
 function Get-ModelKey([string]$Path) {
@@ -489,17 +502,71 @@ function Add-FromServer {
 }
 
 function Remove-SelectedUiModels {
+    param([switch]$PreferChecked)
+    # One highlighted row used to stay: PowerShell 5.1 drops a single
+    # SelectedItems entry when it is enumerated with foreach. Walk by index.
     $lv = $script:Ui.List
-    if ($lv.SelectedItems.Count -eq 0) { return }
     $drop = @{}
-    foreach ($it in @($lv.SelectedItems)) { $drop[[string]$it.Tag] = $true }
+    if ($lv) {
+        $picked = @()
+        if (Get-Command Get-ListViewSelectedItems -ErrorAction SilentlyContinue) {
+            $picked = @(Get-ListViewSelectedItems $lv)
+        }
+        else {
+            $n = 0
+            try { $n = [int]$lv.SelectedItems.Count } catch { $n = 0 }
+            for ($i = 0; $i -lt $n; $i++) {
+                $picked += $lv.SelectedItems.Item($i)
+            }
+        }
+        foreach ($it in @($picked)) {
+            if ($it -and $it.Tag) { $drop[(Get-ModelKey ([string]$it.Tag))] = $true }
+        }
+    }
+    if ($drop.Count -eq 0) {
+        foreach ($key in @($script:PinnedSelection)) {
+            if ($key) { $drop[$key] = $true }
+        }
+    }
+    if ($drop.Count -eq 0 -and $PreferChecked -and $lv) {
+        foreach ($it in @($lv.Items)) {
+            if ($it.Checked -and $it.Tag) {
+                $drop[(Get-ModelKey ([string]$it.Tag))] = $true
+            }
+        }
+    }
+    if ($drop.Count -eq 0) {
+        Set-UiStatus "Нечего убирать: отметьте галочкой или выделите строку."
+        return
+    }
     $keep = New-Object System.Collections.Generic.List[string]
     foreach ($p in @($script:SelectedModels)) {
-        if (-not $drop.ContainsKey($p)) { [void]$keep.Add($p) }
+        if (-not $drop.ContainsKey((Get-ModelKey $p))) { [void]$keep.Add($p) }
     }
+    $before = @($script:SelectedModels).Count
     $script:SelectedModels = $keep
+    $script:PinnedSelection = @()
+    $removed = $before - $keep.Count
     Refresh-ModelList
-    Set-UiStatus "Убраны выделенные строки"
+    if ($removed -le 0) {
+        Set-UiStatus "Нечего убирать: отметьте галочкой или выделите строку."
+        return
+    }
+    Set-UiStatus ("Убрано моделей: {0}" -f $removed)
+}
+
+function Update-PinnedSelection {
+    $lv = $script:Ui.List
+    if (-not $lv) { return }
+    $keys = New-Object System.Collections.Generic.List[string]
+    $picked = @()
+    if (Get-Command Get-ListViewSelectedItems -ErrorAction SilentlyContinue) {
+        $picked = @(Get-ListViewSelectedItems $lv)
+    }
+    foreach ($it in @($picked)) {
+        if ($it -and $it.Tag) { [void]$keys.Add((Get-ModelKey ([string]$it.Tag))) }
+    }
+    if ($keys.Count -gt 0) { $script:PinnedSelection = @($keys) }
 }
 
 function Clear-UiModels {
@@ -523,7 +590,7 @@ function Update-ModeUi {
         $script:Ui.Hint.Text = "Открывает хранилище с проверкой и пересохраняет его со сжатием."
     }
     else {
-        $script:Ui.Hint.Text = "Открывает локаль и сжимает хранилище синхронизацией."
+        $script:Ui.Hint.Text = "Открывает локаль и сжимает хранилище синхронизацией. Сжимает слабее глубокого: без проверки и без пересохранения хранилища."
     }
 }
 
@@ -582,7 +649,7 @@ function Apply-LiveStatus {
 
 function Set-UiBusy([bool]$Busy) {
     $script:RunState.Active = $Busy
-    foreach ($name in @("BtnFiles", "BtnFolders", "BtnServer", "BtnRemove", "BtnClear", "BtnExport", "BtnImport", "BtnCheckAll", "BtnUncheck", "RadioDeep", "RadioQuick")) {
+    foreach ($name in @("BtnFiles", "BtnFolders", "BtnServer", "BtnRemove", "BtnClear", "BtnExport", "BtnImport", "BtnCheckAll", "BtnUncheck", "RadioDeep", "RadioQuick", "ChkParallel")) {
         if ($script:Ui.ContainsKey($name) -and $script:Ui[$name]) {
             $script:Ui[$name].Enabled = -not $Busy
         }
@@ -607,6 +674,9 @@ function Find-LatestReportXlsx {
 }
 
 function Complete-CompactRun {
+    if (Get-Command Disable-CompactStayAwake -ErrorAction SilentlyContinue) {
+        Disable-CompactStayAwake
+    }
     if ($script:Ui.Timer) { $script:Ui.Timer.Stop() }
     Apply-LiveStatus
     foreach ($p in @($script:SelectedModels)) {
@@ -754,6 +824,7 @@ function Start-NextYearIfNeeded {
         return $false
     }
     $script:RunState.Process = $started.Process
+    $script:RunState.Processes = @($started.Process)
     Set-UiStatus ("Revit {0} ({1} из {2})" -f $script:RunState.YearLabel, $script:RunState.YearIndex, $script:RunState.YearTotal)
     return $true
 }
@@ -771,17 +842,33 @@ function Tick-CompactRun {
         }
         Update-RunProgressBar
     }
-    $proc = $script:RunState.Process
-    if ($proc) {
-        try { $proc.Refresh() } catch { }
-        if ($proc.HasExited) {
+    $alive = New-Object System.Collections.Generic.List[object]
+    foreach ($proc in @($script:RunState.Processes)) {
+        if (-not $proc) { continue }
+        $exited = $false
+        try {
+            $proc.Refresh()
+            $exited = [bool]$proc.HasExited
+        }
+        catch { $exited = $true }
+        if ($exited) {
             $code = 0
             try { $code = [int]$proc.ExitCode } catch { }
             $script:RunState.ExitCodes += $code
-            $script:RunState.Process = $null
-            if (Start-NextYearIfNeeded) { return }
-            Complete-CompactRun
         }
+        else {
+            [void]$alive.Add($proc)
+        }
+    }
+    $script:RunState.Processes = @($alive)
+    $script:RunState.Process = if ($alive.Count -gt 0) { $alive[0] } else { $null }
+    if ($alive.Count -eq 0) {
+        if (Start-NextYearIfNeeded) { return }
+        Complete-CompactRun
+        return
+    }
+    if ($script:RunState.Parallel) {
+        Set-UiStatus ("Параллельно, процессов Revit: {0}" -f $alive.Count)
     }
 }
 
@@ -797,7 +884,12 @@ function Export-UiList {
     $dlg = New-Object System.Windows.Forms.SaveFileDialog
     $dlg.Title = "Сохранить список моделей"
     $dlg.Filter = "Список моделей (*.txt)|*.txt|Все файлы (*.*)|*.*"
-    $dlg.FileName = ("список_моделей_{0}.txt" -f (Get-Date -Format "yyyy-MM-dd"))
+    $dlg.FileName = if (Get-Command Get-CompactStandardFileName -ErrorAction SilentlyContinue) {
+        Get-CompactStandardFileName -Paths @($script:SelectedModels) -Kind models
+    }
+    else {
+        ("список_моделей_{0}.txt" -f (Get-Date -Format "yyyy-MM-dd"))
+    }
     $dlg.OverwritePrompt = $true
     if ((Show-OwnedDialog $dlg) -ne [System.Windows.Forms.DialogResult]::OK) { return }
     try {
@@ -916,16 +1008,20 @@ function Start-UiCompact {
     Set-UiBusy $true
     Set-UiStatus "Запускаю Revit Batch Processor…"
     $script:RunState.YearQueue = @()
+    $script:RunState.Processes = @()
     $script:RunState.ExitCodes = @()
     $script:RunState.Mode = $mode
+    $wantParallel = [bool]($script:Ui.ChkParallel -and $script:Ui.ChkParallel.Checked)
+    $script:RunState.Parallel = $wantParallel
     try {
-        $result = Invoke-CompactLaunch -Mode $mode -Models $models -NoWait
+        $result = Invoke-CompactLaunch -Mode $mode -Models $models -NoWait -Parallel:$wantParallel
     }
     catch {
         $result = @{ Ok = $false; Message = $_.Exception.Message; Process = $null }
     }
 
     if (-not $result.Ok -or -not $result.Process) {
+        if (Get-Command Disable-CompactStayAwake -ErrorAction SilentlyContinue) { Disable-CompactStayAwake }
         Set-UiBusy $false
         Set-UiStatus $result.Message
         [System.Windows.Forms.MessageBox]::Show(
@@ -939,6 +1035,10 @@ function Start-UiCompact {
     }
 
     $script:RunState.Process = $result.Process
+    if ($result.Processes) { $script:RunState.Processes = @($result.Processes) }
+    else { $script:RunState.Processes = @($result.Process) }
+    $script:RunState.Parallel = [bool]$result.Parallel
+    if (Get-Command Enable-CompactStayAwake -ErrorAction SilentlyContinue) { Enable-CompactStayAwake }
     $script:RunState.YearQueue = @($result.YearQueue)
     $script:RunState.YearIndex = [int]$(if ($result.YearIndex) { $result.YearIndex } else { 1 })
     $script:RunState.YearTotal = [int]$(if ($result.YearTotal) { $result.YearTotal } else { 1 })
@@ -959,8 +1059,8 @@ function New-MainForm {
 
     $form = New-Object System.Windows.Forms.Form
     $form.Text = "Сжатие моделей Revit"
-    $form.Size = New-Object System.Drawing.Size(1040, 690)
-    $form.MinimumSize = New-Object System.Drawing.Size(1040, 560)
+    $form.Size = New-Object System.Drawing.Size(1040, 748)
+    $form.MinimumSize = New-Object System.Drawing.Size(1040, 660)
     $form.StartPosition = "CenterScreen"
     $form.Font = $font
     $form.BackColor = [System.Drawing.SystemColors]::Window
@@ -1049,7 +1149,7 @@ function New-MainForm {
     $grpMode = New-Object System.Windows.Forms.GroupBox
     $grpMode.Text = "Режим"
     $grpMode.Location = New-Object System.Drawing.Point(16, 454)
-    $grpMode.Size = New-Object System.Drawing.Size(672, 112)
+    $grpMode.Size = New-Object System.Drawing.Size(672, 158)
     $grpMode.Anchor = "Bottom,Left,Right"
 
     $radioDeep = New-Object System.Windows.Forms.RadioButton
@@ -1065,12 +1165,18 @@ function New-MainForm {
 
     $hint = New-Object System.Windows.Forms.Label
     $hint.Text = "Открывает хранилище с проверкой и пересохраняет его со сжатием."
-    $hint.Location = New-Object System.Drawing.Point(14, 74)
-    $hint.Size = New-Object System.Drawing.Size(640, 24)
+    $hint.Location = New-Object System.Drawing.Point(14, 72)
+    $hint.Size = New-Object System.Drawing.Size(640, 40)
     $hint.Anchor = "Top,Left,Right"
     $hint.ForeColor = [System.Drawing.SystemColors]::GrayText
 
-    $grpMode.Controls.AddRange(@($radioDeep, $radioQuick, $hint))
+    $chkParallel = New-Object System.Windows.Forms.CheckBox
+    $chkParallel.Text = "Параллельно: свой Revit на каждый год (2021–2025 и local), внутри года по очереди"
+    $chkParallel.Location = New-Object System.Drawing.Point(14, 114)
+    $chkParallel.Size = New-Object System.Drawing.Size(640, 36)
+    $chkParallel.Anchor = "Top,Left,Right"
+
+    $grpMode.Controls.AddRange(@($radioDeep, $radioQuick, $hint, $chkParallel))
 
     $chkOpenReport = New-Object System.Windows.Forms.CheckBox
     $chkOpenReport.Text = "Открыть отчёт после прогона"
@@ -1093,14 +1199,14 @@ function New-MainForm {
     $btnRun.Font = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
 
     $progress = New-Object System.Windows.Forms.ProgressBar
-    $progress.Location = New-Object System.Drawing.Point(16, 574)
+    $progress.Location = New-Object System.Drawing.Point(16, 620)
     $progress.Size = New-Object System.Drawing.Size(992, 14)
     $progress.Anchor = "Bottom,Left,Right"
     $progress.Visible = $false
 
     $status = New-Object System.Windows.Forms.Label
     $status.Text = "Добавьте модели и нажмите «Сжать»."
-    $status.Location = New-Object System.Drawing.Point(16, 592)
+    $status.Location = New-Object System.Drawing.Point(16, 638)
     $status.Size = New-Object System.Drawing.Size(992, 22)
     $status.Anchor = "Bottom,Left,Right"
     $status.ForeColor = [System.Drawing.SystemColors]::GrayText
@@ -1135,6 +1241,7 @@ function New-MainForm {
         RadioDeep    = $radioDeep
         Hint         = $hint
         ChkOpenReport = $chkOpenReport
+        ChkParallel   = $chkParallel
         BtnOpenReport = $btnOpenReport
         BtnCheckAll  = $btnCheckAll
         BtnUncheck   = $btnUncheck
@@ -1144,7 +1251,7 @@ function New-MainForm {
     $btnFiles.Add_Click({ Add-FromFiles })
     $btnFolders.Add_Click({ Add-FromFolders })
     $btnServer.Add_Click({ Add-FromServer })
-    $btnRemove.Add_Click({ Remove-SelectedUiModels })
+    $btnRemove.Add_Click({ Remove-SelectedUiModels -PreferChecked })
     $btnClear.Add_Click({ Clear-UiModels })
     $btnExport.Add_Click({ Export-UiList })
     $btnImport.Add_Click({ Import-UiList })
@@ -1153,10 +1260,12 @@ function New-MainForm {
     $btnCheckAll.Add_Click({ Set-AllUiChecks $true })
     $btnUncheck.Add_Click({ Set-AllUiChecks $false })
     $list.Add_ItemChecked({ Update-ListCountLabel })
+    $list.Add_ItemSelectionChanged({ Update-PinnedSelection })
     $list.Add_ColumnClick({ On-ListColumnClick $list $_ })
     $radioDeep.Add_CheckedChanged({ Update-ModeUi })
     $radioQuick.Add_CheckedChanged({ Update-ModeUi })
     $chkOpenReport.Add_CheckedChanged({ Save-UiSettings })
+    $chkParallel.Add_CheckedChanged({ Save-UiSettings })
     $list.Add_KeyDown({
         if ($_.KeyCode -eq [System.Windows.Forms.Keys]::Delete) {
             Remove-SelectedUiModels
@@ -1165,10 +1274,14 @@ function New-MainForm {
     $form.Add_FormClosing({
         Save-UiSettings
         if ($script:Ui.Timer) { $script:Ui.Timer.Stop() }
+        if (Get-Command Disable-CompactStayAwake -ErrorAction SilentlyContinue) {
+            Disable-CompactStayAwake
+        }
     })
 
     $savedUi = Read-UiSettings
     $chkOpenReport.Checked = [bool]$savedUi.OpenReport
+    $chkParallel.Checked = [bool]$savedUi.Parallel
 
     Update-ModeUi
     return $form

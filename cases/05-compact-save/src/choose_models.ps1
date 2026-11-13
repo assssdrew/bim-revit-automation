@@ -5,6 +5,11 @@
 # Outputs: rvt_list.txt.
 # How to run: From ui_compact or служебное\choose_models_path.cmd.
 # Notes: Same pattern as other cases.
+# Unified model picker for Revit Batch Processor.
+# Sources: local folder / local files / Revit Server (RSN://).
+# Writes rvt_list.txt - can replace or append.
+# Encoding: ASCII-friendly messages for Windows PowerShell 5.1.
+
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Drawing
@@ -76,7 +81,7 @@ if (-not $_listPathsLoaded) {
     function Get-LocalBatchCompactDir {
         $candidates = @()
         if ($env:LOCALAPPDATA) { $candidates += (Join-Path $env:LOCALAPPDATA "BatchRvt\batch_compact_save") }
-        if ($env:USERPROFILE) { $candidates += (Join-Path $env:USERPROFILE "Documents\doc\script\rbp\batch_compact_save") }
+        if ($env:USERPROFILE) { $candidates += (Join-Path $env:USERPROFILE "Documents\doc\script\rbp\ORG_CompactModels") }
         foreach ($dir in $candidates) {
             if ([string]::IsNullOrWhiteSpace($dir)) { continue }
             try {
@@ -85,7 +90,7 @@ if (-not $_listPathsLoaded) {
             }
             catch { }
         }
-        $fallback = Join-Path ([System.IO.Path]::GetTempPath()) "batch_compact_save"
+        $fallback = Join-Path ([System.IO.Path]::GetTempPath()) "ORG_CompactModels"
         if (-not (Test-Path -LiteralPath $fallback)) { New-Item -ItemType Directory -Path $fallback -Force | Out-Null }
         return $fallback
     }
@@ -219,7 +224,7 @@ function Show-OwnedDialog($Dialog) {
         return $Dialog.ShowDialog($script:UiOwner)
     }
     $owner = New-Object System.Windows.Forms.Form
-    $owner.Text = "batch_compact_save"
+    $owner.Text = "ORG_CompactModels"
     $owner.TopMost = $true
     $owner.ShowInTaskbar = $false
     $owner.StartPosition = "CenterScreen"
@@ -251,6 +256,7 @@ $DefaultServers = @(
     @{ Host = "revit-server-2022.example.local"; Label = "Revit Server 2022"; Year = "2022" }
     @{ Host = "revit-server-2023.example.local"; Label = "Revit Server 2023"; Year = "2023" }
     @{ Host = "revit-server-2024.example.local"; Label = "Revit Server 2024"; Year = "2024" }
+    @{ Host = "SET-REVIT-SERVER-2025-HOST"; Label = "Revit Server 2025"; Year = "2025" }
 )
 
 function Get-NativePath([string]$Path) {
@@ -292,14 +298,41 @@ function Ensure-ServersFile {
         Write-DefaultServersFile
         return
     }
-    $any = $false
-    Get-Content -LiteralPath $ServersCfg -ErrorAction SilentlyContinue |
-        ForEach-Object {
-            if (Parse-ServerLine $_) { $any = $true }
-        }
-    if (-not $any) {
-        Write-DefaultServersFile
+    $years = @{}
+    foreach ($line in @(Get-Content -LiteralPath $ServersCfg -ErrorAction SilentlyContinue)) {
+        $item = Parse-ServerLine $line
+        if ($item) { $years[[string]$item.Year] = $true }
     }
+    if ($years.Count -eq 0) {
+        Write-DefaultServersFile
+        return
+    }
+    $extra = New-Object System.Collections.Generic.List[string]
+    foreach ($s in $DefaultServers) {
+        if (-not $years.ContainsKey([string]$s.Year)) {
+            [void]$extra.Add(("{0}|{1}|{2}" -f $s.Host, $s.Label, $s.Year))
+        }
+    }
+    if ($extra.Count -eq 0) { return }
+    $utf8 = New-Object System.Text.UTF8Encoding $false
+    $text = "`r`n# added missing Revit Server year`r`n" + ($extra -join "`r`n") + "`r`n"
+    [System.IO.File]::AppendAllText($ServersCfg, $text, $utf8)
+}
+
+function Get-ListViewSelectedItems {
+    param($ListView)
+    # SelectedItems foreach drops the only row on Windows PowerShell 5.1.
+    # Index via .Item(i) keeps a single selected model.
+    $items = New-Object System.Collections.Generic.List[object]
+    if (-not $ListView) { return @($items) }
+    $count = 0
+    try { $count = [int]$ListView.SelectedItems.Count } catch { return @($items) }
+    for ($i = 0; $i -lt $count; $i++) {
+        $one = $null
+        try { $one = $ListView.SelectedItems.Item($i) } catch { $one = $null }
+        if ($one) { [void]$items.Add($one) }
+    }
+    return @($items)
 }
 
 function Parse-ServerLine([string]$Line) {
@@ -911,6 +944,38 @@ function Collect-RsnFromRsFolders {
     return $picked
 }
 
+function Get-RsChildLevelName {
+    param(
+        [string]$Folder,
+        [string]$Kind
+    )
+    if ($Kind -eq "model") { return "Модель" }
+    $depth = 0
+    if (-not [string]::IsNullOrWhiteSpace($Folder)) {
+        $depth = @($Folder.Split("/") | Where-Object { $_ }).Count
+    }
+    switch ($depth) {
+        0 { return "Проект" }
+        1 { return "Стадия" }
+        default { return "Папка" }
+    }
+}
+
+function Format-RsBreadcrumb {
+    param([string]$Folder)
+    if ([string]::IsNullOrWhiteSpace($Folder)) {
+        return "Корень (проекты). Это HTTP Revit Server, не путь Windows."
+    }
+    $labels = @("Проект", "Стадия", "Папка")
+    $parts = @($Folder.Split("/") | Where-Object { $_ })
+    $bits = New-Object System.Collections.Generic.List[string]
+    for ($i = 0; $i -lt $parts.Count; $i++) {
+        $lab = if ($i -lt $labels.Count) { $labels[$i] } else { "Папка" }
+        [void]$bits.Add(("{0}: {1}" -f $lab, $parts[$i]))
+    }
+    return ($bits -join "  >  ")
+}
+
 function Show-RevitServerBrowser {
     param($ServerObj)
 
@@ -936,26 +1001,26 @@ function Show-RevitServerBrowser {
     $form.MaximizeBox = $true
 
     $lblPath = New-Object System.Windows.Forms.Label
-    $lblPath.Text = "Folder path - select Folder then Open / double-click"
+    $lblPath.Text = "Путь на сервере: проект / стадия / папка / модель (HTTP, не диск Windows)"
     $lblPath.Location = New-Object System.Drawing.Point(12, 12)
-    $lblPath.AutoSize = $true
+    $lblPath.Size = New-Object System.Drawing.Size(860, 20)
 
     $txtPath = New-Object System.Windows.Forms.TextBox
     $txtPath.Location = New-Object System.Drawing.Point(12, 36)
     $txtPath.Size = New-Object System.Drawing.Size(600, 25)
 
     $btnGo = New-Object System.Windows.Forms.Button
-    $btnGo.Text = "Go"
+    $btnGo.Text = "Перейти"
     $btnGo.Location = New-Object System.Drawing.Point(620, 34)
     $btnGo.Size = New-Object System.Drawing.Size(70, 28)
 
     $btnUp = New-Object System.Windows.Forms.Button
-    $btnUp.Text = "Up"
+    $btnUp.Text = "Вверх"
     $btnUp.Location = New-Object System.Drawing.Point(698, 34)
     $btnUp.Size = New-Object System.Drawing.Size(70, 28)
 
     $btnOpen = New-Object System.Windows.Forms.Button
-    $btnOpen.Text = "Open"
+    $btnOpen.Text = "Открыть"
     $btnOpen.Location = New-Object System.Drawing.Point(776, 34)
     $btnOpen.Size = New-Object System.Drawing.Size(90, 28)
 
@@ -1046,7 +1111,7 @@ function Show-RevitServerBrowser {
 
         foreach ($f in @($contents.Folders)) {
             $item = New-Object System.Windows.Forms.ListViewItem([string]$f)
-            [void]$item.SubItems.Add('Folder')
+            [void]$item.SubItems.Add((Get-RsChildLevelName -Folder $requestFolder -Kind "folder"))
             # Hashtable Tag is reliable in WinForms from PS 5.1 (PSCustomObject Tag can lose props)
             $item.Tag = @{
                 Kind   = 'folder'
@@ -1058,7 +1123,7 @@ function Show-RevitServerBrowser {
         foreach ($m in @($contents.Models)) {
             $fullRsn = ConvertTo-RsnPath -Server ([string]$st.Server) -FolderPath $requestFolder -ModelName ([string]$m)
             $item = New-Object System.Windows.Forms.ListViewItem([string]$m)
-            [void]$item.SubItems.Add('Model (.rvt)')
+            [void]$item.SubItems.Add((Get-RsChildLevelName -Folder $requestFolder -Kind "model"))
             $item.Tag = @{
                 Kind    = 'model'
                 Name    = [string]$m
@@ -1073,8 +1138,8 @@ function Show-RevitServerBrowser {
         $mc = @($contents.Models).Count
         $pathShow = if ([string]::IsNullOrWhiteSpace($requestFolder)) { "/" } else { ("/" + $requestFolder) }
         $st.Status.Text = (
-            "Папка: {0}   папок: {1}   моделей: {2}" -f
-            $(if ([string]::IsNullOrWhiteSpace($requestFolder)) { "/" } else { $requestFolder }),
+            "{0}   папок: {1}   моделей: {2}" -f
+            (Format-RsBreadcrumb $requestFolder),
             $fc,
             $mc
         )
@@ -1086,7 +1151,8 @@ function Show-RevitServerBrowser {
         $st = $script:RsBrowserState
         $lv = $st.List
         $item = $null
-        if ($lv.SelectedItems.Count -gt 0) { $item = $lv.SelectedItems[0] }
+        $pickedRows = @(Get-ListViewSelectedItems $lv)
+        if ($pickedRows.Count -gt 0) { $item = $pickedRows[0] }
         elseif ($lv.FocusedItem) { $item = $lv.FocusedItem }
 
         if (-not $item) {
@@ -1142,7 +1208,7 @@ function Show-RevitServerBrowser {
             $uiFolder = [string]$st.PathBox.Text.Trim().Trim("/\").Replace("\", "/")
         }
 
-        foreach ($it in @($st.List.SelectedItems)) {
+        foreach ($it in @(Get-ListViewSelectedItems $st.List)) {
             $meta = $it.Tag
             if (-not $meta) { continue }
             if ([string]$meta['Kind'] -ne 'model') { continue }
@@ -1182,7 +1248,7 @@ function Show-RevitServerBrowser {
         }
 
         $targets = New-Object System.Collections.Generic.List[string]
-        foreach ($it in @($st.List.SelectedItems)) {
+        foreach ($it in @(Get-ListViewSelectedItems $st.List)) {
             $meta = $it.Tag
             if (-not $meta -or [string]$meta['Kind'] -ne 'folder') { continue }
             $name = [string]$meta['Name']
@@ -1597,7 +1663,7 @@ function Show-DisciplineFolderChecklist {
 
 function Select-LocalFolder {
     Write-Host ""
-    Write-Host "Step 1/2: open PARENT folder (e.g. ...\ExampleProject)"
+    Write-Host "Step 1/2: open PARENT folder (e.g. ...\4_Razrabotka proekta)"
     $typed = Show-FolderPathDialog
     if ([string]::IsNullOrWhiteSpace($typed)) {
         return @()
