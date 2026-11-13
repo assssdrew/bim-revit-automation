@@ -1,0 +1,1 @@
+ISSUES=1 FIXED=3 NEW=0 BUILDER=OPENXML DYNAMICS=3 FILE=<WORK>/out/task.xlsx PAYLOAD=<WORK>/out/google_push_payload.json

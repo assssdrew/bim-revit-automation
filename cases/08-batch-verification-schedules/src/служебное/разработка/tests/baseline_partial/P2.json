@@ -1,0 +1,3889 @@
+{
+ "history": [
+  "2026-02-01\tEOM\tORG_K1_PROJ_IOS_EOM_R23\tЭОМ Проверка заполнения\tПроверить, чтобы была заполнена \"Длина\", ADSK_Размер_Длина\t2\tADSK_Размер_Длина\t2026-02-01 10:00:00",
+  "2026-02-01\tEOM\tORG_K2_PROJ_IOS_EOM_R23\tЭОМ Проверка заполнения\tПроверить, чтобы была заполнена \"Длина\", ADSK_Размер_Длина\t1\tADSK_Размер_Длина\t2026-02-01 10:00:00",
+  "2026-02-01\tSS\tORG_K1_PROJ_IOS_SS_R23\tСС Проверка марки\tПроверить, чтобы была заполнена \"Длина\", ADSK_Размер_Длина\t1\tADSK_Размер_Длина\t2026-02-01 10:00:00",
+  "2026-02-02\tEOM\tORG_K1_PROJ_IOS_EOM_R23\tЭОМ Проверка заполнения\tПроверить, чтобы была заполнена \"Длина\", ADSK_Размер_Длина\t1\tADSK_Размер_Длина\t2026-02-02 10:00:00",
+  "2026-02-02\tEOM\tORG_K2_PROJ_IOS_EOM_R23\tЭОМ Проверка заполнения\tПроверить, чтобы была заполнена \"Длина\", ADSK_Размер_Длина\t1\tADSK_Размер_Длина\t2026-02-02 10:00:00",
+  "2026-02-02\tSS\tORG_K1_PROJ_IOS_SS_R23\tСС Проверка марки\tПроверить, чтобы была заполнена \"Длина\", ADSK_Размер_Длина\t2\tADSK_Размер_Длина\t2026-02-02 10:00:00"
+ ],
+ "ledger": [
+  "ORG_K1_PROJ_IOS_EOM_R23\tEOM\tЭОМ Проверка заполнения\tСветильник: тип А\tСветильник 1\tADSK_Размер_Длина\t\t2026-02-01 10:00:00\t2026-02-02 10:00:00\topen\t\t0",
+  "ORG_K1_PROJ_IOS_EOM_R23\tEOM\tЭОМ Проверка заполнения\tСветильник: тип Б\tСветильник 2\tADSK_Размер_Длина\t007\t2026-02-01 10:00:00\t2026-02-01 10:00:00\tfixed\t2026-02-02 10:00:00\t0",
+  "ORG_K1_PROJ_IOS_SS_R23\tSS\tСС Проверка марки\tИзвещатель\tИП-1\tADSK_Размер_Длина\t\t2026-02-01 10:00:00\t2026-02-02 10:00:00\topen\t\t0",
+  "ORG_K2_PROJ_IOS_EOM_R23\tEOM\tЭОМ Проверка заполнения\tРозетка\tРозетка 1\tADSK_Размер_Длина\tпробел\t2026-02-01 10:00:00\t2026-02-01 10:00:00\topen\t\t0"
+ ],
+ "payload": {
+  "clear": [],
+  "partial": true,
+  "sheets": [
+   {
+    "columnWidths": [
+     31,
+     10,
+     12,
+     14
+    ],
+    "formats": [
+     {
+      "bg": 65535,
+      "c": 1,
+      "r": 1,
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bg": 15917529,
+      "c": 1,
+      "r": 2,
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bg": 15917529,
+      "c": 2,
+      "r": 2,
+      "rot": 90,
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bg": 15917529,
+      "c": 3,
+      "r": 2,
+      "rot": 90,
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bg": 15917529,
+      "c": 4,
+      "r": 2,
+      "rot": 90,
+      "wrap": true
+     },
+     {
+      "bg": 13561798,
+      "c": 2,
+      "dim": true,
+      "ha": "center",
+      "r": 3
+     },
+     {
+      "bg": 8438015,
+      "c": 3,
+      "ha": "center",
+      "r": 3
+     },
+     {
+      "c": 4,
+      "ha": "center",
+      "r": 3
+     },
+     {
+      "b": true,
+      "c": 1,
+      "r": 3
+     },
+     {
+      "bg": 8438015,
+      "c": 2,
+      "dim": true,
+      "ha": "center",
+      "r": 4
+     },
+     {
+      "bg": 13561798,
+      "c": 3,
+      "dim": true,
+      "ha": "center",
+      "r": 4
+     },
+     {
+      "c": 4,
+      "ha": "center",
+      "r": 4
+     },
+     {
+      "b": true,
+      "c": 1,
+      "r": 4
+     },
+     {
+      "bg": 13561798,
+      "c": 2,
+      "dim": true,
+      "ha": "center",
+      "r": 5
+     },
+     {
+      "bg": 8438015,
+      "c": 3,
+      "dim": true,
+      "ha": "center",
+      "r": 5
+     },
+     {
+      "c": 4,
+      "ha": "center",
+      "r": 5
+     },
+     {
+      "b": true,
+      "c": 1,
+      "r": 5
+     }
+    ],
+    "meta": {
+     "dateCols": 0,
+     "headerHeight": 73,
+     "pairCols": []
+    },
+    "name": "Сводка",
+    "rows": [
+     [
+      "Сводка. Число строк спецификации с незаполненным параметром. Оранжевый — есть замечания. Зелёный ноль — чисто. Синий ноль — в прошлой выгрузке были, сейчас нет. В скобках — прошлое число. ↓ — исправлено, ↑ — новых с прошлой сборки.",
+      "",
+      "",
+      ""
+     ],
+     [
+      "Модель",
+      "СС Проверка марки",
+      "ЭОМ Проверка заполнения",
+      "Проверено"
+     ],
+     [
+      "ORG_K1_PROJ_IOS_EOM_R23",
+      "0",
+      "1 (2) ↓1",
+      "01.02.2026"
+     ],
+     [
+      "ORG_K1_PROJ_IOS_SS_R23",
+      "2 (1)",
+      "0",
+      "01.02.2026"
+     ],
+     [
+      "ORG_K2_PROJ_IOS_EOM_R23",
+      "0",
+      "1",
+      "01.02.2026"
+     ]
+    ]
+   },
+   {
+    "columnWidths": [
+     31,
+     29,
+     22,
+     28,
+     16,
+     12
+    ],
+    "formats": [
+     {
+      "bg": 65535,
+      "c": 1,
+      "r": 1,
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bg": 15917529,
+      "c": 1,
+      "r": 2,
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bg": 15917529,
+      "c": 2,
+      "r": 2,
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bg": 15917529,
+      "c": 3,
+      "r": 2,
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bg": 15917529,
+      "c": 4,
+      "r": 2,
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bg": 15917529,
+      "c": 5,
+      "r": 2,
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bg": 15917529,
+      "c": 6,
+      "r": 2,
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bg": 15921906,
+      "c": 1,
+      "r": 3
+     },
+     {
+      "b": false,
+      "bg": 15921906,
+      "c": 2,
+      "r": 3
+     },
+     {
+      "b": false,
+      "bg": 15921906,
+      "c": 3,
+      "r": 3
+     },
+     {
+      "b": false,
+      "bg": 15921906,
+      "c": 4,
+      "r": 3
+     },
+     {
+      "b": false,
+      "bg": 15921906,
+      "c": 5,
+      "r": 3
+     },
+     {
+      "b": false,
+      "bg": 15921906,
+      "c": 6,
+      "r": 3
+     },
+     {
+      "b": true,
+      "bg": 15921906,
+      "c": 1,
+      "r": 6
+     },
+     {
+      "b": false,
+      "bg": 15921906,
+      "c": 2,
+      "r": 6
+     },
+     {
+      "b": false,
+      "bg": 15921906,
+      "c": 3,
+      "r": 6
+     },
+     {
+      "b": false,
+      "bg": 15921906,
+      "c": 4,
+      "r": 6
+     },
+     {
+      "b": false,
+      "bg": 15921906,
+      "c": 5,
+      "r": 6
+     },
+     {
+      "b": false,
+      "bg": 15921906,
+      "c": 6,
+      "r": 6
+     },
+     {
+      "b": false,
+      "bg": 13756625,
+      "c": 1,
+      "r": 4
+     },
+     {
+      "b": true,
+      "bg": 13756625,
+      "c": 2,
+      "r": 4
+     },
+     {
+      "b": false,
+      "bg": 13756625,
+      "c": 3,
+      "r": 4
+     },
+     {
+      "b": false,
+      "bg": 13756625,
+      "c": 4,
+      "r": 4
+     },
+     {
+      "b": false,
+      "bg": 13756625,
+      "c": 5,
+      "r": 4
+     },
+     {
+      "b": false,
+      "bg": 13756625,
+      "c": 6,
+      "r": 4
+     },
+     {
+      "b": false,
+      "bg": 13756625,
+      "c": 1,
+      "r": 7
+     },
+     {
+      "b": true,
+      "bg": 13756625,
+      "c": 2,
+      "r": 7
+     },
+     {
+      "b": false,
+      "bg": 13756625,
+      "c": 3,
+      "r": 7
+     },
+     {
+      "b": false,
+      "bg": 13756625,
+      "c": 4,
+      "r": 7
+     },
+     {
+      "b": false,
+      "bg": 13756625,
+      "c": 5,
+      "r": 7
+     },
+     {
+      "b": false,
+      "bg": 13756625,
+      "c": 6,
+      "r": 7
+     }
+    ],
+    "meta": null,
+    "name": "ЭОМ",
+    "rows": [
+     [
+      "Вариант 1. Лист раздела: строка модели. Кнопка 1 — только модели, 2 — спецификации, 3 — элементы. Плюс слева раскрывает одну строку. Выборочная выгрузка. Не обновлялись в этой сборке (данные прошлых проверок): ORG_K2_PROJ_IOS_EOM_R23: не проверялось 1 из 1, последняя проверка 01.02.2026.",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     [
+      "Модель",
+      "Спецификация",
+      "Параметр",
+      "Семейство и типоразмер",
+      "Наименование",
+      "Значение"
+     ],
+     [
+      "ORG_K1_PROJ_IOS_EOM_R23",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     [
+      "",
+      "ЭОМ Проверка заполнения",
+      "ADSK_Размер_Длина",
+      "",
+      "",
+      ""
+     ],
+     [
+      "",
+      "",
+      "",
+      "Светильник: тип А",
+      "Светильник 1",
+      ""
+     ],
+     [
+      "ORG_K2_PROJ_IOS_EOM_R23",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     [
+      "",
+      "ЭОМ Проверка заполнения",
+      "ADSK_Размер_Длина",
+      "",
+      "",
+      ""
+     ],
+     [
+      "",
+      "",
+      "",
+      "Розетка",
+      "Розетка 1",
+      "пробел"
+     ]
+    ]
+   },
+   {
+    "columnWidths": [
+     31,
+     14,
+     29,
+     22,
+     28,
+     16,
+     12,
+     14,
+     14,
+     10
+    ],
+    "formats": [
+     {
+      "bg": 65535,
+      "c": 1,
+      "r": 1,
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bg": 15917529,
+      "c": 1,
+      "r": 2,
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bg": 15917529,
+      "c": 2,
+      "r": 2,
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bg": 15917529,
+      "c": 3,
+      "r": 2,
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bg": 15917529,
+      "c": 4,
+      "r": 2,
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bg": 15917529,
+      "c": 5,
+      "r": 2,
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bg": 15917529,
+      "c": 6,
+      "r": 2,
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bg": 15917529,
+      "c": 7,
+      "r": 2,
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bg": 15917529,
+      "c": 8,
+      "r": 2,
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bg": 15917529,
+      "c": 9,
+      "r": 2,
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bg": 15917529,
+      "c": 10,
+      "r": 2,
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bg": 13561798,
+      "c": 1,
+      "r": 3
+     },
+     {
+      "b": true,
+      "bg": 13561798,
+      "c": 2,
+      "r": 3
+     },
+     {
+      "b": false,
+      "bg": 13561798,
+      "c": 3,
+      "r": 3
+     },
+     {
+      "b": false,
+      "bg": 13561798,
+      "c": 4,
+      "r": 3
+     },
+     {
+      "b": false,
+      "bg": 13561798,
+      "c": 5,
+      "r": 3
+     },
+     {
+      "b": false,
+      "bg": 13561798,
+      "c": 6,
+      "r": 3
+     },
+     {
+      "b": false,
+      "bg": 13561798,
+      "c": 7,
+      "r": 3
+     },
+     {
+      "b": false,
+      "bg": 13561798,
+      "c": 8,
+      "r": 3
+     },
+     {
+      "b": false,
+      "bg": 13561798,
+      "c": 9,
+      "r": 3
+     },
+     {
+      "b": false,
+      "bg": 13561798,
+      "c": 10,
+      "r": 3
+     },
+     {
+      "b": true,
+      "c": 2,
+      "r": 4
+     },
+     {
+      "b": true,
+      "c": 2,
+      "r": 5
+     }
+    ],
+    "meta": null,
+    "name": "Динамика",
+    "rows": [
+     [
+      "Отработанные замечания за период. Период: 27.01.2026 — 02.02.2026. Группировка как на листах разделов: 1 — модель, 2 — спецификация, 3 — каждое исправленное замечание (когда найдено, когда исправлено, сколько дней висело).",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     [
+      "Модель",
+      "Отработано",
+      "Спецификация",
+      "Параметр",
+      "Семейство и типоразмер",
+      "Наименование",
+      "Значение",
+      "Найдено",
+      "Исправлено",
+      "Дней"
+     ],
+     [
+      "ORG_K1_PROJ_IOS_EOM_R23",
+      "1",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     [
+      "",
+      "1",
+      "ЭОМ Проверка заполнения",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     [
+      "",
+      "1",
+      "",
+      "ADSK_Размер_Длина",
+      "Светильник: тип Б",
+      "Светильник 2",
+      "007",
+      "01.02.2026",
+      "02.02.2026",
+      "1"
+     ]
+    ]
+   }
+  ]
+ },
+ "state": {
+  "buffer": [
+   "EOM\tORG_K1_PROJ_IOS_EOM_R23\tЭОМ Проверка заполнения\tПроверить, чтобы была заполнена \"Длина\", ADSK_Размер_Длина\tADSK_Размер_Длина\tСветильник: тип А\tСветильник 1\t",
+   "EOM\tORG_K2_PROJ_IOS_EOM_R23\tЭОМ Проверка заполнения\tПроверить, чтобы была заполнена \"Длина\", ADSK_Размер_Длина\tADSK_Размер_Длина\tРозетка\tРозетка 1\tпробел",
+   "SS\tORG_K1_PROJ_IOS_SS_R23\tСС Проверка марки\tПроверить, чтобы была заполнена \"Длина\", ADSK_Размер_Длина\tADSK_Размер_Длина\tИзвещатель\tИП-1\t",
+   "SS\tORG_K1_PROJ_IOS_SS_R23\tСС Проверка марки\tПроверить, чтобы была заполнена \"Длина\", ADSK_Размер_Длина\tADSK_Размер_Длина\tИзвещатель\tИП-1\t"
+  ],
+  "catalog": [
+   "model\tORG_K1_PROJ_IOS_EOM_R23\tloaded",
+   "model\tORG_K1_PROJ_IOS_SS_R23\tloaded",
+   "model\tORG_K2_PROJ_IOS_EOM_R23\tloaded",
+   "spec\tСС Проверка марки",
+   "spec\tЭОМ Проверка заполнения"
+  ],
+  "checks": [
+   "*\tСС Проверка марки\t2026-02-01 10:00:00",
+   "*\tЭОМ Проверка заполнения\t2026-02-01 10:00:00",
+   "ORG_K1_PROJ_IOS_EOM_R23\tЭОМ Проверка заполнения\t2026-02-02 10:00:00"
+  ]
+ },
+ "stdout": [
+  "ISSUES=4 FIXED=1 NEW=0 BUILDER=OPENXML DYNAMICS=1 FILE=<WORK>/out/task.xlsx PAYLOAD=<WORK>/out/google_push_payload.json",
+  "PARTIAL=1 PAIRS=1 BUFFERED=2"
+ ],
+ "xlsx": {
+  "sheets": [
+   {
+    "cells": [
+     {
+      "b": false,
+      "bd": [
+       null,
+       null,
+       null,
+       null
+      ],
+      "fc": null,
+      "fill": "FFFFFF00",
+      "h": null,
+      "ref": "A1",
+      "rot": 0,
+      "v": "Сводка. Число строк спецификации с незаполненным параметром. Оранжевый — есть замечания. Зелёный ноль — чисто. Синий ноль — в прошлой выгрузке были, сейчас нет. В скобках — прошлое число. ↓ — исправлено, ↑ — новых с прошлой сборки.",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "A2",
+      "rot": 0,
+      "v": "Модель",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": "center",
+      "ref": "B2",
+      "rot": 90,
+      "v": "СС Проверка марки",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": "center",
+      "ref": "C2",
+      "rot": 90,
+      "v": "ЭОМ Проверка заполнения",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": "center",
+      "ref": "D2",
+      "rot": 90,
+      "v": "Проверено",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "A3",
+      "rot": 0,
+      "v": "ORG_K1_PROJ_IOS_EOM_R23",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": "FF808080",
+      "fill": "FFC6EFCE",
+      "h": "center",
+      "ref": "B3",
+      "rot": 0,
+      "v": 0,
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFFFC080",
+      "h": "center",
+      "ref": "C3",
+      "rot": 0,
+      "v": "1 (2) ↓1",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": "center",
+      "ref": "D3",
+      "rot": 0,
+      "v": "01.02.2026",
+      "wrap": false
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "A4",
+      "rot": 0,
+      "v": "ORG_K1_PROJ_IOS_SS_R23",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": "FF808080",
+      "fill": "FFFFC080",
+      "h": "center",
+      "ref": "B4",
+      "rot": 0,
+      "v": "2 (1)",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": "FF808080",
+      "fill": "FFC6EFCE",
+      "h": "center",
+      "ref": "C4",
+      "rot": 0,
+      "v": 0,
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": "center",
+      "ref": "D4",
+      "rot": 0,
+      "v": "01.02.2026",
+      "wrap": false
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "A5",
+      "rot": 0,
+      "v": "ORG_K2_PROJ_IOS_EOM_R23",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": "FF808080",
+      "fill": "FFC6EFCE",
+      "h": "center",
+      "ref": "B5",
+      "rot": 0,
+      "v": 0,
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": "FF808080",
+      "fill": "FFFFC080",
+      "h": "center",
+      "ref": "C5",
+      "rot": 0,
+      "v": 1,
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": "center",
+      "ref": "D5",
+      "rot": 0,
+      "v": "01.02.2026",
+      "wrap": false
+     }
+    ],
+    "cols": {
+     "A": 31.0,
+     "B": 10.0,
+     "C": 12.0,
+     "D": 14.0
+    },
+    "dims": [
+     5,
+     4
+    ],
+    "freeze": "A3",
+    "merges": [
+     "A1:D1"
+    ],
+    "name": "Сводка",
+    "rows": {
+     "2": {
+      "h": 73.0
+     }
+    }
+   },
+   {
+    "cells": [
+     {
+      "b": false,
+      "bd": [
+       null,
+       null,
+       null,
+       null
+      ],
+      "fc": null,
+      "fill": "FFFFFF00",
+      "h": null,
+      "ref": "A1",
+      "rot": 0,
+      "v": "Вариант 1. Лист раздела: строка модели. Кнопка 1 — только модели, 2 — спецификации, 3 — элементы. Плюс слева раскрывает одну строку. Серым — исправленные за последние 30 дн. «Исправлено» в строках модели и спецификации — число исправленных. Выборочная выгрузка. Не обновлялись в этой сборке (данные прошлых проверок): ORG_K2_PROJ_IOS_EOM_R23: не проверялось 1 из 1, последняя проверка 01.02.2026.",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "A2",
+      "rot": 0,
+      "v": "Модель",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "B2",
+      "rot": 0,
+      "v": "Спецификация",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "C2",
+      "rot": 0,
+      "v": "Параметр",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "D2",
+      "rot": 0,
+      "v": "Семейство и типоразмер",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "E2",
+      "rot": 0,
+      "v": "Наименование",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "F2",
+      "rot": 0,
+      "v": "Значение",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "G2",
+      "rot": 0,
+      "v": "Статус",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "H2",
+      "rot": 0,
+      "v": "Найдено",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "I2",
+      "rot": 0,
+      "v": "Исправлено",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "J2",
+      "rot": 0,
+      "v": "Дней",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "A3",
+      "rot": 0,
+      "v": "ORG_K1_PROJ_IOS_EOM_R23",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "B3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "C3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "D3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "E3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "F3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "G3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "H3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "I3",
+      "rot": 0,
+      "v": 1,
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "J3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "A4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "B4",
+      "rot": 0,
+      "v": "ЭОМ Проверка заполнения",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "C4",
+      "rot": 0,
+      "v": "ADSK_Размер_Длина",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "D4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "E4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "F4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "G4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "H4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "I4",
+      "rot": 0,
+      "v": 1,
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "J4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "A5",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "B5",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "C5",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "D5",
+      "rot": 0,
+      "v": "Светильник: тип А",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "E5",
+      "rot": 0,
+      "v": "Светильник 1",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "F5",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "G5",
+      "rot": 0,
+      "v": "Открыто",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "H5",
+      "rot": 0,
+      "v": "01.02.2026",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "I5",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "J5",
+      "rot": 0,
+      "v": 1,
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": "FF808080",
+      "fill": null,
+      "h": null,
+      "ref": "A6",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": "FF808080",
+      "fill": null,
+      "h": null,
+      "ref": "B6",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": "FF808080",
+      "fill": null,
+      "h": null,
+      "ref": "C6",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": "FF808080",
+      "fill": null,
+      "h": null,
+      "ref": "D6",
+      "rot": 0,
+      "v": "Светильник: тип Б",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": "FF808080",
+      "fill": null,
+      "h": null,
+      "ref": "E6",
+      "rot": 0,
+      "v": "Светильник 2",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": "FF808080",
+      "fill": null,
+      "h": null,
+      "ref": "F6",
+      "rot": 0,
+      "v": "007",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": "FF808080",
+      "fill": null,
+      "h": null,
+      "ref": "G6",
+      "rot": 0,
+      "v": "Исправлено",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": "FF808080",
+      "fill": null,
+      "h": null,
+      "ref": "H6",
+      "rot": 0,
+      "v": "01.02.2026",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": "FF808080",
+      "fill": null,
+      "h": null,
+      "ref": "I6",
+      "rot": 0,
+      "v": "02.02.2026",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": "FF808080",
+      "fill": null,
+      "h": null,
+      "ref": "J6",
+      "rot": 0,
+      "v": 1,
+      "wrap": false
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "A7",
+      "rot": 0,
+      "v": "ORG_K2_PROJ_IOS_EOM_R23",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "B7",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "C7",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "D7",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "E7",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "F7",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "G7",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "H7",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "I7",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "J7",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "A8",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "B8",
+      "rot": 0,
+      "v": "ЭОМ Проверка заполнения",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "C8",
+      "rot": 0,
+      "v": "ADSK_Размер_Длина",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "D8",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "E8",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "F8",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "G8",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "H8",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "I8",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "J8",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "A9",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "B9",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "C9",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "D9",
+      "rot": 0,
+      "v": "Розетка",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "E9",
+      "rot": 0,
+      "v": "Розетка 1",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "F9",
+      "rot": 0,
+      "v": "пробел",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "G9",
+      "rot": 0,
+      "v": "Открыто",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "H9",
+      "rot": 0,
+      "v": "01.02.2026",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "I9",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "J9",
+      "rot": 0,
+      "v": 1,
+      "wrap": false
+     }
+    ],
+    "cols": {
+     "A": 31.0,
+     "B": 29.0,
+     "C": 22.0,
+     "D": 28.0,
+     "E": 16.0,
+     "F": 12.0,
+     "G": 14.0,
+     "H": 14.0,
+     "I": 14.0,
+     "J": 10.0
+    },
+    "dims": [
+     9,
+     10
+    ],
+    "freeze": "A3",
+    "merges": [
+     "A1:J1"
+    ],
+    "name": "ЭОМ",
+    "rows": {
+     "4": {
+      "collapsed": true,
+      "lvl": 1
+     },
+     "5": {
+      "hidden": true,
+      "lvl": 2
+     },
+     "6": {
+      "hidden": true,
+      "lvl": 2
+     },
+     "8": {
+      "collapsed": true,
+      "lvl": 1
+     },
+     "9": {
+      "hidden": true,
+      "lvl": 2
+     }
+    }
+   },
+   {
+    "cells": [
+     {
+      "b": false,
+      "bd": [
+       null,
+       null,
+       null,
+       null
+      ],
+      "fc": null,
+      "fill": "FFFFFF00",
+      "h": null,
+      "ref": "A1",
+      "rot": 0,
+      "v": "Вариант 1. Лист раздела: строка модели. Кнопка 1 — только модели, 2 — спецификации, 3 — элементы. Плюс слева раскрывает одну строку. Серым — исправленные за последние 30 дн. «Исправлено» в строках модели и спецификации — число исправленных. Выборочная выгрузка. Не обновлялись в этой сборке (данные прошлых проверок): ORG_K1_PROJ_IOS_SS_R23: не проверялось 1 из 1, последняя проверка 01.02.2026.",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "A2",
+      "rot": 0,
+      "v": "Модель",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "B2",
+      "rot": 0,
+      "v": "Спецификация",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "C2",
+      "rot": 0,
+      "v": "Параметр",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "D2",
+      "rot": 0,
+      "v": "Семейство и типоразмер",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "E2",
+      "rot": 0,
+      "v": "Наименование",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "F2",
+      "rot": 0,
+      "v": "Значение",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "G2",
+      "rot": 0,
+      "v": "Статус",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "H2",
+      "rot": 0,
+      "v": "Найдено",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "I2",
+      "rot": 0,
+      "v": "Исправлено",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "J2",
+      "rot": 0,
+      "v": "Дней",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "A3",
+      "rot": 0,
+      "v": "ORG_K1_PROJ_IOS_SS_R23",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "B3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "C3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "D3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "E3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "F3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "G3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "H3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "I3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFF2F2F2",
+      "h": null,
+      "ref": "J3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "A4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "B4",
+      "rot": 0,
+      "v": "СС Проверка марки",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "C4",
+      "rot": 0,
+      "v": "ADSK_Размер_Длина",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "D4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "E4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "F4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "G4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "H4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "I4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD1E8D1",
+      "h": null,
+      "ref": "J4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "A5",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "B5",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "C5",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "D5",
+      "rot": 0,
+      "v": "Извещатель",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "E5",
+      "rot": 0,
+      "v": "ИП-1",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "F5",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "G5",
+      "rot": 0,
+      "v": "Открыто",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "H5",
+      "rot": 0,
+      "v": "01.02.2026",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "I5",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "J5",
+      "rot": 0,
+      "v": 1,
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "A6",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "B6",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "C6",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "D6",
+      "rot": 0,
+      "v": "Извещатель",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "E6",
+      "rot": 0,
+      "v": "ИП-1",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "F6",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "G6",
+      "rot": 0,
+      "v": "Открыто",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "H6",
+      "rot": 0,
+      "v": "01.02.2026",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "I6",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "J6",
+      "rot": 0,
+      "v": 1,
+      "wrap": false
+     }
+    ],
+    "cols": {
+     "A": 30.0,
+     "B": 22.0,
+     "C": 22.0,
+     "D": 28.0,
+     "E": 16.0,
+     "F": 12.0,
+     "G": 11.0,
+     "H": 14.0,
+     "I": 14.0,
+     "J": 10.0
+    },
+    "dims": [
+     6,
+     10
+    ],
+    "freeze": "A3",
+    "merges": [
+     "A1:J1"
+    ],
+    "name": "СС",
+    "rows": {
+     "4": {
+      "collapsed": true,
+      "lvl": 1
+     },
+     "5": {
+      "hidden": true,
+      "lvl": 2
+     },
+     "6": {
+      "hidden": true,
+      "lvl": 2
+     }
+    }
+   },
+   {
+    "cells": [
+     {
+      "b": false,
+      "bd": [
+       null,
+       null,
+       null,
+       null
+      ],
+      "fc": null,
+      "fill": "FFFFFF00",
+      "h": null,
+      "ref": "A1",
+      "rot": 0,
+      "v": "Отработанные замечания за период. Период: 27.01.2026 — 02.02.2026. Группировка как на листах разделов: 1 — модель, 2 — спецификация, 3 — каждое исправленное замечание (когда найдено, когда исправлено, сколько дней висело).",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "A2",
+      "rot": 0,
+      "v": "Модель",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "B2",
+      "rot": 0,
+      "v": "Отработано",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "C2",
+      "rot": 0,
+      "v": "Спецификация",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "D2",
+      "rot": 0,
+      "v": "Параметр",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "E2",
+      "rot": 0,
+      "v": "Семейство и типоразмер",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "F2",
+      "rot": 0,
+      "v": "Наименование",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "G2",
+      "rot": 0,
+      "v": "Значение",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "H2",
+      "rot": 0,
+      "v": "Найдено",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "I2",
+      "rot": 0,
+      "v": "Исправлено",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFD9E1F2",
+      "h": null,
+      "ref": "J2",
+      "rot": 0,
+      "v": "Дней",
+      "wrap": true
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFC6EFCE",
+      "h": null,
+      "ref": "A3",
+      "rot": 0,
+      "v": "ORG_K1_PROJ_IOS_EOM_R23",
+      "wrap": false
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFC6EFCE",
+      "h": null,
+      "ref": "B3",
+      "rot": 0,
+      "v": 1,
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFC6EFCE",
+      "h": null,
+      "ref": "C3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFC6EFCE",
+      "h": null,
+      "ref": "D3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFC6EFCE",
+      "h": null,
+      "ref": "E3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFC6EFCE",
+      "h": null,
+      "ref": "F3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFC6EFCE",
+      "h": null,
+      "ref": "G3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFC6EFCE",
+      "h": null,
+      "ref": "H3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFC6EFCE",
+      "h": null,
+      "ref": "I3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": "FFC6EFCE",
+      "h": null,
+      "ref": "J3",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "A4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "B4",
+      "rot": 0,
+      "v": 1,
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "C4",
+      "rot": 0,
+      "v": "ЭОМ Проверка заполнения",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "D4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "E4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "F4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "G4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "H4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "I4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "J4",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "A5",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": true,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "B5",
+      "rot": 0,
+      "v": 1,
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "C5",
+      "rot": 0,
+      "v": "",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "D5",
+      "rot": 0,
+      "v": "ADSK_Размер_Длина",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "E5",
+      "rot": 0,
+      "v": "Светильник: тип Б",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "F5",
+      "rot": 0,
+      "v": "Светильник 2",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "G5",
+      "rot": 0,
+      "v": "007",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "H5",
+      "rot": 0,
+      "v": "01.02.2026",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "I5",
+      "rot": 0,
+      "v": "02.02.2026",
+      "wrap": false
+     },
+     {
+      "b": false,
+      "bd": [
+       "thin",
+       "thin",
+       "thin",
+       "thin"
+      ],
+      "fc": null,
+      "fill": null,
+      "h": null,
+      "ref": "J5",
+      "rot": 0,
+      "v": 1,
+      "wrap": false
+     }
+    ],
+    "cols": {
+     "A": 31.0,
+     "B": 14.0,
+     "C": 29.0,
+     "D": 22.0,
+     "E": 28.0,
+     "F": 16.0,
+     "G": 12.0,
+     "H": 14.0,
+     "I": 14.0,
+     "J": 10.0
+    },
+    "dims": [
+     5,
+     10
+    ],
+    "freeze": "A3",
+    "merges": [
+     "A1:J1"
+    ],
+    "name": "Динамика",
+    "rows": {
+     "4": {
+      "collapsed": true,
+      "lvl": 1
+     },
+     "5": {
+      "hidden": true,
+      "lvl": 2
+     }
+    }
+   }
+  ]
+ }
+}

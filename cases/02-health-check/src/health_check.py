@@ -1,11 +1,26 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 # Name: health_check.py
-# Version: 1.4.0
+# Version: 1.5.4
 # What it does: Read-only RBP audit: health metrics (waves A/B/C) and RVT link inventory per model.
 # Inputs: rvt_list.txt, thresholds.cfg, xlsx_out_path.cfg; RBP Create New Local, Detach off.
-# Outputs: Per-model CSV append; one Excel report (Summary + RVT Links) after the last model.
+# Outputs: Per-model CSV append; one Excel report (Summary, RVT Links, Metrics) after the last model.
 # How to run: RBP task on rvt_list.txt; optional color_latest_report.cmd to rebuild Excel.
 # Notes: Never Save, Sync, or Relinquish; prefer closing locals without saving.
+
+"""
+Revit Batch Processor — Health Check (только отчёт, без правок модели).
+
+CSV на шаре — сырой бэкап метрик (без списка связей).
+XLSX (основной отчёт) — один раз после последней модели из rvt_list.txt:
+  лист «Сводка» (обзор) + «Связи» (группировка) + «Метрики».
+  Папка: Documents\\doc\\script\\rbp\\reports (создаётся при первом отчёте).
+  Имя файла: health_check_YYYY-MM-DD_HHmm.csv / .xlsx
+
+Важно:
+  - Save / Sync / Relinquish НЕ вызываются
+  - в RBP для общих моделей: Create New Local, Detach выкл
+  - после прогона лучше закрыть локалы без сохранения
+"""
 
 import clr
 import codecs
@@ -19,8 +34,13 @@ from Autodesk.Revit.DB import *
 import revit_script_util
 from revit_script_util import Output
 
-SCRIPT_VERSION = "1.4.0"
-TOOL_DIR_FALLBACK = r""  # optional: path to deployed copy on share
+SCRIPT_VERSION = "1.5.4"
+RBP_ROOT = os.path.join(
+    os.environ.get("USERPROFILE", r"C:\Users\Public"),
+    r"Documents\doc\script\rbp",
+)
+TOOL_DIR_FALLBACK = os.path.join(RBP_ROOT, "batch_health_check")
+TOOL_DIR_SHARE = r""
 
 # Метрики отчёта: волны A/B/C (числа в CSV/XLSX).
 # В светофор идут только selected keys из thresholds.cfg — см. compute_status.
@@ -142,11 +162,13 @@ CSV_HEADERS_RU = [
 
 def get_script_dir():
     try:
-        return os.path.dirname(os.path.abspath(__file__))
+        folder = os.path.dirname(os.path.abspath(__file__))
+        if folder and os.path.isfile(os.path.join(folder, "thresholds.cfg")):
+            return folder
     except Exception:
         pass
 
-    candidates = [TOOL_DIR_FALLBACK, os.getcwd()]
+    candidates = [TOOL_DIR_FALLBACK, os.getcwd(), TOOL_DIR_SHARE]
     for folder in candidates:
         if folder and os.path.isfile(os.path.join(folder, "thresholds.cfg")):
             return folder
@@ -155,17 +177,33 @@ def get_script_dir():
 
 SCRIPT_DIR = get_script_dir()
 CONFIG_PATH = os.path.join(SCRIPT_DIR, "thresholds.cfg")
-REPORTS_DIR = os.path.join(SCRIPT_DIR, "reports")
-CSV_DIR = os.path.join(REPORTS_DIR, "cvc")
-ACTIVE_MARKER = os.path.join(CSV_DIR, "_active_report.txt")
-ACTIVE_LINKS_MARKER = os.path.join(CSV_DIR, "_active_links.txt")
+
+
+def ensure_reports_dir():
+    """First action for any report: create the shared folder if it does not exist."""
+    path = os.path.join(RBP_ROOT, "reports")
+    if not os.path.isdir(path):
+        os.makedirs(path)
+    return path
+
+
+REPORTS_DIR = ensure_reports_dir()
+CSV_DIR = REPORTS_DIR
+ACTIVE_MARKER = os.path.join(CSV_DIR, "_active_health_check.txt")
+ACTIVE_LINKS_MARKER = os.path.join(CSV_DIR, "_active_health_check_links.txt")
 XLSX_OUT_CFG = os.path.join(SCRIPT_DIR, "xlsx_out_path.cfg")
 RVT_LIST_PATH = os.path.join(SCRIPT_DIR, "rvt_list.txt")
 LINKS_CSV_HEADERS = [
     u"Модель-хаб",
+    u"Путь хоста",
     u"Имя связи",
-    u"Путь",
+    u"Сохраненный путь",
+    u"Тип пути",
+    u"Абсолютный путь",
     u"Статус связи",
+    u"Тип связи",
+    u"Файл существует",
+    u"Дата/время",
 ]
 
 
@@ -240,15 +278,36 @@ def load_thresholds():
     return values
 
 
-def ensure_reports_dir():
-    if not os.path.isdir(REPORTS_DIR):
-        os.makedirs(REPORTS_DIR)
-    if not os.path.isdir(CSV_DIR):
-        os.makedirs(CSV_DIR)
+def clear_active_markers():
+    for path in (ACTIVE_MARKER, ACTIVE_LINKS_MARKER):
+        try:
+            if os.path.isfile(path):
+                os.remove(path)
+        except Exception:
+            pass
+
+
+def is_first_model_in_batch():
+    """True for the first model of the current RBP run -> start a new report file."""
+    try:
+        get_num = getattr(revit_script_util, "GetProgressNumber", None)
+        if callable(get_num):
+            return int(get_num()) <= 1
+    except Exception:
+        pass
+    return False
 
 
 def get_report_path():
+    """
+    One CSV pair per RBP batch.
+    First model always starts a NEW report (old files are kept, only markers reset).
+    """
     ensure_reports_dir()
+    if is_first_model_in_batch():
+        clear_active_markers()
+        Output("New report session (first model in RBP batch)")
+
     if os.path.isfile(ACTIVE_MARKER):
         try:
             with open(ACTIVE_MARKER, "r") as f:
@@ -258,7 +317,7 @@ def get_report_path():
         except Exception:
             pass
 
-    name = "health_{}.csv".format(now_file_stamp())
+    name = "health_check_{}.csv".format(now_file_stamp())
     path = os.path.join(CSV_DIR, name)
     with open(ACTIVE_MARKER, "w") as f:
         f.write(name)
@@ -266,6 +325,7 @@ def get_report_path():
     links_name = name.replace(".csv", "_links.csv")
     with open(ACTIVE_LINKS_MARKER, "w") as f:
         f.write(links_name)
+    Output("Report CSV: {}".format(name))
     return path
 
 
@@ -287,19 +347,29 @@ def get_links_report_path(summary_csv_path):
     return os.path.join(CSV_DIR, name)
 
 
+def default_xlsx_output_dir():
+    return ensure_reports_dir()
+
+
+def ensure_dir(path):
+    if path and not os.path.isdir(path):
+        os.makedirs(path)
+
+
 def read_xlsx_output_dir():
-    if not os.path.isfile(XLSX_OUT_CFG):
-        return ""
+    """Always Documents\\doc\\script\\rbp\\reports (create if missing)."""
+    path = default_xlsx_output_dir()
     try:
-        with open(XLSX_OUT_CFG, "r") as f:
-            for raw in f:
-                line = raw.strip()
-                if not line or line.startswith("#"):
-                    continue
-                return line
-    except Exception:
-        pass
-    return ""
+        ensure_dir(path)
+        try:
+            with open(XLSX_OUT_CFG, "w") as f:
+                f.write(path + "\n")
+        except Exception:
+            pass
+        return path
+    except Exception as ex:
+        Output("WARN XLSX folder: {}".format(ex))
+        return path
 
 
 def normalize_model_path(path):
@@ -389,13 +459,11 @@ def export_xlsx_from_csv(csv_path, wait=True):
 
         out_dir = read_xlsx_output_dir()
         if not out_dir:
-            Output(
-                "WARN XLSX export skipped: run reset_report_session.cmd and choose local XLSX folder"
-            )
+            Output("WARN XLSX export skipped: cannot resolve reports folder")
             return False
 
         links_path = get_links_report_path(csv_path)
-        log_path = os.path.join(out_dir, "xlsx_export.log")
+        log_path = os.path.join(out_dir, "health_check_xlsx_export.log")
         args = (
             u'-NoProfile -ExecutionPolicy Bypass -File "{0}" '
             u'-CsvPath "{1}" -LinksCsvPath "{2}" -OutputDir "{3}" -LogPath "{4}"'
@@ -453,17 +521,24 @@ def csv_escape(value):
     return text
 
 
-def append_links_rows(links_path, hub_name, link_rows):
+def append_links_rows(links_path, hub_name, hub_path, timestamp, link_rows):
     write_header = (not os.path.isfile(links_path)) or (os.path.getsize(links_path) == 0)
     lines = []
     if write_header:
         lines.append(u";".join(LINKS_CSV_HEADERS))
-    for item in link_rows:
+    items = list(link_rows) if link_rows else [{}]
+    for item in items:
         row = [
             hub_name or "",
+            hub_path or "",
             item.get("name", ""),
-            item.get("path", ""),
+            item.get("saved_path", item.get("path", "")),
+            item.get("path_type", ""),
+            item.get("absolute_path", ""),
             item.get("status", ""),
+            item.get("ref_type", ""),
+            item.get("file_exists", ""),
+            timestamp or "",
         ]
         lines.append(u";".join([csv_escape(v) for v in row]))
 
@@ -623,16 +698,124 @@ def collect_cad_external(document):
     return link_total, link_nf, import_total, unpinned
 
 
-def get_link_type_path(link_type):
+def model_path_to_user(model_path):
+    if not model_path:
+        return ""
     try:
-        ext_ref = link_type.GetExternalFileReference()
-        if ext_ref:
-            model_path = ext_ref.GetPath()
-            if model_path:
-                return ModelPathUtils.ConvertModelPathToUserVisiblePath(model_path)
+        return ModelPathUtils.ConvertModelPathToUserVisiblePath(model_path)
+    except Exception:
+        return ""
+
+
+def get_external_file_ref(link_type):
+    try:
+        if ExternalFileUtils.IsExternalFileReference(link_type):
+            return link_type.GetExternalFileReference()
     except Exception:
         pass
+    try:
+        return link_type.GetExternalFileReference()
+    except Exception:
+        return None
+
+
+def get_link_type_path(link_type):
+    ext_ref = get_external_file_ref(link_type)
+    if ext_ref:
+        try:
+            saved = model_path_to_user(ext_ref.GetPath())
+            if saved:
+                return saved
+        except Exception:
+            pass
     return ""
+
+
+def path_type_ru(ext_ref):
+    if not ext_ref:
+        return ""
+    try:
+        raw = str(ext_ref.PathType)
+    except Exception:
+        return ""
+    low = raw.lower()
+    if "relative" in low:
+        return u"Относительный"
+    if "absolute" in low:
+        return u"Абсолютный"
+    if "server" in low:
+        return u"Сервер"
+    return raw
+
+
+def attachment_type_ru(link_type):
+    try:
+        raw = str(link_type.AttachmentType)
+    except Exception:
+        return ""
+    low = raw.lower()
+    if "overlay" in low:
+        return u"Наложение"
+    if "attachment" in low:
+        return u"Присоединение"
+    return raw
+
+
+def link_status_ru(status):
+    raw = link_status_name(status)
+    low = raw.lower().replace(" ", "")
+    if "notfound" in low:
+        return u"Не найдено"
+    if "locallyunload" in low:
+        return u"Выгружено локально"
+    if "unload" in low:
+        return u"Выгружено"
+    if "loaded" in low:
+        return u"Загружено"
+    if "canbeupgrade" in low:
+        return u"Можно обновить"
+    if "inclosedworkset" in low or "closedworkset" in low:
+        return u"В закрытом РН"
+    return raw
+
+
+def file_exists_label(abs_path):
+    if not abs_path:
+        return ""
+    low = abs_path.strip()
+    if low.upper().startswith("RSN://"):
+        return u"n/a (RSN)"
+    try:
+        if System.IO.File.Exists(abs_path):
+            return u"да"
+        return u"нет"
+    except Exception:
+        return ""
+
+
+def is_nested_rvt_link(link_type):
+    try:
+        return bool(link_type.IsNestedLink)
+    except Exception:
+        return False
+
+
+def is_ifc_link_type(link_type, path):
+    try:
+        if link_type.IsFromIFC():
+            return True
+    except Exception:
+        pass
+    p = (path or "").lower()
+    if p.endswith(".ifc"):
+        return True
+    try:
+        name = (link_type.Name or "").lower()
+        if name.endswith(".ifc"):
+            return True
+    except Exception:
+        pass
+    return False
 
 
 def basename_from_path(path, fallback=""):
@@ -647,18 +830,40 @@ def basename_from_path(path, fallback=""):
 
 
 def collect_rvt_links_detail(document):
-    """Прямые RVT-связи хаба (1 уровень): name, path, status."""
+    """Прямые RVT-связи хоста (1 уровень): путь, тип пути, статус, overlay."""
     rows = []
     try:
         for lt in FilteredElementCollector(document).OfClass(RevitLinkType):
             try:
-                path = get_link_type_path(lt)
+                if is_nested_rvt_link(lt):
+                    continue
+
+                ext_ref = get_external_file_ref(lt)
+                saved = ""
+                absolute = ""
+                ptype = ""
+                if ext_ref:
+                    try:
+                        saved = model_path_to_user(ext_ref.GetPath())
+                    except Exception:
+                        saved = ""
+                    try:
+                        absolute = model_path_to_user(ext_ref.GetAbsolutePath())
+                    except Exception:
+                        absolute = ""
+                    ptype = path_type_ru(ext_ref)
+                if not saved:
+                    saved = get_link_type_path(lt)
+
+                if is_ifc_link_type(lt, saved or absolute):
+                    continue
+
                 name = ""
                 try:
                     name = lt.Name
                 except Exception:
                     name = ""
-                nice = basename_from_path(path, "")
+                nice = basename_from_path(saved or absolute, "")
                 if nice:
                     name = nice
                 elif name and not name.lower().endswith(".rvt"):
@@ -668,15 +873,20 @@ def collect_rvt_links_detail(document):
 
                 status = ""
                 try:
-                    status = link_status_name(lt.GetLinkedFileStatus())
+                    status = link_status_ru(lt.GetLinkedFileStatus())
                 except Exception:
                     status = ""
 
                 rows.append(
                     {
                         "name": name,
-                        "path": path if path else "(path n/a)",
+                        "saved_path": saved if saved else "(path n/a)",
+                        "path": saved if saved else "(path n/a)",
+                        "path_type": ptype,
+                        "absolute_path": absolute,
                         "status": status,
+                        "ref_type": attachment_type_ru(lt),
+                        "file_exists": file_exists_label(absolute or saved),
                     }
                 )
             except Exception:
@@ -1522,8 +1732,13 @@ try:
     row = analyze_document(doc, revitFilePath, THRESHOLDS)
     link_rows = row.pop("_link_rows", [])
     links_path = get_links_report_path(report_path)
-    if link_rows:
-        append_links_rows(links_path, row.get("model_name", ""), link_rows)
+    append_links_rows(
+        links_path,
+        row.get("model_name", ""),
+        row.get("model_path", "") or revitFilePath,
+        row.get("timestamp", ""),
+        link_rows,
+    )
     append_csv_row(report_path, row)
 
     Output("warnings={}".format(row["warnings_count"]))
@@ -1564,7 +1779,11 @@ try:
         preview = link_rows[:5]
         for item in preview:
             Output(
-                "  rvt: {} | {}".format(item.get("name", ""), item.get("path", ""))
+                "  rvt: {} | {} | {}".format(
+                    item.get("name", ""),
+                    item.get("path_type", ""),
+                    item.get("saved_path", item.get("path", "")),
+                )
             )
         if len(link_rows) > 5:
             Output("  ... (+{})".format(len(link_rows) - 5))

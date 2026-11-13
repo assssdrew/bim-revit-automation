@@ -5,6 +5,9 @@
 # Outputs: Path helpers used by ui_compact/start_compact.
 # How to run: Dot-sourced from sibling scripts.
 # Notes: Embedded fallbacks exist if this file is missing on the share.
+# Shared paths for rvt_list.txt: share when writable, else per-user local copy.
+# Optional sidecar: scripts also embed these helpers if this file is missing on the share.
+
 function Remove-LeftoverWriteProbes {
     param(
         [string]$Folder,
@@ -89,7 +92,7 @@ function Get-LocalBatchCompactDir {
         $candidates += (Join-Path $env:LOCALAPPDATA "BatchRvt\batch_compact_save")
     }
     if ($env:USERPROFILE) {
-        $candidates += (Join-Path $env:USERPROFILE "Documents\doc\script\rbp\batch_compact_save")
+        $candidates += (Join-Path $env:USERPROFILE "Documents\doc\script\rbp\ORG_CompactModels")
     }
 
     foreach ($dir in $candidates) {
@@ -105,7 +108,7 @@ function Get-LocalBatchCompactDir {
         catch { }
     }
 
-    $fallback = Join-Path ([System.IO.Path]::GetTempPath()) "batch_compact_save"
+    $fallback = Join-Path ([System.IO.Path]::GetTempPath()) "ORG_CompactModels"
     if (-not (Test-Path -LiteralPath $fallback)) {
         New-Item -ItemType Directory -Path $fallback -Force | Out-Null
     }

@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+отчеты/
+служебное/google_push/google_push.cfg
+список_спецификаций.txt
+google_push.cfg
+
+# адрес и секрет Google-таблицы проекта (отчеты\проект\google_<проект>.cfg) — секрет, не коммитить
+**/проект/google_*.cfg
+google_*.cfg
+!google_push.cfg.example

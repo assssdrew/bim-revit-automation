@@ -1,18 +1,19 @@
-' Name: Операции с моделями.vbs
-' Version: 3.0.0
-' What it does: Primary hidden STA launcher for the model-ops presets window.
-' Inputs: presets.ps1 beside script.
-' Outputs: PowerShell presets UI.
-' How to run: Double-click in src\.
-' Notes: ShellExecute with hidden PowerShell.
 Set fso = CreateObject("Scripting.FileSystemObject")
-Set app = CreateObject("Shell.Application")
+Set sh = CreateObject("WScript.Shell")
 tool = fso.GetParentFolderName(Wscript.ScriptFullName)
 If Right(tool, 1) <> "\" Then tool = tool & "\"
-ps1 = tool & "presets.ps1"
+' Code lives in a subfolder (sluzhebnoe). Its Cyrillic name is not written here:
+' a .vbs is read as ANSI, so the subfolder is found by its presets.ps1.
+ps1 = ""
+For Each d In fso.GetFolder(tool).SubFolders
+  If fso.FileExists(d.Path & "\presets.ps1") Then ps1 = d.Path & "\presets.ps1"
+Next
+If ps1 = "" Then ps1 = tool & "presets.ps1"
 If Not fso.FileExists(ps1) Then
   MsgBox "Cannot find presets.ps1" & vbCrLf & ps1, 16, "batch_model_ops"
   Wscript.Quit 1
 End If
-args = "-NoProfile -ExecutionPolicy Bypass -STA -WindowStyle Hidden -File """ & ps1 & """"
-app.ShellExecute "powershell.exe", args, tool, "", 1
+cmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -STA -WindowStyle Hidden -File """ & ps1 & """"
+' 0 = hidden from the start: no console / Windows Terminal tab. The WinForms window still shows.
+sh.CurrentDirectory = tool
+sh.Run cmd, 0, False

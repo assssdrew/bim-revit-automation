@@ -5,8 +5,24 @@
 # Outputs: Starts RBP process.
 # How to run: Called from ui_compact.ps1.
 # Notes: Locks Revit year when entire list shares one _R## suffix.
+# Launch Revit Batch Processor: compact save, Create New Local, no extra checkboxes.
+# ASCII-friendly messages for Windows PowerShell 5.1.
+# CLI (no UI): -NonInteractive -Mode deep|quick -ListPath <file> [-Parallel]
+# See служебное\CLI.txt.
+
+param(
+    [string]$ListPath = "",
+    [string]$Mode = "",
+    [switch]$Parallel,
+    [switch]$NonInteractive
+)
+
 $ErrorActionPreference = "Stop"
 $ToolDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$_namingFile = Join-Path $ToolDir (Join-Path "служебное" "naming.ps1")
+if (Test-Path -LiteralPath $_namingFile) {
+    . $_namingFile
+}
 
 $_listPathsFile = Join-Path $ToolDir "list_paths.ps1"
 $_listPathsLoaded = $false
@@ -72,7 +88,7 @@ if (-not $_listPathsLoaded) {
     function Get-LocalBatchCompactDir {
         $candidates = @()
         if ($env:LOCALAPPDATA) { $candidates += (Join-Path $env:LOCALAPPDATA "BatchRvt\batch_compact_save") }
-        if ($env:USERPROFILE) { $candidates += (Join-Path $env:USERPROFILE "Documents\doc\script\rbp\batch_compact_save") }
+        if ($env:USERPROFILE) { $candidates += (Join-Path $env:USERPROFILE "Documents\doc\script\rbp\ORG_CompactModels") }
         foreach ($dir in $candidates) {
             if ([string]::IsNullOrWhiteSpace($dir)) { continue }
             try {
@@ -81,7 +97,7 @@ if (-not $_listPathsLoaded) {
             }
             catch { }
         }
-        $fallback = Join-Path ([System.IO.Path]::GetTempPath()) "batch_compact_save"
+        $fallback = Join-Path ([System.IO.Path]::GetTempPath()) "ORG_CompactModels"
         if (-not (Test-Path -LiteralPath $fallback)) { New-Item -ItemType Directory -Path $fallback -Force | Out-Null }
         return $fallback
     }
@@ -255,20 +271,90 @@ function Get-RvtYearFromFile([string]$Path) {
     return $null
 }
 
+function Get-ServerYearFromCfg {
+    param([string]$HostName)
+    if ([string]::IsNullOrWhiteSpace($HostName)) { return "" }
+    if (Get-Command Get-Servers -ErrorAction SilentlyContinue) {
+        foreach ($s in @(Get-Servers)) {
+            if ([string]$s.Host -eq $HostName -and $s.Year) { return [string]$s.Year }
+        }
+    }
+    $cfg = Join-Path $ToolDir "servers.cfg"
+    if (-not (Test-Path -LiteralPath $cfg)) { return "" }
+    foreach ($line in @(Get-Content -LiteralPath $cfg -ErrorAction SilentlyContinue)) {
+        $raw = [string]$line
+        if ([string]::IsNullOrWhiteSpace($raw)) { continue }
+        $raw = $raw.Trim()
+        if ($raw.StartsWith("#")) { continue }
+        $parts = $raw.Split("|")
+        if ($parts.Count -ge 3 -and $parts[0].Trim() -eq $HostName) {
+            return $parts[2].Trim()
+        }
+    }
+    return ""
+}
+
 function Guess-Year([string]$Path) {
     if ($Path -match '(?i)_R(20|21|22|23|24|25|26)\b') {
         return ("20" + $Matches[1])
+    }
+    if ($Path -match '^(?i)RSN://([^/]+)') {
+        $fromCfg = Get-ServerYearFromCfg -HostName $Matches[1]
+        if ($fromCfg) { return $fromCfg }
     }
     if ($Path -match '(?i)RSN://revit-server-2021\.example\.local\b') { return "2021" }
     if ($Path -match '(?i)RSN://revit-server-2022\.example\.local\b') { return "2022" }
     if ($Path -match '(?i)RSN://revit-server-2023\.example\.local\b') { return "2023" }
     if ($Path -match '(?i)RSN://revit-server-2024\.example\.local\b') { return "2024" }
-    if ($Path -match '(?i)RSN://revit-server-2021') { return "2021" }
-    if ($Path -match '(?i)RSN://revit-server-2022') { return "2022" }
-    if ($Path -match '(?i)RSN://revit-server-2023') { return "2023" }
-    if ($Path -match '(?i)RSN://revit-server-2024') { return "2024" }
+    if ($Path -match '(?i)RSN://(?:revit-server-|SET-REVIT-SERVER-)202([1-6])') { return ("202" + $Matches[1]) }
     if ($Path -match '(?i)Revit Server 202([1-6])') { return ("202" + $Matches[1]) }
     return (Get-RvtYearFromFile $Path)
+}
+
+function Enable-CompactStayAwake {
+    if ($script:CompactStayAwakeOn) { return }
+    try {
+        if (-not ("CompactSave.StayAwake" -as [type])) {
+            $sig = @"
+[System.Runtime.InteropServices.DllImport("kernel32.dll")]
+public static extern uint SetThreadExecutionState(uint esFlags);
+"@
+            Add-Type -Namespace CompactSave -Name StayAwake -MemberDefinition $sig | Out-Null
+        }
+        # ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED
+        $flags = [uint32]2147483651
+        [void][CompactSave.StayAwake]::SetThreadExecutionState($flags)
+        $script:CompactStayAwakeOn = $true
+    }
+    catch { }
+}
+
+function Disable-CompactStayAwake {
+    if (-not $script:CompactStayAwakeOn) { return }
+    try {
+        $continuous = [uint32]2147483648
+        [void][CompactSave.StayAwake]::SetThreadExecutionState($continuous)
+    }
+    catch { }
+    $script:CompactStayAwakeOn = $false
+}
+
+function Set-CompactBatchEnv {
+    param(
+        [string[]]$Paths,
+        [string]$ModeName,
+        [string]$RevitToken = ""
+    )
+    if ($ModeName) { $env:BATCH_COMPACT_MODE = $ModeName }
+    if (Get-Command Get-CompactProjectToken -ErrorAction SilentlyContinue) {
+        $env:BATCH_COMPACT_PROJECT = Get-CompactProjectToken -Paths $Paths
+    }
+    if ($RevitToken) {
+        $env:BATCH_COMPACT_REVIT = $RevitToken
+    }
+    elseif (Get-Command Get-CompactRevitToken -ErrorAction SilentlyContinue) {
+        $env:BATCH_COMPACT_REVIT = Get-CompactRevitToken -Paths $Paths
+    }
 }
 
 function Get-LiveStatusPath {
@@ -330,7 +416,7 @@ function Group-ModelsByYear {
     if ($byYear.ContainsKey("")) { $ordered += "" }
     $groups = New-Object System.Collections.Generic.List[object]
     foreach ($y in $ordered) {
-        $label = if ($y) { [string]$y } else { "авто" }
+        $label = if ($y) { [string]$y } else { "local" }
         [void]$groups.Add(@{
             Year   = [string]$y
             Models = @($byYear[$y])
@@ -423,11 +509,17 @@ function Start-CompactYearBatch {
         [string]$Exe,
         [Parameter(Mandatory = $true)]
         [string]$ExeDir,
-        [switch]$NoWait
+        [switch]$NoWait,
+        [switch]$SeparateReport
     )
 
     $year = [string]$Group.Year
     $models = @($Group.Models)
+    if ($SeparateReport) {
+        $env:BATCH_COMPACT_RUN_ID = [guid]::NewGuid().ToString("N")
+        $token = if ($year) { "R" + $year.Substring($year.Length - 2) } else { "Rlocal" }
+        Set-CompactBatchEnv -Paths $models -ModeName $Mode -RevitToken $token
+    }
     $listPath = Get-YearFileListPath -Year $year
     if (-not (Write-RvtListSafe -Paths $models -ListPath $listPath)) {
         return @{
@@ -481,7 +573,8 @@ function Invoke-CompactLaunch {
         [ValidateSet("quick", "deep")]
         [string]$Mode,
         [string[]]$Models,
-        [switch]$NoWait
+        [switch]$NoWait,
+        [switch]$Parallel
     )
 
     Save-ActiveModePointer -Mode $Mode
@@ -506,6 +599,8 @@ function Invoke-CompactLaunch {
     if ($useModels.Count -eq 0) {
         return @{ Ok = $false; Message = "Список моделей пуст."; Code = 1 }
     }
+
+    Set-CompactBatchEnv -Paths $useModels -ModeName $Mode
 
     $exe = Find-BatchRvt
     if (-not $exe) {
@@ -537,11 +632,70 @@ function Invoke-CompactLaunch {
     }
 
     $labels = @($groups | ForEach-Object { $_.Label })
-    $yearNote = if ($groups.Count -eq 1) {
+    $yearNote = if ($Parallel -and $groups.Count -gt 1) {
+        ("параллельно: {0}" -f ($labels -join ", "))
+    }
+    elseif ($groups.Count -eq 1) {
         ("Revit {0}" -f $groups[0].Label)
     }
     else {
         ("годы по очереди: {0}" -f ($labels -join " → "))
+    }
+
+    if ($Parallel) {
+        $procs = New-Object System.Collections.Generic.List[object]
+        $fail = @()
+        foreach ($g in $groups) {
+            $started = Start-CompactYearBatch -Group $g -Mode $Mode -Exe $exe -ExeDir $exeDir -NoWait -SeparateReport
+            if ($started.Process) {
+                [void]$procs.Add($started.Process)
+            }
+            else {
+                $fail += [string]$started.Message
+            }
+        }
+        if ($procs.Count -eq 0) {
+            $why = if ($fail.Count) { $fail -join "; " } else { "RBP не стартовал." }
+            return @{ Ok = $false; Message = $why; Code = 1; Parallel = $true }
+        }
+        if (-not $NoWait) {
+            foreach ($proc in @($procs)) {
+                try { $proc.WaitForExit() } catch { }
+                $code = 0
+                try { $code = [int]$proc.ExitCode } catch { $code = 1 }
+                if ($code -ne 0) { $fail += ("{0}: код {1}" -f $proc.Id, $code) }
+            }
+            if ($fail.Count -gt 0) {
+                return @{
+                    Ok       = $false
+                    Message  = ("Готово с ошибками ({0}). {1}" -f $yearNote, ($fail -join "; "))
+                    Code     = 1
+                    Parallel = $true
+                }
+            }
+            return @{
+                Ok       = $true
+                Message  = ("Revit Batch Processor завершил работу ({0})." -f $yearNote)
+                Code     = 0
+                Parallel = $true
+            }
+        }
+        $note = $yearNote
+        if ($fail.Count -gt 0) { $note = ("{0}. Не стартовали: {1}" -f $yearNote, ($fail -join "; ")) }
+        return @{
+            Ok         = $true
+            Message    = ("Запущено: {0}." -f $note)
+            Code       = 0
+            Process    = $procs[0]
+            Processes  = @($procs)
+            YearQueue  = @()
+            YearLabel  = "parallel"
+            YearIndex  = 1
+            YearTotal  = $procs.Count
+            Exe        = $exe
+            ExeDir     = $exeDir
+            Parallel   = $true
+        }
     }
 
     if ($NoWait) {
@@ -559,12 +713,14 @@ function Invoke-CompactLaunch {
             Message    = ("Запущено: {0}." -f $yearNote)
             Code       = 0
             Process    = $started.Process
+            Processes  = @($started.Process)
             YearQueue  = $rest
             YearLabel  = $first.Label
             YearIndex  = 1
             YearTotal  = $groups.Count
             Exe        = $exe
             ExeDir     = $exeDir
+            Parallel   = $false
         }
     }
 
@@ -591,8 +747,62 @@ function Invoke-CompactLaunch {
     }
 }
 
+function Read-CompactModelFile {
+    param([string]$Path)
+    if ([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path -LiteralPath $Path)) { return @() }
+    return @(
+        Get-Content -LiteralPath $Path -ErrorAction SilentlyContinue |
+            ForEach-Object { $_.Trim() } |
+            Where-Object {
+                $_ -and -not $_.StartsWith("#") -and (
+                    $_.ToLower().EndsWith(".rvt") -or $_ -match '^(?i)RSN://'
+                )
+            }
+    )
+}
+
+function Invoke-CompactCommandLine {
+    $modeName = [string]$Mode
+    if ([string]::IsNullOrWhiteSpace($modeName)) { $modeName = "deep" }
+    $modeName = $modeName.Trim().ToLower()
+    if ($modeName -notin @("quick", "deep")) {
+        Write-Host "ERROR: -Mode must be quick or deep."
+        return 2
+    }
+    $models = @()
+    if (-not [string]::IsNullOrWhiteSpace($ListPath)) {
+        if (-not (Test-Path -LiteralPath $ListPath)) {
+            Write-Host "ERROR: -ListPath file was not found."
+            return 2
+        }
+        $models = @(Read-CompactModelFile -Path $ListPath)
+        if ($models.Count -eq 0) {
+            Write-Host "ERROR: -ListPath has no .rvt or RSN:// rows."
+            return 2
+        }
+    }
+    Enable-CompactStayAwake
+    try {
+        $result = Invoke-CompactLaunch -Mode $modeName -Models $models -Parallel:$Parallel
+    }
+    catch {
+        Write-Host ("ERROR: {0}" -f $_.Exception.Message)
+        return 1
+    }
+    finally {
+        Disable-CompactStayAwake
+    }
+    if ($result.Message) { Write-Host $result.Message }
+    if ($result.Ok) { return 0 }
+    return 1
+}
+
 if ($CompactLaunchLibrary -or $script:CompactLaunchLibrary) {
     return
+}
+
+if ($NonInteractive -or $Parallel -or -not [string]::IsNullOrWhiteSpace($ListPath) -or -not [string]::IsNullOrWhiteSpace($Mode)) {
+    exit (Invoke-CompactCommandLine)
 }
 
 Write-Host ""
@@ -735,7 +945,7 @@ $code = $LASTEXITCODE
 Write-Host ""
 if ($code -eq 0) {
     Write-Host "BatchRvt finished (exit 0). Check log for OK / ERROR lines."
-    Write-Host "Reports: share ...\batch_compact_save\отчеты  (or local %LOCALAPPDATA%\BatchRvt\batch_compact_save\отчеты if no share write)"
+    Write-Host "Reports: share ...\ORG_CompactModels\отчеты  (or local %LOCALAPPDATA%\BatchRvt\batch_compact_save\отчеты if no share write)"
     Write-Host "Open .xlsx there (dated name). Path also in BatchRvt log: Report xlsx: ..."
     Write-Host "CSV backup: отчеты\csv\"
 }

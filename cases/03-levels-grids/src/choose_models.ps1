@@ -5,6 +5,15 @@
 # Outputs: rvt_list.txt or exemplar_model.cfg.
 # How to run: choose_models_path.cmd or -Purpose Exemplar via choose_exemplar_link.
 # Notes: Same RSN/folder/files sources as other cases.
+# Unified model picker for Revit Batch Processor.
+# Sources: local folder / local files / Revit Server (RSN://).
+# Writes rvt_list.txt - can replace or append.
+# Encoding: ASCII-friendly messages for Windows PowerShell 5.1.
+#
+# Modes:
+#   (default)  select host models -> rvt_list.txt
+#   -Purpose Exemplar  select ONE reference model -> exemplar_model.cfg
+
 param(
     [ValidateSet("Models", "Exemplar")]
     [string]$Purpose = "Models"
@@ -185,7 +194,9 @@ function Write-RvtList {
         $incoming = @(Read-ExistingList) + $incoming
     }
 
-    $unique = @($incoming | Where-Object { $_ } | Sort-Object -Unique)
+    $unique = @($incoming | Where-Object {
+        $_ -and ($_ -notmatch '(?i)^RSN://x(/|$)')
+    } | Sort-Object -Unique)
 
     if ($unique.Count -eq 0) {
         Write-Host "No models selected. List not updated."
@@ -391,7 +402,7 @@ function ConvertTo-RsnPath {
         [string]$FolderPath,
         [string]$ModelName
     )
-    # IMPORTANT: do NOT use $folder — in PowerShell $Folder/$folder are the same variable
+    # IMPORTANT: do NOT use $folder - in PowerShell $Folder/$folder are the same variable
     # and "$folder = ''" would wipe the -FolderPath/-Folder argument.
     $normalizedFolder = ""
     if (-not [string]::IsNullOrWhiteSpace($FolderPath)) {
@@ -693,7 +704,7 @@ function Show-RevitServerBrowser {
 
             if ($fullRsn -match '(?i)^RSN://[^/]+/[^/]+\.rvt$' -and -not [string]::IsNullOrWhiteSpace($uiFolder)) {
                 [System.Windows.Forms.MessageBox]::Show(
-                    ("Ошибка пути (без папок):{0}{1}{0}Ожидалась папка: {2}" -f [Environment]::NewLine, $fullRsn, $uiFolder),
+                    ("Path error (no folders):{0}{1}{0}Expected folder: {2}" -f [Environment]::NewLine, $fullRsn, $uiFolder),
                     "Revit Server"
                 ) | Out-Null
                 return
@@ -725,7 +736,7 @@ function Show-RevitServerBrowser {
         }
         if ([string]::IsNullOrWhiteSpace($folderForRecursive)) {
             [System.Windows.Forms.MessageBox]::Show(
-                "Папка пустая. Сначала откройте нужную папку (Open / Go), затем нажмите 'Add ALL models...'.",
+                "Folder is empty. First open the needed folder (Open / Go), then click 'Add ALL models...'.",
                 "Revit Server"
             ) | Out-Null
             return
@@ -827,6 +838,53 @@ function Ensure-RbpRsnPatch {
     return $false
 }
 
+function Ensure-RbpOpenFailPatch {
+    # Stock RBP cancels Open on Cyrillic Revit warnings. Apply on every list write.
+    $toolsRoot = Split-Path -Parent $ToolDir
+    $candidates = @(
+        (Join-Path $toolsRoot "rbp_patches\apply_open_fail.ps1"),
+        (Join-Path $ToolDir "patch_rbp_open_failures.ps1"),
+        (Join-Path $toolsRoot "batch_model_ops\patch_rbp_open_failures.ps1")
+    )
+    $patchPs = $null
+    foreach ($c in $candidates) {
+        if (Test-Path -LiteralPath $c -PathType Leaf) { $patchPs = $c; break }
+    }
+    if (-not $patchPs) {
+        Write-Host "WARN: RBP open-fail patch script missing (tools\rbp_patches)."
+        return $false
+    }
+    Write-Host ""
+    Write-Host "Ensuring RBP does not cancel Open on Cyrillic warnings..."
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $patchPs
+    $code = $LASTEXITCODE
+    if ($code -eq 0) {
+        Write-Host "RBP open-fail patch: OK"
+        return $true
+    }
+    if ($code -eq 2) {
+        Write-Host "WARN: RBP Scripts not found on this PC."
+        Write-Host "      Keep Revit Batch Processor open, then pick models again."
+        return $false
+    }
+    Write-Host ("WARN: open-fail patch finished with code {0}." -f $code)
+    Write-Host "      See tools\rbp_patches\README.md"
+    return $false
+}
+
+function Ensure-RbpProgressMonitor {
+    $toolsRoot = Split-Path -Parent $ToolDir
+    $ensurePs = Join-Path $toolsRoot "rbp_progress_monitor\ensure_running.ps1"
+    if (-not (Test-Path -LiteralPath $ensurePs -PathType Leaf)) {
+        Write-Host "WARN: rbp_progress_monitor missing (optional)."
+        return $false
+    }
+    Write-Host ""
+    Write-Host "RBP progress monitor: tray (window opens when BatchRvt starts)..."
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ensurePs
+    return ($LASTEXITCODE -eq 0)
+}
+
 function Select-FromRevitServer {
     # Local/UNC (menu 1-2) unchanged. Server needs RBP patch for File exists check.
     [void](Ensure-RbpRsnPatch)
@@ -854,7 +912,7 @@ function Show-FolderPathDialog {
     # Same Explorer-style dialog as file Open (address bar, tree, UNC).
     # Trick: ValidateNames/CheckFileExists off + dummy FileName = pick folder.
     $dlg = New-Object System.Windows.Forms.OpenFileDialog
-    $dlg.Title = "Select folder with Revit models (paste path in address bar)"
+    $dlg.Title = "Parent folder (e.g. 4_Razrabotka): paste path, then Open"
     $dlg.Filter = "Folders|*.nevermatch|All files (*.*)|*.*"
     $dlg.FilterIndex = 1
     $dlg.CheckFileExists = $false
@@ -864,6 +922,20 @@ function Show-FolderPathDialog {
     $dlg.DereferenceLinks = $true
     $dlg.FileName = "Select this folder"
 
+    if (Test-Path -LiteralPath $PathCfg) {
+        $prev = (
+            Get-Content -LiteralPath $PathCfg -ErrorAction SilentlyContinue |
+                Where-Object { $_ -and -not $_.StartsWith("#") -and -not $_.StartsWith("FILES:") } |
+                Select-Object -First 1
+        )
+        if ($prev) {
+            $prev = Get-NativePath $prev.Trim()
+            if ($prev -and (Test-Path -LiteralPath $prev -PathType Container)) {
+                $dlg.InitialDirectory = $prev
+            }
+        }
+    }
+
     if ($dlg.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) {
         return $null
     }
@@ -871,7 +943,6 @@ function Show-FolderPathDialog {
     $picked = $dlg.FileName
     if ([string]::IsNullOrWhiteSpace($picked)) { return $null }
 
-    # If user picked a real file, use its directory; if dummy name in folder - that folder
     if (Test-Path -LiteralPath $picked -PathType Leaf) {
         return (Split-Path -Parent $picked)
     }
@@ -886,46 +957,216 @@ function Show-FolderPathDialog {
     return $null
 }
 
+function Get-U {
+    param([int[]]$Codes)
+    return (-join ($Codes | ForEach-Object { [char]([int]$_) }))
+}
+
+function Test-ExcludedModelPath([string]$Path) {
+    if ([string]::IsNullOrWhiteSpace($Path)) { return $true }
+    $p = $Path.Replace("/", "\")
+    if ($p -match '(?i)\\Backup\\') { return $true }
+    if ($p -match '(?i)\\Revit_temp\\') { return $true }
+    if ($p -match '(?i)_backup(\\|$)') { return $true }
+    $rezerv = Get-U @(0x0420, 0x0435, 0x0437, 0x0435, 0x0440, 0x0432) # Резерв
+    $sem = Get-U @(0x0421, 0x0435, 0x043C, 0x0435, 0x0439, 0x0441, 0x0442, 0x0432, 0x0430) # Семейства
+    if ($p -match ("(?i)\\" + [regex]::Escape($rezerv) + "\\")) { return $true }
+    if ($p -match ("(?i)\\" + [regex]::Escape($sem) + "\\")) { return $true }
+    return $false
+}
+
+function Test-IsTargetRvtName([string]$Name) {
+    # Main models: *_R22.rvt / *_R24.rvt (any _R##.rvt). Skip .0001.rvt backups.
+    if ([string]::IsNullOrWhiteSpace($Name)) { return $false }
+    if ($Name -match '\.\d{4}\.rvt$') { return $false }
+    return ($Name -match '(?i)_R\d{2}\.rvt$')
+}
+
+function Get-TargetRvtsFromDisciplineFolders {
+    param([string[]]$Folders)
+
+    $found = New-Object System.Collections.Generic.List[string]
+    foreach ($folder in @($Folders)) {
+        if ([string]::IsNullOrWhiteSpace($folder)) { continue }
+        if (-not (Test-Path -LiteralPath $folder -PathType Container)) { continue }
+        if (Test-ExcludedModelPath $folder) { continue }
+
+        $rvtDirs = @(
+            Get-ChildItem -LiteralPath $folder -Recurse -Directory -Force -ErrorAction SilentlyContinue |
+                Where-Object {
+                    ($_.Name -ieq "RVT") -and
+                    (-not (Test-ExcludedModelPath $_.FullName))
+                }
+        )
+        foreach ($rvtDir in $rvtDirs) {
+            $files = @(
+                Get-ChildItem -LiteralPath $rvtDir.FullName -File -Force -ErrorAction SilentlyContinue |
+                    Where-Object {
+                        ($_.Extension -ieq ".rvt") -and
+                        (Test-IsTargetRvtName $_.Name)
+                    }
+            )
+            foreach ($f in $files) {
+                $native = Get-NativePath $f.FullName
+                if ($native -and -not (Test-ExcludedModelPath $native)) {
+                    [void]$found.Add($native)
+                }
+            }
+        }
+    }
+    return @($found | Sort-Object -Unique)
+}
+
+function Show-DisciplineFolderChecklist {
+    param([string]$ParentFolder)
+
+    $children = @(
+        Get-ChildItem -LiteralPath $ParentFolder -Directory -Force -ErrorAction SilentlyContinue |
+            Sort-Object Name
+    )
+    if ($children.Count -eq 0) {
+        Write-Host ("No subfolders in: {0}" -f $ParentFolder)
+        return @()
+    }
+
+    $form = New-Object System.Windows.Forms.Form
+    $form.Text = "Select discipline folders (Ctrl+click / Space)"
+    $form.Size = New-Object System.Drawing.Size(760, 560)
+    $form.StartPosition = "CenterScreen"
+    $form.MinimizeBox = $false
+    $form.MaximizeBox = $true
+    $form.MinimumSize = New-Object System.Drawing.Size(560, 400)
+
+    $lbl = New-Object System.Windows.Forms.Label
+    $lbl.Location = New-Object System.Drawing.Point(12, 10)
+    $lbl.Size = New-Object System.Drawing.Size(720, 40)
+    $lbl.Anchor = "Top,Left,Right"
+    $lbl.Text = ("Parent: {0}{1}Check folders with models (e.g. 5_1_..., 9_PT). Script finds RVT\*_R##.rvt only." -f $ParentFolder, [Environment]::NewLine)
+
+    $list = New-Object System.Windows.Forms.CheckedListBox
+    $list.Location = New-Object System.Drawing.Point(12, 58)
+    $list.Size = New-Object System.Drawing.Size(720, 390)
+    $list.Anchor = "Top,Bottom,Left,Right"
+    $list.CheckOnClick = $true
+    $list.IntegralHeight = $false
+
+    foreach ($d in $children) {
+        [void]$list.Items.Add($d.Name, $false)
+    }
+
+    $lblStatus = New-Object System.Windows.Forms.Label
+    $lblStatus.Location = New-Object System.Drawing.Point(12, 456)
+    $lblStatus.Size = New-Object System.Drawing.Size(420, 22)
+    $lblStatus.Anchor = "Bottom,Left"
+    $lblStatus.Text = ("Folders: {0}" -f $children.Count)
+
+    $btnAll = New-Object System.Windows.Forms.Button
+    $btnAll.Text = "Check all"
+    $btnAll.Location = New-Object System.Drawing.Point(12, 484)
+    $btnAll.Size = New-Object System.Drawing.Size(100, 30)
+    $btnAll.Anchor = "Bottom,Left"
+    $btnAll.Add_Click({
+        for ($i = 0; $i -lt $list.Items.Count; $i++) { $list.SetItemChecked($i, $true) }
+    })
+
+    $btnNone = New-Object System.Windows.Forms.Button
+    $btnNone.Text = "Uncheck all"
+    $btnNone.Location = New-Object System.Drawing.Point(120, 484)
+    $btnNone.Size = New-Object System.Drawing.Size(100, 30)
+    $btnNone.Anchor = "Bottom,Left"
+    $btnNone.Add_Click({
+        for ($i = 0; $i -lt $list.Items.Count; $i++) { $list.SetItemChecked($i, $false) }
+    })
+
+    $btnOk = New-Object System.Windows.Forms.Button
+    $btnOk.Text = "OK"
+    $btnOk.Location = New-Object System.Drawing.Point(532, 484)
+    $btnOk.Size = New-Object System.Drawing.Size(90, 30)
+    $btnOk.Anchor = "Bottom,Right"
+    $btnOk.Add_Click({
+        $form.DialogResult = [System.Windows.Forms.DialogResult]::OK
+        $form.Close()
+    })
+
+    $btnCancel = New-Object System.Windows.Forms.Button
+    $btnCancel.Text = "Cancel"
+    $btnCancel.Location = New-Object System.Drawing.Point(630, 484)
+    $btnCancel.Size = New-Object System.Drawing.Size(90, 30)
+    $btnCancel.Anchor = "Bottom,Right"
+    $btnCancel.Add_Click({
+        $form.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
+        $form.Close()
+    })
+
+    $form.AcceptButton = $btnOk
+    $form.CancelButton = $btnCancel
+    $form.Controls.AddRange(@($lbl, $list, $lblStatus, $btnAll, $btnNone, $btnOk, $btnCancel))
+    $null = $form.ShowDialog()
+    if ($form.DialogResult -ne [System.Windows.Forms.DialogResult]::OK) {
+        return @()
+    }
+
+    $selected = @()
+    for ($i = 0; $i -lt $list.Items.Count; $i++) {
+        if ($list.GetItemChecked($i)) {
+            $selected += (Join-Path $ParentFolder ([string]$list.Items[$i]))
+        }
+    }
+    return @($selected)
+}
+
 function Select-LocalFolder {
+    Write-Host ""
+    Write-Host "Step 1/2: open PARENT folder (e.g. ...\4_Razrabotka proekta)"
     $typed = Show-FolderPathDialog
     if ([string]::IsNullOrWhiteSpace($typed)) {
         return @()
     }
 
     $root = Get-NativePath $typed
-    if (-not (Test-Path -LiteralPath $root)) {
+    if (-not (Test-Path -LiteralPath $root -PathType Container)) {
         Write-Host ("Folder not found: {0}" -f $root)
         return @()
     }
 
     Set-Content -LiteralPath $PathCfg -Value $root -Encoding UTF8
-    Write-Host ("Folder: {0}" -f $root)
+    Write-Host ("Parent: {0}" -f $root)
 
-    $tempOut = Join-Path $env:TEMP ("rvt_pick_{0}.txt" -f [guid]::NewGuid().ToString("N"))
-    & $MakeList -Root $root -Out $tempOut -SkipBackups
-    if (-not (Test-Path -LiteralPath $tempOut)) { return @() }
+    Write-Host "Step 2/2: check discipline folders (Ctrl / Space), then OK"
+    $disciplineFolders = @(Show-DisciplineFolderChecklist -ParentFolder $root)
+    if ($disciplineFolders.Count -eq 0) {
+        Write-Host "No discipline folders selected."
+        return @()
+    }
 
-    $files = @(
-        Get-Content -LiteralPath $tempOut |
-            ForEach-Object { $_.Trim() } |
-            Where-Object { $_ }
-    )
-    Remove-Item -LiteralPath $tempOut -Force -ErrorAction SilentlyContinue
+    Write-Host ("Scanning {0} folder(s) for RVT\*_R##.rvt ..." -f $disciplineFolders.Count)
+    foreach ($d in $disciplineFolders) {
+        Write-Host ("  - {0}" -f (Split-Path -Leaf $d))
+    }
+
+    $files = @(Get-TargetRvtsFromDisciplineFolders -Folders $disciplineFolders)
+    Write-Host ("Found {0} target model(s)." -f $files.Count)
+    if ($files.Count -gt 0) {
+        Write-Host ("Example: {0}" -f $files[0])
+    }
     return $files
 }
 
 function Select-LocalFiles {
     $dlg = New-Object System.Windows.Forms.OpenFileDialog
     if ($IsExemplar) {
-        $dlg.Title = "Select EXEMPLAR Revit model (AR or BF) - one file"
+        $dlg.Title = "EXEMPLAR model - paste path in address bar / File name (one .rvt)"
         $dlg.Multiselect = $false
     }
     else {
-        $dlg.Title = "Select Revit model files (you can paste a path in the address bar)"
+        $dlg.Title = "Host models - paste path in address bar / File name (.rvt)"
         $dlg.Multiselect = $true
     }
     $dlg.Filter = "Revit (*.rvt)|*.rvt|All files (*.*)|*.*"
     $dlg.CheckFileExists = $true
+    $dlg.CheckPathExists = $true
+    $dlg.ValidateNames = $true
+    $dlg.DereferenceLinks = $true
 
     if ($dlg.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) {
         return @()
@@ -960,15 +1201,27 @@ function Write-ExemplarCfg {
 Write-Host ""
 Write-Host "============================================"
 if ($IsExemplar) {
-    Write-Host "  Select EXEMPLAR model (one file)"
-    Write-Host "  BF vs AR  -> pick AR model"
-    Write-Host "  Sections vs BF -> pick BF model"
+    Write-Host "  EXEMPLAR model (one file)"
+    Write-Host "  Local PC/share  OR  Revit Server"
+    Write-Host "  BF vs AR -> pick AR"
+    Write-Host "  Sections vs BF -> pick BF"
 }
 else {
-    Write-Host "  Select Revit models -> rvt_list.txt"
-    Write-Host "  Local disk / UNC  +  Revit Server (RSN)"
+    Write-Host "  Host models -> rvt_list.txt"
+    Write-Host "  Local PC/share  OR  Revit Server"
 }
 Write-Host "============================================"
+Write-Host ""
+Write-Host "Revit Server list (servers.cfg, same as HC/Units):"
+$srvList = @(Get-Servers)
+if ($srvList.Count -eq 0) {
+    Write-Host "  (empty - will create defaults)"
+}
+else {
+    foreach ($s in $srvList) {
+        Write-Host ("  - {0}  {1}  year {2}" -f $s.Host, $s.Label, $s.Year)
+    }
+}
 Write-Host ""
 
 $existing = @()
@@ -982,16 +1235,16 @@ if (-not $IsExemplar) {
 
 Write-Host "Source:"
 if ($IsExemplar) {
-    Write-Host "  1 - Individual file on this PC / share"
-    Write-Host "  2 - Revit Server (RSN://)"
+    Write-Host "  1 - Local PC / network share (Open dialog, paste path to .rvt)"
+    Write-Host "  2 - Revit Server (RSN://) - pick year/server, then model"
     Write-Host "  3 - Show current exemplar"
-    Write-Host "  4 - Clear exemplar (use first loaded link)"
+    Write-Host "  4 - Clear exemplar (use first loaded link in host)"
     Write-Host "  0 - Exit"
 }
 else {
-    Write-Host "  1 - Folder on this PC / network share (all .rvt)"
-    Write-Host "  2 - Individual files on this PC / share"
-    Write-Host "  3 - Revit Server (RSN://)"
+    Write-Host "  1 - Parent folder -> pick discipline folders (Ctrl) -> RVT\*_R##.rvt"
+    Write-Host "  2 - Individual files on this PC / share (Open dialog)"
+    Write-Host "  3 - Revit Server (RSN://) - pick year/server, then models"
     Write-Host "  4 - Show current rvt_list.txt"
     Write-Host "  5 - Clear rvt_list.txt"
     Write-Host "  0 - Exit"
@@ -1037,7 +1290,7 @@ if ($IsExemplar) {
         exit 0
     }
     if ($picked.Count -gt 1) {
-        Write-Host ("Selected {0} models — using the first as exemplar." -f $picked.Count)
+        Write-Host ("Selected {0} models - using the first as exemplar." -f $picked.Count)
         $picked = @($picked[0])
     }
 
@@ -1122,6 +1375,8 @@ else {
 
 $finalList = @(Read-ExistingList)
 $hasRsn = @($finalList | Where-Object { $_ -match '^(?i)RSN://' }).Count -gt 0
+[void](Ensure-RbpOpenFailPatch)
+[void](Ensure-RbpProgressMonitor)
 if ($hasRsn) {
     [void](Ensure-RbpRsnPatch)
 }

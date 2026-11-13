@@ -20,6 +20,7 @@ Publish new automation as a numbered folder. Keep the hub README in sync (EN + R
 | 05 | Compact save (published) |
 | 06 | Model operations (published) |
 | 07 | Apartment schedule export (published) |
-| 08 | Navisworks rename / publish helpers |
+| 08 | Batch verification schedules (published) |
+| 09 | Navisworks rename / publish helpers |
 
 Do not commit live `rvt_list.txt`, session cfg, real project reports, FTP `credentials.xml` / `config.json` / `state.json`.

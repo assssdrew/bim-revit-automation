@@ -15,7 +15,7 @@ An operator window (`Сжатие.vbs` → WinForms). The person picks models (f
 | **Fast** | Anytime; others may stay in the files | Create New Local, close worksets, `SynchronizeWithCentral` with **Compact = True**, Relinquish. |
 | **Deep** | Monthly / quarterly | Open the **central with Audit** (no new local, no Detach, worksets closed) → Save As the **same** central with Compact → Sync Compact. |
 
-Excel report (sheets «Модели», «Сводка», «Динамика»): size before / after, run summary, history vs previous runs. Savings vary. On live runs they were often very small (for example 61.03 MB → 61.01 MB); some models shrink more (up to about −11.6% on one early fast-mode model).
+Excel report (sheets «Модели», «Сводка», «Проекты»): size before / after, run summary, and per-project totals. The Dynamics sheet is not written. A model absent from the previous report of the same mode is marked `новая`. Savings vary. On live runs they were often very small (for example 61.03 MB → 61.01 MB); some models shrink more (up to about −11.6% on one early fast-mode model).
 
 ## Project scale / context
 
@@ -23,7 +23,7 @@ Excel report (sheets «Модели», «Сводка», «Динамика»): 
 |------|--------|
 | Status | Tested on real working models; RSN deep mode on a limited number of runs |
 | Impact | On average about 4–5× faster than manual work; long lists (e.g. ~125 models) in one unattended run; file-size change varies (often small, e.g. 61.03→61.01 MB; up to about −11.6% on one early fast-mode model) |
-| Operator UX | One window; mixed local / UNC / `RSN://` list; years run in sequence |
+| Operator UX | One window; mixed local / UNC / `RSN://` list. Years run in sequence, or in parallel (one hidden BatchRvt per year, 2021–2025 and local) |
 | Writes model? | **Yes** — Compact on the central (workshared) or Save Compact (plain `.rvt`) |
 
 ## Screenshots
@@ -56,10 +56,11 @@ Details: [docs/SAFETY.md](../../docs/SAFETY.md)
 ## How to run
 
 1. Copy `src/` to a PC that has Revit + RBP
-2. Edit `servers.cfg` with your Revit Server hosts (placeholders in this repo)
+2. Edit `servers.cfg` with your Revit Server hosts (placeholders in this repo, including `revit-server-2025.example.local` for 2025)
 3. Double-click `Сжатие.vbs` (Russian for “Compact”)
-4. Add models → choose Fast or Deep → Compact
+4. Add models → choose Fast or Deep → Compact. The parallel checkbox starts one hidden BatchRvt per year.
 5. First Revit launch: if BatchRvt is blocked, use `служебное\разрешить_надстройку_BatchRvt.cmd`
+6. Without the window: `start_compact.ps1 -ListPath <file> -Mode quick|deep [-Parallel] -NonInteractive`. Parameters are in [`служебное/CLI.txt`](src/служебное/CLI.txt). Exported list and report names are built by [`служебное/naming.ps1`](src/служебное/naming.ps1).
 
 `.ps1` files in this case are **UTF-8 with BOM on purpose**. Windows PowerShell 5.1 needs the BOM to read Cyrillic correctly.
 

@@ -1,34 +1,64 @@
-﻿# Levels & Grids — operator notes
+# Levels & Grids для Revit Batch Processor
 
-Version **1.0.2**. Compare host Levels/Grids to an exemplar RVT link. Audit = report only; Apply = BF list only.
+Версия **apply 1.23.0** / **audit 1.21.0**.
 
-## Model list
+## Меню (`run_cascade.cmd`)
+1. **Check BF vs AR** — Audit (отметки, оси, лишние/недостающие, CR, базовая точка; эталон = связь АР)  
+2. **Fix BF from report** — окно выбора правок → Apply  
+3. **Check sections vs BF** — тот же Audit (эталон = связь БФ)  
+4. **Fix sections from report** — то же окно, что пункт 2, для разделов → Apply  
+5. Open reports folder
 
-`choose_models_path.cmd` → `rvt_list.txt`
+### Пункты 2 и 4 (окно)
+- Чекбоксы **моделей** из последнего отчёта (2 = только БФ, 4 = только разделы)  
+- Чекбоксы **на каждую проблему** из отчёта  
+- Подробный текст строки: модель, категория, проблема, элемент, значение в модели/эталоне  
+- Фильтры: **Уровни** / **Оси** / **Только RED** (в план попадают только видимые строки)  
+- Чекбокс **«Синхронизировать после изменений»** (один на весь прогон)
+- **Базовая точка** — на каждую выбранную модель: галочки «Сдвинуть по X / Y / Z» и число в мм (Z: **минус = вниз**). Сняли модель — PBP для неё не пишется. Значения подставляются из отчёта; нулевой сдвиг по оси не пишется в план.
+- OK → `fix_plan.csv` + `rvt_list.txt`
 
-## Exemplar
+Пункт 4 читает отчёт пункта 3. Сначала 3, потом 4 — не наоборот и не сразу после пункта 1.
 
-`choose_exemplar_link.cmd` / session reset → exemplar cfg. Script finds the matching RVT link in the host.
+## Что сравнивает Audit
+Эталон — связь из хоста (AUTO: БФ→АР, раздел→БФ по коду корпуса). Геометрия связи переводится в координаты хоста через `GetTotalTransform`. Пороги — `tolerances.cfg`. Совпадение внутри жёлтого порога в детализацию не пишется. Save / Sync / Relinquish audit не вызывает.
 
-| Run | Host list | Exemplar |
-|-----|-----------|----------|
-| BF ↔ AR | BF models | AR model |
-| Disciplines ↔ BF | Disciplines | BF model |
+### Уровни
+Пары по **имени**. Если имя есть с обеих сторон и модуль разницы отметок больше `level_delta_yellow_mm` — строка `elevation_delta` («Уровень перемещен»): значения в мм, дельта со знаком (хост − эталон). Жёлтый/красный — `level_delta_yellow_mm` / `level_delta_red_mm`.
 
-## Out of scope
+Имя только в эталоне — `missing_in_host` («Есть в эталоне, нет в модели»), статус RED. Имя только в хосте — `extra_in_host`. Дубли имени — отдельные строки.
 
-Internal Origin, PBP/Survey, True North, Shared Coordinates, Site.
+Расхождение количества само по себе делает статус не GREEN. 10 уровней в БФ и 19 в АР дают строки на недостающие имена; одноимённые сдвинутые уровни дают дельту отметки. Оба вида строк попадают в `issues_total`.
 
-## Audit
+### Оси
+Пары по **имени**. Положение — перпендикуляр между линиями (`position_delta`, «Сетка перемещена»), не расстояние между серединами: ось той же прямой, но длиннее, сдвигом не считается. Угол — отдельная строка `angle_delta`. Пороги: `grid_delta_*_mm`, `grid_angle_*_deg`. Лишние и недостающие имена — как у уровней.
 
-1. Choose models  
-2. Reset session + exemplar  
-3. RBP: `levels_grids_audit.py`
+### Базовая точка
+Дополнительно сравнивается **базовая точка проекта (PBP)**:
+- положение в модели хоста vs точка связи после `GetTotalTransform`;
+- `SharedPosition` хоста vs эталона (если АР сдвинула PBP).
 
-## Apply (BF only)
+В Excel: строка категории **Координаты**. Значения в мм: `X=; Y=; Z=` и `XY=; Z=` (для общих координат префикс `общ.`). Пороги: `pbp_*` в `tolerances.cfg`.
 
-1. `rvt_list.txt` = BF only  
-2. Exemplar = AR  
-3. RBP: `levels_grids_apply.py`  
+### Coordination Review (`GetWarnings`)
+Окно «Просмотр координаций» показывает поэлементные строки вроде «Уровень перемещен пользователем». `Document.GetWarnings()` их обычно **не** содержит: там общее «для экземпляра связи требуется просмотр координаций», «наблюдаемая связь перемещена», либо пусто (Postpone не обязан оставлять warning).
 
-Apply does not create/delete levels or grids.
+Audit всё равно читает `GetWarnings` и дописывает реальные предупреждения Copy/Monitor. Если по тому же элементу уже есть измеренная дельта, повтор «уровень/сетка перемещены» из warning не дублируется. Системное предупреждение связи и предупреждение без геометрической строки остаются. Пустой `GetWarnings` больше не означает GREEN, если отметки, оси или состав имён расходятся.
+
+Колонка «Источник»: **Геометрия**, **Базовая точка**, **Revit CR**.
+
+Не кладите в список моделей пути вида `RSN://x/Имя.rvt` — это заглушка Revit Server, RBP падает с `The central model in sourcePath is missing`.
+
+## Apply
+`levels_grids_apply.py` **1.23.0** читает `fix_plan.csv`. В этом исправлении Apply не менялся.
+
+Отмеченная строка `elevation_delta` двигает отметку уровня хоста к эталону. `position_delta` и `angle_delta` двигают ось. Пара, как и раньше: элемент, который мониторит связь, иначе то же имя. Галочки базовой точки сдвигают PBP (Z: минус = вниз).
+
+В логе: `=== Levels & Grids Apply v1.23.0 ===`, `MOVE PBP …`, `SET level …`, `TRANSFORM grid …`.
+
+Недостающие уровни и оси Apply не создаёт и лишние не удаляет. Окно «Просмотр координаций» само не нажимает. Survey / True North не меняются. Окно Revit для прогона не нужно.
+
+Скопируйте папку `batch_levels_grids` на ПК RBP:
+`C:\Users\Public\Documents\doc\script\rbp\batch_levels_grids`
+
+XLSX и CSV: `%USERPROFILE%\Documents\doc\script\rbp\reports\levels_grids_audit_YYYY-MM-DD_HHmm.csv` / `.xlsx`

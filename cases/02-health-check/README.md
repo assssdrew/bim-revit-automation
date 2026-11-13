@@ -8,12 +8,13 @@ BIM managers need a weekly “is this model healthy?” signal across many centr
 
 ## Solution
 
-Read-only RBP audit (**v1.4.0**):
+Read-only RBP audit (**v1.5.4**):
 
 - Metrics in waves A / B / C (links, families, views/sheets, MEP connectors estimate, far elements, …)
+- Link inventory includes status, IFC, and nested RVT links
 - Traffic-light status from `thresholds.cfg`
 - CSV append per model + **one Excel report** at end of batch (OpenXML, no Excel COM; with status highlighting)
-- Sheets: Summary + RVT Links
+- Sheets: Summary, RVT Links, and Metrics
 
 ## Screenshot
 
