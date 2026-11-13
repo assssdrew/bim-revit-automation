@@ -1,5 +1,5 @@
 ﻿# Name: apply_rsn_support.ps1
-# Version: 2.0
+# Version: 4.0
 # What it does: Install RSN:// and deep-compact routing patch into local Revit Batch Processor scripts.
 # Inputs: Optional -ScriptsPath, -Quiet.
 # Outputs: Patched RBP Scripts tree (marker RSN_PATCH_PS_v4).

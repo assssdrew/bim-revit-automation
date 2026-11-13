@@ -1,5 +1,5 @@
 ' Name: Операции с моделями.vbs
-' Version: 1.0
+' Version: 3.0.0
 ' What it does: Primary hidden STA launcher for the model-ops presets window.
 ' Inputs: presets.ps1 beside script.
 ' Outputs: PowerShell presets UI.

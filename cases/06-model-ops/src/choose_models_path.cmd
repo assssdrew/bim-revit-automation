@@ -1,5 +1,5 @@
 REM Name: choose_models_path.cmd
-REM Version: 1.0
+REM Version: 3.0.0
 REM What it does: Launch model picker for case 06.
 REM Inputs: None.
 REM Outputs: choose_models.ps1.

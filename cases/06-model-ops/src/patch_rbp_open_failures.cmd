@@ -1,5 +1,5 @@
 REM Name: patch_rbp_open_failures.cmd
-REM Version: 1.0
+REM Version: 3.0.0
 REM What it does: Wrapper to patch RBP open-failure handling.
 REM Inputs: None.
 REM Outputs: patch_rbp_open_failures.ps1.

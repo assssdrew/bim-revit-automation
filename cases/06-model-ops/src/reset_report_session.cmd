@@ -1,5 +1,5 @@
 REM Name: reset_report_session.cmd
-REM Version: 1.0
+REM Version: 3.0.0
 REM What it does: Clear active RBP report marker files under the default RBP reports folder.
 REM Inputs: RBP_ROOT path in script.
 REM Outputs: Deleted _active_* txt files.

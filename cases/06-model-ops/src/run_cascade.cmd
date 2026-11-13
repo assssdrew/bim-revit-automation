@@ -1,5 +1,5 @@
 REM Name: run_cascade.cmd
-REM Version: 1.0
+REM Version: 3.0.0
 REM What it does: Text menu for batch_model_ops helpers (presets, pick, move, delete, patch).
 REM Inputs: Saved job files in src\.
 REM Outputs: Invokes other cmd/ps1 tools.

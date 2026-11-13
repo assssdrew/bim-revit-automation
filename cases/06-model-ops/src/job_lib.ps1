@@ -1,5 +1,5 @@
 ﻿# Name: job_lib.ps1
-# Version: 1.0
+# Version: 3.0.0
 # What it does: PowerShell job helpers: naming, path rewrite, mapping/list export for model ops.
 # Inputs: job JSON/CSV from presets.
 # Outputs: job_paths.csv, mapping.csv, lists.

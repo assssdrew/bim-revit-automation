@@ -1,5 +1,5 @@
 REM Name: presets.cmd
-REM Version: 1.0
+REM Version: 3.0.0
 REM What it does: Console launcher for presets.ps1 (STA).
 REM Inputs: None.
 REM Outputs: Model ops UI.

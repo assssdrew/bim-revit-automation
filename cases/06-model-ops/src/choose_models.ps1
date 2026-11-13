@@ -1,5 +1,5 @@
 ﻿# Name: choose_models.ps1
-# Version: 1.0
+# Version: 3.0.0
 # What it does: Model picker writing rvt_list.txt (default) for Pass 1 old paths.
 # Inputs: servers.cfg; -OutFile optional.
 # Outputs: rvt_list.txt.

@@ -58,7 +58,7 @@ One table for status and scale. Batch sizes are anonymised figures from a multi-
 |---|------|--------|-------|
 | 01 | [Project Units + RSN](cases/01-project-units/) | Tested on real working models | Length accuracy in one batch across disk, UNC, and live `RSN://` |
 | 02 | [Health Check](cases/02-health-check/) (v1.4.0) | Tested on real working models; read-only (no model changes) | Health metrics and RVT links in one Excel report and a CSV batch |
-| 03 | [Levels & Grids](cases/03-levels-grids/) | Tested on real working models; MVP scope (Apply on base files only) | Weekly cascade: ~5–6 base files (BF↔AR), then up to ~80 discipline models (vs BF); one audit report session per wave |
+| 03 | [Levels & Grids](cases/03-levels-grids/) (v1.0.2) | Tested on real working models; MVP scope (Apply on base files only) | Weekly cascade: ~5–6 base files (BF↔AR), then up to ~80 discipline models (vs BF); one audit report session per wave |
 | 04 | [FTP model alerts](cases/04-ftp-model-alerts/) | Tested on real working models | Phone push when shared FTP folders change, without watching the client |
 | 05 | [Compact save](cases/05-compact-save/) | Tested on real working models; RSN deep mode on a limited number of runs | Long lists (e.g. ~125 models) in one unattended run; file-size change varies (up to about −11.6% on one early fast-mode model) |
 | 06 | [Model operations](cases/06-model-ops/) (v3.0.0) | Tested on real working models | ~50+ models, mixed UNC / `RSN://`; one saved job plan for staged Save As, move, and relink |
@@ -150,6 +150,7 @@ See [NOTICE](NOTICE) for details.
 bim-revit-automation/
   README.md / README.ru.md     ← portfolio hub
   NOTICE                       ← third-party notices (RBP, GPL-3.0 patch files)
+  CHANGELOG.md                 ← history by date and case
   cases/
     01-project-units/src/
     02-health-check/src/

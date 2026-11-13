@@ -1,5 +1,5 @@
 # Name: delete_old_models.ps1
-# Version: 1.0
+# Version: 3.0.0
 # What it does: After successful Pass 2: delete old UNC models and list RSN paths for manual removal.
 # Inputs: job_paths.csv, optional -ForceDeleteOldWithoutNewCheck.
 # Outputs: Deleted UNC files; to_delete_rsn.txt.

@@ -1,5 +1,5 @@
 REM Name: установить_поддержку_RSN_в_RBP.cmd
-REM Version: 1.0
+REM Version: 4.0
 REM What it does: Wrapper to apply RSN patch from compact-save toolkit.
 REM Inputs: None.
 REM Outputs: apply_rsn_support.ps1.
