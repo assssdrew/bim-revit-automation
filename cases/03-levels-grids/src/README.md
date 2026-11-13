@@ -1,6 +1,6 @@
 ﻿# Levels & Grids — operator notes
 
-Version **1.0.x**. Compare host Levels/Grids to an exemplar RVT link. Audit = report only; Apply = BF list only.
+Version **1.0.2**. Compare host Levels/Grids to an exemplar RVT link. Audit = report only; Apply = BF list only.
 
 ## Model list
 

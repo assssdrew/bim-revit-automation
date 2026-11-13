@@ -1,5 +1,5 @@
 ﻿# Name: presets.ps1
-# Version: 1.0
+# Version: 3.0.0
 # What it does: Single WinForms window to plan rename/move/year/relink passes and export job files.
 # Inputs: Operator inputs; rvt_list paths.
 # Outputs: job_paths.csv, mapping.csv, rbp_checklist.txt.

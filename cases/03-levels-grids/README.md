@@ -8,7 +8,7 @@ After each Architecture update, base files (BF) and then ~80 discipline models m
 
 ## Solution
 
-Cascade toolkit for RBP:
+Cascade toolkit for RBP (**v1.0.2**):
 
 1. **Audit BF ↔ AR** (exemplar = linked AR) → CSV / Excel report (with status highlighting)  
 2. Review → **Apply on BF only** (elevation / grid move-rotate when name match + cfg flags) → Sync  

@@ -1,6 +1,6 @@
 ﻿# -*- coding: utf-8 -*-
 # Name: lg_lib.py
-# Version: 1.0
+# Version: 1.0.2
 # What it does: Shared IronPython helpers for levels/grids audit and apply scripts.
 # Inputs: Imported by audit/apply after SCRIPT_DIR on sys.path.
 # Outputs: Utility functions only (no standalone run).

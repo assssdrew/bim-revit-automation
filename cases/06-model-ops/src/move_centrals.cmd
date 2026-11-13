@@ -1,5 +1,5 @@
 REM Name: move_centrals.cmd
-REM Version: 1.0
+REM Version: 3.0.0
 REM What it does: Wrapper for move_centrals.ps1.
 REM Inputs: None.
 REM Outputs: Moves per job_paths.csv.

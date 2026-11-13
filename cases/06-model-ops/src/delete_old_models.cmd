@@ -1,5 +1,5 @@
 REM Name: delete_old_models.cmd
-REM Version: 1.0
+REM Version: 3.0.0
 REM What it does: Wrapper for delete_old_models.ps1 with safety echo.
 REM Inputs: None.
 REM Outputs: Old model cleanup.

@@ -1,5 +1,5 @@
 # Name: make_rvt_list.ps1
-# Version: 1.0
+# Version: 3.0.0
 # What it does: Collect .rvt under discipline RVT folders into a list.
 # Inputs: -Root or -Roots, -Out.
 # Outputs: rvt_list.txt.
